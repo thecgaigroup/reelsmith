@@ -1,0 +1,32 @@
+# HyperFrames (manual authoring)
+
+Templates generate HyperFrames projects for you. Use this for custom pieces, overlays and GIFs.
+HyperFrames is Apache-2.0 and pinned at 0.8.188 (bump only after a test render passes).
+
+## Setup (once)
+1. Node 22.12+. If older, unpack a portable Node 22 LTS (nodejs.org linux-x64) to `/workspace/tools/node22/` and
+   prepend its `bin` to PATH for HyperFrames only.
+2. `export HYPERFRAMES_NO_TELEMETRY=1 HYPERFRAMES_SKIP_SKILLS=1`; `HF="npx --yes hyperframes@0.8.188"`.
+3. `$HF doctor` (Chrome + FFmpeg). Save GSAP once to `/workspace/tools/gsap.min.js` (jsdelivr `gsap@3/dist/gsap.min.js`).
+4. Kokoro TTS: venv `pip install kokoro-onnx soundfile`, `HYPERFRAMES_PYTHON=<venv>/bin/python`.
+   Do NOT use `$HF audio --quality best` (cloud processing that may bill).
+
+## Per video
+1. `$HF init <slug> --example blank --resolution landscape|portrait|square --non-interactive`; copy GSAP into
+   `assets/` and point `<script src>` there.
+2. `index.html`: root `<div data-composition-id="main" data-start="0" data-duration data-width data-height>`;
+   visible elements and `<audio>`/`<video>` are `class="clip"` with `data-start`, `data-duration`,
+   `data-track-index`. One `gsap.timeline({paused:true})` registered as `window.__timelines["main"]`.
+3. Animate only transforms and opacity. No CSS transitions, timers, `Math.random()` or `Date.now()`. Build the
+   timeline synchronously. Use `fromTo` with explicit end states (cold seeks). Don't mix `translate(-50%)` with
+   GSAP x/y. Variables: `<html data-composition-variables='[…]'>` and `window.__hyperframes.getVariables()`.
+4. Loop: `$HF lint` -> `$HF check` -> `$HF snapshot --at t1,t2,t3`, then Read the contact sheet.
+5. `$HF render -o out/x.mp4 --quality delivery` (`draft` for drafts; `--workers 2` if OOM).
+   Alpha/GIF: `--format mov|webm|gif` (webm alpha is VP9: decode with `-c:v libvpx-vp9`).
+
+See `hyperframes-example/` (a sizzle) and `lottie-example/` (Lottie seeked by the runtime).
+
+## Troubleshooting
+Blank/frozen: timeline not paused or registered, or a bad asset path. `nested_structure` or
+`timeline_track_too_dense` warnings are fine in single-file pieces. Chrome won't launch: `$HF doctor`.
+`EBADENGINE`: wrong Node.

@@ -1,0 +1,9 @@
+{"title": "Brightline in 60 seconds", "presenter": "Brightline team", "footer": "brightline.example",
+ "slides": [
+  {"kind": "title", "title": "Ship ideas *faster*", "subtitle": "How small teams plan, review and launch in one place"},
+  {"kind": "bullets", "title": "Why teams switch", "bullets": ["Specs that stay current", "Reviews without meetings", "Launch plans in minutes"]},
+  {"kind": "stat", "value": "3x", "label": "faster from idea to launch", "title": "The result", "note": "Illustrative figure"},
+  {"kind": "image", "title": "Made for real work", "image": "../_media/laptop-2.jpg"},
+  {"kind": "quote", "quote": "It feels like the whole team shares one brain.", "by": "Engineering lead (fictional)"},
+  {"kind": "question", "title": "What would you ship first?", "subtitle": "Ask us at the booth"}
+ ]}

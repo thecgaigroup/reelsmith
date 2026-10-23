@@ -1,0 +1,363 @@
+{
+ "checked": "2026-10-23",
+ "note": "Numbers come from each platform's own docs; see references/platform-specs.md for sources. Safe zones are fractions of width/height kept free of text/logos (platform UI covers them). Loudness: platforms normalize playback; -14 LUFS integrated / -1 dBTP is a safe social master.",
+ "presets": {
+  "youtube": {
+   "label": "YouTube (16:9)",
+   "w": 1920,
+   "h": 1080,
+   "fps": 30,
+   "max_seconds": 43200,
+   "max_bytes": 274877906944,
+   "video_kbps": 8000,
+   "maxrate_kbps": 12000,
+   "gop": "half_fps",
+   "audio_kbps": 384,
+   "audio_hz": 48000,
+   "safe": {
+    "top": 0.05,
+    "bottom": 0.1,
+    "left": 0.05,
+    "right": 0.05
+   },
+   "lufs": -14,
+   "thumb": {
+    "w": 1280,
+    "h": 720,
+    "format": "jpg",
+    "max_bytes": 2000000,
+    "note": "YouTube recommends up to 3840x2160; 1280x720 stays under the 2 MB mobile limit"
+   }
+  },
+  "shorts": {
+   "label": "YouTube Shorts (9:16)",
+   "w": 1080,
+   "h": 1920,
+   "fps": 30,
+   "max_seconds": 180,
+   "recommended_seconds": [
+    15,
+    60
+   ],
+   "max_bytes": 274877906944,
+   "video_kbps": 8000,
+   "maxrate_kbps": 12000,
+   "gop": "half_fps",
+   "audio_kbps": 256,
+   "audio_hz": 48000,
+   "safe": {
+    "top": 0.08,
+    "bottom": 0.35,
+    "left": 0.06,
+    "right": 0.1
+   },
+   "lufs": -14,
+   "thumb": {
+    "w": 1080,
+    "h": 1920,
+    "format": "jpg",
+    "max_bytes": 2000000,
+    "note": "Pick a frame in-app; no custom thumbnail upload for Shorts on most clients"
+   }
+  },
+  "reels": {
+   "label": "Instagram/Facebook Reels (9:16)",
+   "w": 1080,
+   "h": 1920,
+   "fps": 30,
+   "max_seconds": 900,
+   "recommended_seconds": [
+    7,
+    90
+   ],
+   "max_bytes": 314572800,
+   "video_kbps": 8000,
+   "maxrate_kbps": 25000,
+   "gop": "2s",
+   "audio_kbps": 128,
+   "audio_hz": 48000,
+   "safe": {
+    "top": 0.14,
+    "bottom": 0.35,
+    "left": 0.06,
+    "right": 0.06
+   },
+   "lufs": -14,
+   "thumb": {
+    "w": 1080,
+    "h": 1920,
+    "format": "jpg",
+    "max_bytes": 8000000,
+    "note": "Cover shows cropped to 1:1/4:5 in grid; keep title centered"
+   }
+  },
+  "ig-feed": {
+   "label": "Instagram Feed video (4:5)",
+   "w": 1080,
+   "h": 1350,
+   "fps": 30,
+   "max_seconds": 900,
+   "recommended_seconds": [
+    15,
+    60
+   ],
+   "max_bytes": 314572800,
+   "video_kbps": 6000,
+   "maxrate_kbps": 25000,
+   "gop": "2s",
+   "audio_kbps": 128,
+   "audio_hz": 48000,
+   "safe": {
+    "top": 0.05,
+    "bottom": 0.08,
+    "left": 0.05,
+    "right": 0.05
+   },
+   "lufs": -14,
+   "thumb": {
+    "w": 1080,
+    "h": 1350,
+    "format": "jpg",
+    "max_bytes": 8000000
+   }
+  },
+  "ig-stories": {
+   "label": "Instagram/Facebook Stories (9:16)",
+   "w": 1080,
+   "h": 1920,
+   "fps": 30,
+   "max_seconds": 60,
+   "recommended_seconds": [
+    5,
+    15
+   ],
+   "max_bytes": 4294967296,
+   "video_kbps": 8000,
+   "maxrate_kbps": 25000,
+   "gop": "2s",
+   "audio_kbps": 128,
+   "audio_hz": 48000,
+   "safe": {
+    "top": 0.14,
+    "bottom": 0.35,
+    "left": 0.06,
+    "right": 0.06
+   },
+   "lufs": -14,
+   "thumb": {
+    "w": 1080,
+    "h": 1920,
+    "format": "jpg",
+    "max_bytes": 8000000,
+    "note": "Organic stories split into 60s cards"
+   }
+  },
+  "tiktok": {
+   "label": "TikTok (9:16)",
+   "w": 1080,
+   "h": 1920,
+   "fps": 30,
+   "max_seconds": 180,
+   "recommended_seconds": [
+    9,
+    60
+   ],
+   "max_bytes": 4294967296,
+   "video_kbps": 8000,
+   "maxrate_kbps": 16000,
+   "gop": "2s",
+   "audio_kbps": 192,
+   "audio_hz": 48000,
+   "safe": {
+    "top": 0.125,
+    "bottom": 0.345,
+    "left": 0.111,
+    "right": 0.111,
+    "right_rail": {
+     "x": 0.722,
+     "y": 0.4375
+    }
+   },
+   "lufs": -14,
+   "thumb": {
+    "w": 1080,
+    "h": 1920,
+    "format": "jpg",
+    "note": "Cover picked in-app from a frame"
+   }
+  },
+  "linkedin": {
+   "label": "LinkedIn (16:9)",
+   "w": 1920,
+   "h": 1080,
+   "fps": 30,
+   "max_seconds": 900,
+   "recommended_seconds": [
+    15,
+    90
+   ],
+   "max_bytes": 5368709120,
+   "video_kbps": 8000,
+   "maxrate_kbps": 15000,
+   "gop": "2s",
+   "audio_kbps": 192,
+   "audio_hz": 48000,
+   "safe": {
+    "top": 0.06,
+    "bottom": 0.1,
+    "left": 0.05,
+    "right": 0.05
+   },
+   "lufs": -14,
+   "thumb": {
+    "w": 1920,
+    "h": 1080,
+    "format": "jpg"
+   }
+  },
+  "linkedin-square": {
+   "label": "LinkedIn (1:1)",
+   "w": 1080,
+   "h": 1080,
+   "fps": 30,
+   "max_seconds": 900,
+   "recommended_seconds": [
+    15,
+    90
+   ],
+   "max_bytes": 5368709120,
+   "video_kbps": 6000,
+   "maxrate_kbps": 15000,
+   "gop": "2s",
+   "audio_kbps": 192,
+   "audio_hz": 48000,
+   "safe": {
+    "top": 0.06,
+    "bottom": 0.1,
+    "left": 0.05,
+    "right": 0.05
+   },
+   "lufs": -14,
+   "thumb": {
+    "w": 1080,
+    "h": 1080,
+    "format": "jpg"
+   }
+  },
+  "x": {
+   "label": "X (16:9)",
+   "w": 1280,
+   "h": 720,
+   "fps": 30,
+   "max_seconds": 1200,
+   "max_bytes": 8589934592,
+   "video_kbps": 5000,
+   "maxrate_kbps": 8000,
+   "gop": "half_fps",
+   "audio_kbps": 128,
+   "audio_hz": 48000,
+   "safe": {
+    "top": 0.05,
+    "bottom": 0.12,
+    "left": 0.05,
+    "right": 0.05
+   },
+   "lufs": -14,
+   "thumb": {
+    "w": 1280,
+    "h": 720,
+    "format": "jpg"
+   },
+   "recommended_seconds": [
+    15,
+    140
+   ],
+   "note": "X API docs: standard accounts 0.5 s-20 min, 8 GB (Premium longer). Many viewers still see <=140 s clips best."
+  },
+  "x-vertical": {
+   "label": "X (9:16)",
+   "w": 720,
+   "h": 1280,
+   "fps": 30,
+   "max_seconds": 1200,
+   "max_bytes": 8589934592,
+   "video_kbps": 5000,
+   "maxrate_kbps": 8000,
+   "gop": "half_fps",
+   "audio_kbps": 128,
+   "audio_hz": 48000,
+   "safe": {
+    "top": 0.08,
+    "bottom": 0.2,
+    "left": 0.06,
+    "right": 0.06
+   },
+   "lufs": -14,
+   "thumb": {
+    "w": 720,
+    "h": 1280,
+    "format": "jpg"
+   },
+   "recommended_seconds": [
+    15,
+    140
+   ],
+   "note": "X API docs: standard accounts 0.5 s-20 min, 8 GB (Premium longer). Many viewers still see <=140 s clips best."
+  },
+  "x-square": {
+   "label": "X (1:1)",
+   "w": 720,
+   "h": 720,
+   "fps": 30,
+   "max_seconds": 1200,
+   "max_bytes": 8589934592,
+   "video_kbps": 5000,
+   "maxrate_kbps": 8000,
+   "gop": "half_fps",
+   "audio_kbps": 128,
+   "audio_hz": 48000,
+   "safe": {
+    "top": 0.06,
+    "bottom": 0.12,
+    "left": 0.06,
+    "right": 0.06
+   },
+   "lufs": -14,
+   "thumb": {
+    "w": 720,
+    "h": 720,
+    "format": "jpg"
+   },
+   "recommended_seconds": [
+    15,
+    140
+   ],
+   "note": "X API docs: standard accounts 0.5 s-20 min, 8 GB (Premium longer). Many viewers still see <=140 s clips best."
+  },
+  "master": {
+   "label": "Archive master (any aspect)",
+   "w": 0,
+   "h": 0,
+   "fps": 0,
+   "max_seconds": 999999,
+   "max_bytes": 0,
+   "video_kbps": 0,
+   "crf": 16,
+   "gop": "2s",
+   "audio_kbps": 320,
+   "audio_hz": 48000,
+   "safe": {
+    "top": 0.05,
+    "bottom": 0.05,
+    "left": 0.05,
+    "right": 0.05
+   },
+   "lufs": -16,
+   "thumb": {
+    "w": 0,
+    "h": 0,
+    "format": "png"
+   }
+  }
+ }
+}

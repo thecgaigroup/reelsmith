@@ -1,0 +1,7 @@
+{"name": "stat-callout", "engine": "hyperframes", "summary": "Data story: rolling counters for 1-3 big numbers, an animated bar chart, cited source, end card",
+ "energy": "medium", "unit": "bar", "caption_style": "boxed",
+ "required": ["title", "stats", "source"],
+ "budgets": {"kicker": 28, "title": 48, "stats": {"min_items": 1, "max_items": 3}, "stats.label": 56, "chart.title": 40, "chart.bars": {"max_items": 6}, "chart.bars.label": 14, "source": 90, "cta": 28},
+ "slots": {"kicker": "label", "title": "the claim", "stats": "1-3 of {value (digits), prefix?, suffix?, label}", "chart": "optional {title, unit?, bars:[{label, value}], highlight?: index}",
+           "source": "REQUIRED citation shown on screen", "cta": "button text", "url": "domain", "vo": "optional {scene_id: line}"},
+ "notes": "Every number needs a source. Sample figures are illustrative.", "aspects": ["16x9", "9x16", "1x1"], "seconds": "14-30"}

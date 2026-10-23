@@ -1,0 +1,8 @@
+{"name": "slides-presentation", "engine": "hyperframes", "summary": "Animated slides: title/section/bullets/stat/quote/image/question slides with deck chrome ('n of N'), crossfades, VO-paced or auto-advance; --loop makes a seamless kiosk/booth loop",
+ "energy": "calm", "unit": "bar", "caption_style": "boxed", "loopable": true,
+ "required": ["title", "slides"],
+ "budgets": {"title": 48, "slides": {"min_items": 2, "max_items": 20}, "slides.title": 60, "slides.bullets": {"max_items": 5}, "slides.vo": 400},
+ "slots": {"title": "deck title (header chrome)", "presenter": "optional", "slides": "list of {kind: title|section|bullets|stat|quote|image|question, title, subtitle?, bullets?, value?, label?, quote?, by?, image?, seconds?, vo?}",
+           "footer": "optional footer label", "min_seconds": "default 5 (auto-advance floor)"},
+ "notes": "Slide length = max(min_seconds, seconds, VO + pads), snapped to the bar. Kiosk: render with --loop (no fade-to-black; last frame == first).",
+ "aspects": ["16x9", "9x16", "1x1"], "seconds": "any"}

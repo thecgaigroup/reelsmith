@@ -1,0 +1,7 @@
+{"event": "Brightline Summit", "date": "October 2026", "location": "Jersey City, NJ",
+ "photos": [{"src": "../_media/skyline-1.jpg", "caption": "One city. One weekend."},
+            {"src": "../_media/crowd-1.jpg", "caption": "*1,200* builders in one room"},
+            {"src": "../_media/crowd-2.jpg", "caption": "Live demos all day"},
+            {"src": "../_media/skyline-2.jpg", "caption": "And a skyline to celebrate"}],
+ "stats": [{"value": "1200", "label": "attendees"}, {"value": "48", "label": "talks"}, {"value": "16", "label": "countries"}],
+ "cta": "See you next year", "url": "brightline.example/summit"}

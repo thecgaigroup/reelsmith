@@ -1,0 +1,16 @@
+[
+ {
+  "title": "Militaire Electronic (ISRC USUAN1100442)",
+  "creator": "Kevin MacLeod",
+  "creator_url": null,
+  "license": "by",
+  "license_version": "3.0",
+  "license_url": "https://creativecommons.org/licenses/by/3.0/",
+  "foreign_landing_url": "https://commons.wikimedia.org/w/index.php?curid=64747022",
+  "source": "wikimedia_audio",
+  "attribution": "\"Militaire Electronic (ISRC USUAN1100442)\" by Kevin MacLeod is licensed under CC BY 3.0. To view a copy of this license, visit https://creativecommons.org/licenses/by/3.0/.",
+  "file": "militaire-electronic-32s.mp3",
+  "notes": "Trimmed to 32 s on a bar line with a fade-out (scripts/beats.py fit). Credit required in the video description or end card.",
+  "retrieved": "2026-10-23 via Openverse API (source: Wikimedia Commons)"
+ }
+]

@@ -1,0 +1,7 @@
+{"kicker": "Introducing", "product": "Brightline 2.0", "headline": "Ideas, *shipped* faster.",
+ "features": [{"title": "Live docs", "body": "Specs that update themselves as you build."},
+              {"title": "One-click review", "body": "Approve changes without the meeting."},
+              {"title": "Instant handoff", "body": "From idea to launch plan in minutes."}],
+ "image": "../_media/laptop-1.jpg", "image_caption": "Built for the way your team already works",
+ "stat": {"value": "3x", "label": "faster from idea to launch*"}, "cta": "Start free today", "url": "brightline.example",
+ "footnote": "*Illustrative figure for a fictional brand."}

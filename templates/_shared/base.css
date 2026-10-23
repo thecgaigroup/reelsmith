@@ -1,0 +1,36 @@
+/* Reelsmith base layout. Brand tokens come from brand/brand.css; layout vars are injected per aspect. */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: var(--W); height: var(--H); overflow: hidden; background: var(--bg); }
+#root { position: relative; width: 100%; height: 100%; overflow: hidden; color: var(--fg); font-family: var(--font-body); font-weight: var(--weight-body); }
+#rs-bg { position: absolute; inset: 0; background: linear-gradient(125deg, var(--bg) 0%, var(--surface) 45%, var(--bg) 70%, var(--surface) 100%); background-size: 260% 260%; }
+.rs-blob { position: absolute; width: 70vmin; height: 70vmin; border-radius: 50%; filter: blur(9vmin); opacity: .42; }
+#rs-blob1 { background: var(--primary); left: -18vmin; top: -14vmin; }
+#rs-blob2 { background: var(--secondary); right: -22vmin; bottom: -18vmin; opacity: .32; }
+#rs-blob3 { background: var(--accent); right: 18%; top: 30%; width: 34vmin; height: 34vmin; opacity: .14; }
+#rs-grid { position: absolute; inset: 0; opacity: .07; background-image: linear-gradient(var(--fg) 1px, transparent 1px), linear-gradient(90deg, var(--fg) 1px, transparent 1px); background-size: 9vmin 9vmin; }
+#rs-wipe { position: absolute; top: -10%; bottom: -10%; left: 0; width: 100%; background: linear-gradient(90deg, transparent 0%, var(--primary) 18%, var(--primary) 50%, var(--secondary) 82%, transparent 100%); transform: skewX(-12deg); opacity: 0; z-index: 50; }
+.scene { position: absolute; inset: 0; z-index: 10; }
+.stage { position: absolute; left: var(--safe-l); right: var(--safe-r); top: var(--safe-t); bottom: var(--safe-b); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 3vmin; }
+.stage.left { align-items: flex-start; text-align: left; }
+.h1 { font-family: var(--font-heading); font-weight: var(--weight-heading); letter-spacing: var(--tracking-heading); line-height: 1.02; font-size: var(--h1); }
+.h2 { font-family: var(--font-heading); font-weight: var(--weight-heading); letter-spacing: var(--tracking-heading); line-height: 1.08; font-size: var(--h2); }
+.body { font-size: var(--body); line-height: 1.3; color: var(--fg); opacity: .88; }
+.kicker { font-size: var(--kicker); text-transform: uppercase; letter-spacing: .18em; color: var(--secondary); font-weight: 700; }
+.w { display: inline-block; white-space: pre; }
+.acc { color: var(--accent); }
+.pri { color: var(--primary); }
+.chip { display: inline-flex; align-items: center; gap: 1.6vmin; padding: 1.4vmin 3vmin; border-radius: 999px; background: color-mix(in srgb, var(--surface) 82%, transparent); border: 0.25vmin solid color-mix(in srgb, var(--fg) 14%, transparent); }
+.card { background: color-mix(in srgb, var(--surface) 88%, transparent); border: 0.25vmin solid color-mix(in srgb, var(--fg) 12%, transparent); border-radius: var(--radius); padding: 3vmin 3.6vmin; box-shadow: 0 3vmin 8vmin rgba(0,0,0,.35); }
+.logo-img { display: block; max-width: 100%; height: auto; }
+.cta { display: inline-block; padding: 2vmin 4.5vmin; border-radius: 999px; background: var(--primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-heading); font-size: var(--body); }
+.url { font-size: var(--kicker); color: var(--muted); letter-spacing: .06em; }
+.media { position: absolute; inset: 0; overflow: hidden; }
+.media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.15) 0%, rgba(0,0,0,.35) 50%, rgba(0,0,0,.82) 100%); }
+.credit { position: absolute; right: 2vmin; bottom: 1.2vmin; font-size: 1.5vmin; color: rgba(255,255,255,.6); z-index: 60; }
+.rs-num { display: inline-flex; font-family: var(--font-heading); font-weight: var(--weight-heading); font-variant-numeric: tabular-nums; line-height: 1; }
+.rs-digit { display: inline-block; height: 1em; overflow: hidden; }
+.rs-strip { display: flex; flex-direction: column; }
+.rs-strip span { height: 1em; display: block; }
+#rs-disclosure { z-index: 55; pointer-events: none; }
+.rs-ai { position: absolute; left: var(--safe-l); top: calc(var(--safe-t) * .5); font-family: var(--font-body); font-size: 1.7vmin; letter-spacing: .04em; color: rgba(255,255,255,.72); background: rgba(0,0,0,.35); padding: .5vmin 1.2vmin; border-radius: 1vmin; }

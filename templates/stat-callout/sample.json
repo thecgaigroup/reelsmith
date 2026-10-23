@@ -1,0 +1,5 @@
+{"kicker": "State of shipping 2026", "title": "Small teams ship *faster*",
+ "stats": [{"value": "73", "suffix": "%", "label": "of teams plan in docs, not meetings"}, {"value": "2.4", "suffix": "x", "label": "more releases per quarter"}],
+ "chart": {"title": "Releases per quarter by team size", "bars": [{"label": "1-5", "value": 14}, {"label": "6-20", "value": 11}, {"label": "21-50", "value": 7}, {"label": "50+", "value": 4}], "highlight": 0},
+ "source": "Source: illustrative data for a fictional brand", "cta": "Read the report", "url": "brightline.example/report",
+ "vo": {"s-intro": "Small teams ship faster. Here is the proof."}}

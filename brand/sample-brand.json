@@ -1,0 +1,24 @@
+{
+  "name": "Brightline",
+  "tagline": "Ideas, shipped faster.",
+  "url": "brightline.example",
+  "handle": "@brightline",
+  "logo": {"primary": "logo.svg", "mark": "mark.svg", "min_height_pct": 6, "watermark": false},
+  "colors": {
+    "bg": "#0B1220", "fg": "#F8FAFC", "primary": "#5B6CFF", "secondary": "#22D3EE",
+    "accent": "#FFB020", "muted": "#94A3B8", "surface": "#162036"
+  },
+  "fonts": {
+    "heading": {"family": "Space Grotesk", "weight": 700, "source": "google", "letter_spacing": "-0.03em"},
+    "body": {"family": "Inter", "weight": 500, "source": "google", "letter_spacing": "0em"}
+  },
+  "voice": {
+    "tone": ["confident", "warm", "plain-spoken"],
+    "avoid": ["jargon", "exclamation marks", "superlatives we can't prove"],
+    "person": "we", "cta": "Start free today", "wps": 2.5, "tts_voice": "af_heart"
+  },
+  "lower_third": {"style": "bar", "bg": "surface", "fg": "fg", "accent": "primary", "radius": 14, "position": "left"},
+  "safe_margins": {"title_pct": 10, "action_pct": 5},
+  "motion": {"energy": "medium", "ease": "power3.out", "corner_radius": 24},
+  "music": {"mood": "upbeat electronic, 110-128 BPM"}
+}

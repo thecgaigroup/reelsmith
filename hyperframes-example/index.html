@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape" data-composition-variables='[{"id":"brand","type":"string","label":"Brand","default":"Reelsmith"},{"id":"cta","type":"string","label":"Call to action","default":"Make it move."},{"id":"accent","type":"color","label":"Accent","default":"#ffd166"}]'>
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1920, height=1080" />
+<script src="assets/gsap.min.js"></script>
+<style>
+:root { --ink:#fff; --acc:#ffd166; }
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:1920px; height:1080px; overflow:hidden; background:#0b0f1a; }
+#root { width:100%; height:100%; position:relative; font-family:"DejaVu Sans", Arial, sans-serif; color:var(--ink); }
+#bg { position:absolute; inset:0; background:linear-gradient(120deg,#0b0f1a,#1b2a4a,#3a1c5c,#0b0f1a); background-size:300% 300%; background-position:0% 50%; }
+.scene { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 8vmin; gap:3vmin; }
+.big { font-size:11vmin; font-weight:800; line-height:1.05; letter-spacing:-0.02em; }
+.big.small { font-size:12vmin; }
+.acc { color:var(--acc); }
+.slam { font-size:13vmin; font-weight:900; }
+.slam .w, .ar { display:inline-block; }
+.ar { margin:0 2vmin; border:0.6vmin solid var(--acc); border-radius:2vmin; padding:0 3vmin; }
+.sub { font-size:5vmin; opacity:.85; }
+.logo { display:flex; align-items:center; gap:4vmin; }
+.mark { width:14vmin; height:14vmin; border-radius:3vmin; background:conic-gradient(var(--acc),#ef476f,#118ab2,var(--acc)); }
+.brand { font-size:12vmin; font-weight:900; }
+.caption { position:absolute; left:8vmin; right:8vmin; bottom:14%; text-align:center; font-size:4.5vmin; font-weight:700; }
+.cw { opacity:.45; color:#fff; }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="main" data-start="0" data-duration="12.5" data-width="1920" data-height="1080">
+<div id="bg" class="clip" data-start="0" data-duration="12.5" data-track-index="0"></div>
+<section id="s1" class="clip scene" data-start="0" data-duration="2" data-track-index="1"><div class="big">Your story,<br><span class="acc">told faster.</span></div></section>
+<section id="s2" class="clip scene" data-start="2" data-duration="2" data-track-index="1"><div class="big">Every frame,<br><span class="acc">on brand.</span></div></section>
+<section id="s3" class="clip scene" data-start="4" data-duration="2" data-track-index="1"><div class="slam"><span class="w">Kinetic.</span> <span class="w">Type.</span> <span class="w acc">Motion.</span></div></section>
+<section id="s4" class="clip scene" data-start="6" data-duration="3" data-track-index="1"><div class="big small"><span class="ar">16:9</span> <span class="ar">9:16</span> <span class="ar">1:1</span></div><div class="sub">One source, every aspect.</div></section>
+<section id="s5" class="clip scene" data-start="9" data-duration="3.5" data-track-index="1"><div class="logo"><div class="mark"></div><div class="brand" id="brand"></div></div><div class="sub" id="cta"></div></section>
+
+<audio id="music" class="clip" data-start="0" data-duration="12.5" data-track-index="4" data-volume="0.45" data-fade-in="0.5" data-fade-out="1.5" src="assets/music/bed-120bpm.mp3"></audio>
+
+</div>
+<script>
+const v = window.__hyperframes.getVariables();
+document.getElementById("brand").textContent = v.brand;
+document.getElementById("cta").textContent = v.cta;
+document.documentElement.style.setProperty("--acc", v.accent);
+const tl = gsap.timeline({ paused: true });
+tl.from("#s1 > *", {y:"6vmin", opacity:0, duration:0.30, stagger:0.125, ease:"power3.out"}, 0.000);
+tl.to("#s1 > *", {opacity:0, scale:1.06, duration:0.20, ease:"power2.in"}, 1.800);
+tl.from("#s2 > *", {y:"6vmin", opacity:0, duration:0.30, stagger:0.125, ease:"power3.out"}, 2.000);
+tl.to("#s2 > *", {opacity:0, scale:1.06, duration:0.20, ease:"power2.in"}, 3.800);
+tl.from("#s3 > *", {y:"6vmin", opacity:0, duration:0.30, stagger:0.125, ease:"power3.out"}, 4.000);
+tl.to("#s3 > *", {opacity:0, scale:1.06, duration:0.20, ease:"power2.in"}, 5.800);
+tl.from("#s4 > *", {y:"6vmin", opacity:0, duration:0.30, stagger:0.125, ease:"power3.out"}, 6.000);
+tl.to("#s4 > *", {opacity:0, scale:1.06, duration:0.20, ease:"power2.in"}, 8.800);
+tl.from("#s5 > *", {y:"6vmin", opacity:0, duration:0.30, stagger:0.125, ease:"power3.out"}, 9.000);
+tl.from("#s3 .w", {scale:2.2, opacity:0, duration:0.18, stagger:0.5, ease:"back.out(2)"}, 4.000);
+tl.from("#s4 .ar", {yPercent:120, opacity:0, duration:0.25, stagger:0.5, ease:"power4.out"}, 6.000);
+tl.from("#s5 .mark", {rotation:-180, scale:0, duration:1.0, ease:"back.out(1.6)"}, 9.000);
+tl.from("#brand", {x:"-8vmin", scale:0.8, opacity:0, duration:1.0, ease:"power3.out"}, 9.500);
+tl.to("#bg", {backgroundPosition:"100% 50%", duration:12.5, ease:"none"}, 0);
+window.__timelines["main"] = tl;
+tl.seek(0);
+</script>
+</body>
+</html>

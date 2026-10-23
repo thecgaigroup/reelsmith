@@ -1,0 +1,88 @@
+[
+  {
+    "provider": "openverse",
+    "id": "461d71b8-f06d-44d7-9263-672244031586",
+    "creator": "unknown",
+    "creator_url": null,
+    "page": "https://www.rawpixel.com/image/5970282/music-concert-crowd",
+    "license": "CC CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "attribution": "\"Music Concert Crowd\" is marked with CC0 1.0. To view the terms, visit https://creativecommons.org/publicdomain/zero/1.0/.",
+    "source": "rawpixel",
+    "file": "crowd-2.jpg",
+    "downloaded": "2026-10-23"
+  },
+  {
+    "provider": "openverse",
+    "id": "39f17f24-bbbd-499c-8cc9-d9c97797a6aa",
+    "creator": "Wvdp",
+    "creator_url": "https://commons.wikimedia.org/wiki/User:Wvdp",
+    "page": "https://commons.wikimedia.org/w/index.php?curid=164752625",
+    "license": "CC CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.en/",
+    "attribution": "\"Muddy evening concert crowd, Saemangeum, 30 July 2023 \u2013 WSJ 2023\" by Wvdp is marked with CC0 1.0. To view the terms, visit https://creativecommons.org/publicdomain/zero/1.0/deed.en/.",
+    "source": "wikimedia",
+    "file": "crowd-1.jpg",
+    "downloaded": "2026-10-23"
+  },
+  {
+    "provider": "openverse",
+    "id": "19f89def-c920-4e19-bc37-c20a2dedaa5a",
+    "creator": "Lisa Fotios",
+    "creator_url": "https://lisafotiosphotography.co.uk",
+    "page": "https://stocksnap.io/photo/laptop-desk-JCXQS3IVWD",
+    "license": "CC CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "attribution": "\"Laptop Desk\" by Lisa Fotios is marked with CC0 1.0. To view the terms, visit https://creativecommons.org/publicdomain/zero/1.0/.",
+    "source": "stocksnap",
+    "file": "laptop-1.jpg",
+    "downloaded": "2026-10-23"
+  },
+  {
+    "provider": "openverse",
+    "id": "2faf088e-2ba7-423c-81c2-11a57858bc54",
+    "creator": "Lisa Fotios",
+    "creator_url": "https://lisafotiosphotography.co.uk",
+    "page": "https://stocksnap.io/photo/laptop-desk-WTSQO9T3DK",
+    "license": "CC CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "attribution": "\"Laptop Desk\" by Lisa Fotios is marked with CC0 1.0. To view the terms, visit https://creativecommons.org/publicdomain/zero/1.0/.",
+    "source": "stocksnap",
+    "file": "laptop-2.jpg",
+    "downloaded": "2026-10-23"
+  },
+  {
+    "provider": "openverse",
+    "id": "d647ba11-97b9-4227-89a4-c6a9e2e418dd",
+    "creator": "Alfred Twu",
+    "creator_url": "https://commons.wikimedia.org/wiki/User:Firstcultural",
+    "page": "https://commons.wikimedia.org/w/index.php?curid=135455832",
+    "license": "CC CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.en/",
+    "attribution": "\"Jersey City night skyline\" by Alfred Twu is marked with CC0 1.0. To view the terms, visit https://creativecommons.org/publicdomain/zero/1.0/deed.en/.",
+    "source": "wikimedia",
+    "file": "skyline-2.jpg",
+    "downloaded": "2026-10-23"
+  },
+  {
+    "provider": "openverse",
+    "id": "c61bd051-a026-406d-b575-f6f8b83f81aa",
+    "creator": "Alfred Twu",
+    "creator_url": "https://commons.wikimedia.org/wiki/User:Firstcultural",
+    "page": "https://commons.wikimedia.org/w/index.php?curid=135455833",
+    "license": "CC CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.en/",
+    "attribution": "\"Jersey City night skyline looking northwest\" by Alfred Twu is marked with CC0 1.0. To view the terms, visit https://creativecommons.org/publicdomain/zero/1.0/deed.en/.",
+    "source": "wikimedia",
+    "file": "skyline-1.jpg",
+    "downloaded": "2026-10-23"
+  },
+  {
+    "provider": "generated",
+    "file": "ui-mock.png",
+    "creator": "Reelsmith (generated with Pillow)",
+    "license": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "attribution": "Fictional UI mock-up generated for the examples; no third-party rights."
+  }
+]

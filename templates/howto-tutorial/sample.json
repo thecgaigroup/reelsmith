@@ -1,0 +1,13 @@
+{"title": "Approve a launch plan in 3 steps", "subtitle": "A 60-second Brightline walkthrough",
+ "sections": [
+  {"kind": "intro", "title": "Approve a launch plan in *3 steps*", "vo": "Here is how to approve a launch plan in three quick steps."},
+  {"kind": "step", "title": "Open the plan", "body": "Pick the doc from Projects.", "image": "../_media/ui-mock.png", "focus": {"x": 0.3, "y": 0.18, "zoom": 1.6},
+   "callout": {"x": 0.205, "y": 0.04, "text": "Projects"}, "vo": "First, open the launch plan from your projects list."},
+  {"kind": "step", "title": "Run the checklist", "body": "Tick what is done; the rest stays visible.", "image": "../_media/ui-mock.png", "focus": {"x": 0.3, "y": 0.72, "zoom": 1.8},
+   "callout": {"x": 0.22, "y": 0.77, "text": "Two left"}, "vo": "Next, run the review checklist. Anything unfinished stays highlighted."},
+  {"kind": "step", "title": "Approve", "body": "One click notifies the whole team.", "image": "../_media/ui-mock.png", "focus": {"x": 0.68, "y": 0.74, "zoom": 1.45},
+   "callout": {"x": 0.85, "y": 0.895, "text": "Click"}, "vo": "Finally, press approve. Everyone on the plan is notified."},
+  {"kind": "compare", "title": "Before vs after", "left": {"label": "Before", "points": ["Status meetings", "Lost feedback"]}, "right": {"label": "After", "points": ["Async approvals", "One source of truth"]},
+   "vo": "No more status meetings, and no more lost feedback."},
+  {"kind": "outro", "title": "You're ready", "cta": "Try it free", "url": "brightline.example/start", "vo": "That's it. Try it free today."}
+ ]}

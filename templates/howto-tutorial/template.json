@@ -1,0 +1,8 @@
+{"name": "howto-tutorial", "engine": "hyperframes", "summary": "Narrated how-to: intro, numbered steps on screenshots with camera zoom/pan + callouts, key-points / compare / checklist scenes, outro; emits chapters",
+ "energy": "calm", "unit": "beat", "caption_style": "boxed",
+ "required": ["title", "sections"],
+ "budgets": {"title": 48, "subtitle": 70, "sections": {"min_items": 3, "max_items": 12}, "sections.title": 48, "sections.body": 90, "sections.vo": 260},
+ "slots": {"title": "<= 48 chars", "subtitle": "optional", "sections": "list of {kind: intro|step|three|compare|checklist|outro, title, vo, ...}; step: body, image, focus {x,y,zoom}, callout {x,y,text}; three: points[3]; compare: left/right {label, points}; checklist: items[]; outro: cta, url",
+           "ai_voice_disclosure": "default true: shows 'Narration: AI-generated voice' when TTS narration is used"},
+ "notes": "Narration drives timing (scene >= VO + pads). Lock the script before voicing; cached VO is reused. Chapters go to job.json for youtube_prep.py.",
+ "aspects": ["16x9", "9x16", "1x1"], "seconds": "30-120"}

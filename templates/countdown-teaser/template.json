@@ -1,0 +1,41 @@
+{
+ "name": "countdown-teaser",
+ "engine": "hyperframes",
+ "summary": "Teaser: cryptic lines, beat-synced 5-4-3-2-1 count (flash-safe), big reveal with date, end card",
+ "energy": "high",
+ "unit": "half",
+ "caption_style": "pop",
+ "required": [
+  "title",
+  "date_text"
+ ],
+ "budgets": {
+  "tease": {
+   "max_items": 4
+  },
+  "tease.item": 34,
+  "title": 28,
+  "date_text": 32,
+  "count_from": 2,
+  "cta": 28
+ },
+ "slots": {
+  "tease": "0-4 short lines ('Something new is coming')",
+  "count_from": "3-9, default 5",
+  "count_label": "optional e.g. 'days to go'",
+  "kicker": "label over the reveal",
+  "title": "the reveal",
+  "date_text": "date/time line",
+  "cta": "e.g. 'Save the date'",
+  "url": "domain",
+  "count_label_one": "optional singular label for the final number (default: auto 'days'->'day')"
+ },
+ "notes": "No full-screen luminance flips: numbers scale/blur in on a steady background (WCAG 2.3.1: max 3 flashes/s).",
+ "aspects": [
+  "16x9",
+  "9x16",
+  "1x1"
+ ],
+ "seconds": "10-20",
+ "loopable": true
+}

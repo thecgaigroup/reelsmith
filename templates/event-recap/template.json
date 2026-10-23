@@ -1,0 +1,7 @@
+{"name": "event-recap", "engine": "hyperframes", "summary": "Photo-driven event recap: title over photo, Ken Burns highlights on the beat, stat counters, see-you-next-time end card",
+ "energy": "high", "unit": "bar", "caption_style": "pop",
+ "required": ["event", "photos"],
+ "budgets": {"event": 32, "date": 32, "photos": {"min_items": 3, "max_items": 10}, "photos.caption": 44, "stats": {"max_items": 3}, "stats.label": 24, "cta": 28},
+ "slots": {"event": "event name", "date": "date line", "location": "place", "photos": "3-10 of {src, caption?}", "stats": "0-3 of {value, label}",
+           "cta": "e.g. 'See you next year'", "url": "domain", "vo": "optional {scene_id: line}"},
+ "aspects": ["16x9", "9x16", "1x1"], "seconds": "15-35"}

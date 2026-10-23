@@ -1,0 +1,7 @@
+{"name": "testimonial", "engine": "hyperframes", "summary": "Customer quote(s) with kinetic word reveal, rating, attribution card and end card",
+ "energy": "calm", "unit": "bar", "caption_style": "clean",
+ "required": ["quotes"],
+ "budgets": {"quotes": {"min_items": 1, "max_items": 3}, "quotes.text": 160, "quotes.name": 32, "quotes.role": 48, "headline": 40, "cta": 28},
+ "slots": {"headline": "optional opener, e.g. 'Teams love Brightline'", "rating": "optional 1-5 stars", "quotes": "1-3 of {text, name, role, avatar?}; *word* = accent",
+           "cta": "button text", "url": "domain", "vo": "optional {scene_id: line}"},
+ "notes": "Only use real, approved customer quotes. Sample quotes are fictional.", "aspects": ["16x9", "9x16", "1x1"], "seconds": "12-30"}

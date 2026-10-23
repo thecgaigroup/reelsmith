@@ -1,0 +1,8 @@
+{"name": "product-launch", "engine": "hyperframes", "summary": "Music-driven launch reel: name slam, kinetic headline, 3 features, hero image, stat, end card",
+ "energy": "high", "unit": "half", "caption_style": "boxed",
+ "required": ["product", "headline", "features", "cta"],
+ "budgets": {"product": 24, "headline": 48, "features": {"min_items": 2, "max_items": 4}, "features.title": 24, "features.body": 60, "cta": 28},
+ "slots": {"kicker": "small label above the name", "product": "product name", "headline": "one line; wrap *words* for accent",
+           "features": "2-4 of {title, body, icon?}", "image": "optional hero image (product shot / UI)", "image_caption": "optional",
+           "stat": "optional {value, label}", "cta": "button text", "url": "domain", "vo": "optional {scene_id: line}"},
+ "aspects": ["16x9", "9x16", "1x1"], "seconds": "16-24"}

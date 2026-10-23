@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "reelsmith/brand.schema.json",
+  "title": "Reelsmith brand kit",
+  "type": "object",
+  "required": ["name", "colors", "fonts"],
+  "properties": {
+    "name": {"type": "string", "description": "Brand or product name as it should appear on screen"},
+    "tagline": {"type": "string", "maxLength": 60},
+    "url": {"type": "string", "description": "Shown on end cards. Omit the protocol for display."},
+    "handle": {"type": "string", "description": "Social handle for end cards, e.g. @brand"},
+    "logo": {
+      "type": "object",
+      "properties": {
+        "primary": {"type": "string", "description": "Path (relative to this file) to the full logo. SVG or transparent PNG."},
+        "mark": {"type": "string", "description": "Square icon / symbol only. Used for watermarks and 1:1."},
+        "on_dark": {"type": "string", "description": "Variant for dark backgrounds, if different"},
+        "on_light": {"type": "string"},
+        "min_height_pct": {"type": "number", "default": 6, "description": "Smallest logo height as % of frame height"},
+        "watermark": {"type": "boolean", "default": false}
+      }
+    },
+    "colors": {
+      "type": "object",
+      "required": ["bg", "fg", "primary"],
+      "properties": {
+        "bg": {"$ref": "#/$defs/hex"}, "fg": {"$ref": "#/$defs/hex"},
+        "primary": {"$ref": "#/$defs/hex"}, "secondary": {"$ref": "#/$defs/hex"},
+        "accent": {"$ref": "#/$defs/hex"}, "muted": {"$ref": "#/$defs/hex"},
+        "surface": {"$ref": "#/$defs/hex", "description": "Card / panel background"}
+      }
+    },
+    "fonts": {
+      "type": "object",
+      "required": ["heading"],
+      "properties": {
+        "heading": {"$ref": "#/$defs/font"},
+        "body": {"$ref": "#/$defs/font"},
+        "mono": {"$ref": "#/$defs/font"}
+      }
+    },
+    "voice": {
+      "type": "object",
+      "description": "How scripts and VO should sound",
+      "properties": {
+        "tone": {"type": "array", "items": {"type": "string"}},
+        "avoid": {"type": "array", "items": {"type": "string"}},
+        "person": {"enum": ["we", "you", "third"], "default": "we"},
+        "cta": {"type": "string", "description": "Default call to action"},
+        "wps": {"type": "number", "default": 2.5, "description": "Voiceover words per second"},
+        "tts_voice": {"type": "string", "description": "Local voice name for Kokoro/espeak. Never a cloud voice ID."}
+      }
+    },
+    "lower_third": {
+      "type": "object",
+      "properties": {
+        "style": {"enum": ["bar", "pill", "underline", "boxed"], "default": "bar"},
+        "bg": {"type": "string", "description": "Color token (primary, surface...) or hex", "default": "surface"},
+        "fg": {"type": "string", "default": "fg"},
+        "accent": {"type": "string", "default": "primary"},
+        "radius": {"type": "number", "default": 12},
+        "position": {"enum": ["left", "center"], "default": "left"}
+      }
+    },
+    "safe_margins": {
+      "type": "object",
+      "description": "Brand-level margins as % of frame. Platform safe zones are applied on top.",
+      "properties": {
+        "title_pct": {"type": "number", "default": 10},
+        "action_pct": {"type": "number", "default": 5}
+      }
+    },
+    "motion": {
+      "type": "object",
+      "properties": {
+        "energy": {"enum": ["calm", "medium", "high"], "default": "medium"},
+        "ease": {"type": "string", "default": "power3.out"},
+        "corner_radius": {"type": "number", "default": 24}
+      }
+    },
+    "music": {
+      "type": "object",
+      "properties": {
+        "mood": {"type": "string"},
+        "track": {"type": "string", "description": "Default licensed track path"},
+        "bpm": {"type": "number"}
+      }
+    }
+  },
+  "$defs": {
+    "hex": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+    "font": {
+      "type": "object",
+      "required": ["family"],
+      "properties": {
+        "family": {"type": "string"},
+        "weight": {"type": "integer", "default": 700},
+        "file": {"type": "string", "description": "Optional local .ttf/.otf/.woff2 path relative to this file"},
+        "source": {"enum": ["google", "local", "system"], "default": "google"},
+        "letter_spacing": {"type": "string", "default": "-0.02em"},
+        "uppercase": {"type": "boolean", "default": false}
+      }
+    }
+  }
+}

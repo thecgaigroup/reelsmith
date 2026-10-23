@@ -1,0 +1,18 @@
+{
+ "name": "feature-explainer",
+ "engine": "remotion",
+ "summary": "Narrated product explainer: kinetic hook, 3 numbered feature cards, a stat callout, logo + CTA. Brand-driven, free local VO, captions.",
+ "duration": "20-30 s",
+ "aspects": ["16:9", "9:16", "1:1"],
+ "energy": "medium",
+ "slots": {
+  "hook": "kinetic line, highlight one word",
+  "features": "3 x {index, text (<=4 words), sub (<=8 words), vo}",
+  "stat": "{value, label, vo}; mark illustrative numbers as such",
+  "cta": "wordmark + tagline + vo",
+  "brand": "brand.json (bundled to public/brand/)",
+  "music": "public/music/*.mp3 + bpm"
+ },
+ "edit": "remotion/src/plans/featureExplainer.ts",
+ "render": "templates/feature-explainer/render.sh"
+}
