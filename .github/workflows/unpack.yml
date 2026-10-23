@@ -1,0 +1,22 @@
+name: Unpack Reelsmith package
+on:
+  push:
+    paths: ['reelsmith-repo.zip']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unpack to repo root and clean up
+        run: |
+          unzip -o reelsmith-repo.zip -d .
+          git rm -q --cached reelsmith-repo.zip reelsmith-skill.zip .github/workflows/unpack.yml || true
+          rm -f reelsmith-repo.zip reelsmith-skill.zip .github/workflows/unpack.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Reelsmith v5: unpack package to repo root, add README install, MIT license, .gitignore"
+          git push
