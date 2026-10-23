@@ -6,6 +6,17 @@ captions, platform presets and a review gate before anything final or paid. It r
 API keys (stock media, premium voice, AI generation) switch extra features on when they are present.
 Every example was rendered end to end on Linux before packaging.
 
+## Examples
+
+![Contact sheet of every template in 16:9, 9:16 and 1:1](examples/gallery.jpg)
+
+| | | | |
+|---|---|---|---|
+| <a href="examples/product-launch-9x16.mp4"><img src="examples/previews/product-launch-9x16.gif" alt="product-launch 9:16 preview"></a><br><b>product-launch</b> · 9:16 · 20 s | <a href="examples/event-recap-16x9.mp4"><img src="examples/previews/event-recap-16x9.gif" alt="event-recap 16:9 preview"></a><br><b>event-recap</b> · 16:9 · 18 s | <a href="examples/countdown-teaser-9x16.mp4"><img src="examples/previews/countdown-teaser-9x16.gif" alt="countdown-teaser 9:16 preview"></a><br><b>countdown-teaser</b> · 9:16 · 17 s | <a href="examples/feature-explainer-1x1.mp4"><img src="examples/previews/feature-explainer-1x1.gif" alt="feature-explainer 1:1 preview"></a><br><b>feature-explainer</b> · 1:1 · 24 s |
+| <a href="examples/stat-callout-9x16.mp4"><img src="examples/previews/stat-callout-9x16.gif" alt="stat-callout 9:16 preview"></a><br><b>stat-callout</b> · 9:16 · 21 s | <a href="examples/testimonial-16x9.mp4"><img src="examples/previews/testimonial-16x9.gif" alt="testimonial 16:9 preview"></a><br><b>testimonial</b> · 16:9 · 25 s | <a href="examples/howto-tutorial-16x9.mp4"><img src="examples/previews/howto-tutorial-16x9.gif" alt="howto-tutorial 16:9 preview"></a><br><b>howto-tutorial</b> · 16:9 · 28 s | <a href="examples/slides-presentation-16x9.mp4"><img src="examples/previews/slides-presentation-16x9.gif" alt="slides-presentation 16:9 preview"></a><br><b>slides-presentation</b> · 16:9 · 30 s |
+
+Click a preview to open the full MP4 (with sound). All of these were rendered by the skill on a standard Linux box with free tools and free assets; music, image and voice credits are in [examples/CREDITS.md](examples/CREDITS.md).
+
 ## What's inside
 - `SKILL.md`: the skill (concise; routes to `references/`).
 - `getting-started/SKILL.md`: first-run setup (engines, free voice, brand kit, optional keys).
