@@ -28,3 +28,13 @@ The templates already follow these rules. Apply them to custom work too.
 12. **Flash-safe:** no more than 3 flashes per second; animate scale, blur and opacity instead of luminance flips.
 13. **Engine rules:** animate only transforms and opacity (GPU-cheap, deterministic); seekable timelines only (no
     random values, timers or CSS animations).
+
+## Kinetic typography (client bar)
+Distilled for awards/partner sizzles (see also `client-sizzle.md`).
+
+1. Lock static type before motion (line-height ~1.1–1.2 display, tracking −1% to −3%).
+2. Split granularity: line (premium) → word (energetic taglines) → character (short hits only).
+3. Prefer **mask/clip reveals** over blur-heavy stacks; stagger words 40–70ms, lines 60–100ms.
+4. Ease-out expo feel (`power3.out` / cubic-bezier(0.16,1,0.3,1)); cap a reveal near ~800ms.
+5. Accent color from brand on speech-locked keywords; rest of line stays readable white/cream on dark.
+6. Never ship typo’d kinetic — run `brand-qa.md` denylist before render.

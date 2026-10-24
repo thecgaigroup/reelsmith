@@ -22,7 +22,7 @@ Click a preview to open the full MP4 (with sound). All of these were rendered by
 - `getting-started/SKILL.md`: first-run setup (engines, free voice, brand kit, optional keys).
 - `references/`: brand kit, capabilities and keys, templates, scriptwriting, voiceover, music, stock media,
   captions, platform specs, loudness and accessibility, motion design, review and QA, YouTube publishing,
-  HyperFrames, Remotion, AI generation (quotes only), helpers.
+  HyperFrames, Remotion, AI generation (quotes only), helpers, client sizzle, brand QA, storyboard.
 - `scripts/`: `capabilities.py`, `brand.py`, `reelsmith.py`, `script_lint.py`, `beats.py`, `stock.py`, `captions.py`,
   `review.py`, `export.py`, `youtube_prep.py`, `presets.json`. Python 3.10+ standard library; Pillow and librosa optional.
 - `templates/`: product-launch, event-recap, testimonial, countdown-teaser, stat-callout, slides-presentation
@@ -33,6 +33,7 @@ Click a preview to open the full MP4 (with sound). All of these were rendered by
 - `guides/`: safe-zone overlay PNGs per platform.
 - `remotion-starter-kit.tgz`: complete Remotion 4 project (brand-driven theme, captions, free/paid VO script).
 - `hyperframes-example/`, `manim-example/`, `lottie-example/`: small starting points.
+- Awards and partner cuts: start with `references/client-sizzle.md` and a storyboard (`references/storyboard.md`, pattern in `examples/storyboard/`).
 
 ## Install
 **Grok Bot:** ask your bot: "Download https://github.com/thecgaigroup/reelsmith/archive/refs/heads/main.zip, unzip it so its
