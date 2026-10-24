@@ -32,7 +32,8 @@ Then ask these one at a time, waiting for each answer:
 While they answer, start one background task for the one-time setup:
 - **Unpack** the Reelsmith folder to `/workspace/reelsmith/` if it isn't there.
 - **HyperFrames:** Node 22.12+ (else a portable Node 22 in `/workspace/tools/node22/`), `HYPERFRAMES_NO_TELEMETRY=1`,
-  `HYPERFRAMES_SKIP_SKILLS=1`, `npx --yes hyperframes@0.8.188 doctor`, GSAP saved to `/workspace/tools/gsap.min.js`.
+  then `npx --yes hyperframes@0.8.188 doctor`. `HYPERFRAMES_SKIP_SKILLS=1` is only for this throwaway smoke test.
+  Never set it for client sizzle or custom craft (references/hyperframes.md). GSAP saved to `/workspace/tools/gsap.min.js`.
 - **Free voice + beats:** a venv with `pip install kokoro-onnx soundfile librosa`; set
   `HYPERFRAMES_PYTHON=<venv>/bin/python`; check espeak-ng (apt) as the fallback. Never use `hyperframes audio
   --quality best` (cloud).

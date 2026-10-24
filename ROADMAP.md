@@ -2,6 +2,12 @@
 
 Parked work. Do not start these until the current release gates elsewhere are stable, unless the owner asks for a spike.
 
+## Client sizzle is storyboard-first (2026-10-24)
+
+**Status:** in the skill
+
+Awards, partner, and client sizzles now require a storyboard before the edit — `storyboard.json` plus HTML (proportional timeline, brief-beat alignment, shot cards, HAVE/ID/NEED/TEMP) — and a brand QA gate before anything leaves the box. See [references/storyboard.md](references/storyboard.md), [references/client-sizzle.md](references/client-sizzle.md), and [references/brand-qa.md](references/brand-qa.md). The generic pattern (no client media) is in [examples/storyboard/](examples/storyboard/).
+
 ## Fold in local FFmpeg edit helpers (no sidecar)
 
 **Status:** parked  
