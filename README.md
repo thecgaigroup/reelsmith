@@ -44,6 +44,9 @@ Reelsmith and `getting-started/SKILL.md` as its getting-started skill, then run 
 **Other coding agents:** `git clone https://github.com/thecgaigroup/reelsmith.git` into your skills directory
 (for example `.cursor/skills/reelsmith` or `~/.claude/skills/reelsmith`).
 
+## Roadmap
+Parked fold-in work — local FFmpeg helpers and selected design/motion ideas, with no sidecar packages — is in [ROADMAP.md](ROADMAP.md).
+
 ## Notes
 - Needs ffmpeg and Node 22.12+ (HyperFrames). Kokoro (free local voice), librosa, Manim and WhisperX install on first use.
 - Optional keys, all through your bot's secure secret prompt and never in chat: `PEXELS_API_KEY`, `PIXABAY_API_KEY`
