@@ -28,7 +28,7 @@ kinetic type, correct logos — not grey placeholders or a talk-head TEMP divert
 ## Route the job
 | Job | Use | Read |
 |---|---|---|
-| **Awards / partner / client sizzle from real selects** | **client-sizzle** (HyperFrames or Remotion) | **client-sizzle.md**, **storyboard.md**, brand-qa.md, motion-design.md, hyperframes.md or remotion.md |
+| **Awards / partner / client sizzle from real selects** | **client-sizzle** (HyperFrames or Remotion) | **client-sizzle.md**, **storyboard.md**, brand-qa.md, motion-design.md, kinetic-type.md, transitions.md, hyperframes.md or remotion.md |
 | Launch reel, feature drop, promo | template `product-launch` (music-led) | templates.md, music.md |
 | Event highlights from photos | `event-recap` | templates.md, stock-media.md |
 | Customer quotes / reviews | `testimonial` | templates.md |
@@ -37,7 +37,7 @@ kinetic type, correct logos — not grey placeholders or a talk-head TEMP divert
 | Talk/booth/kiosk loop, animated deck | `slides-presentation` (`--loop`) | templates.md |
 | Tutorial, walkthrough, onboarding (+ YouTube chapters) | `howto-tutorial` | templates.md, youtube-publishing.md |
 | Narrated product explainer with captions | `feature-explainer` (Remotion; `render.sh`) | remotion.md |
-| Custom kinetic piece, overlay, alpha, GIF | HyperFrames by hand | hyperframes.md, motion-design.md |
+| Custom kinetic piece, overlay, alpha, GIF | HyperFrames by hand (Remotion if speech-locked) | hyperframes.md, motion-design.md, kinetic-type.md, transitions.md, brand-qa.md |
 | Diagrams / math, Lottie, cut user footage, transcribe | Manim, Lottie, auto-editor, parakeet | helpers.md |
 | Script or VO lines | 2–3 options + `script_lint.py` | scriptwriting.md, voiceover.md |
 | Captions (SRT/VTT/ASS, burn-in) | `captions.py` | captions.md |
@@ -50,9 +50,9 @@ a license (ask once if commercial). Music, stock, fonts: licensed, credited (`st
 ## Client sizzle (mandatory when it fits)
 Read **references/client-sizzle.md** end to end. Summary:
 1. Map every brief beat; skip none.
-2. Author storyboard (JSON + HTML) — see storyboard.md — then ingest real selects (phone/iPad/Day-Of first).
+2. Author storyboard (JSON + HTML) — see storyboard.md; open pattern in examples/storyboard/ — then ingest real selects (phone/iPad/Day-Of first).
 3. Build HyperFrames or Remotion with **skills on** — never `HYPERFRAMES_SKIP_SKILLS=1` on this lane.
-4. Kinetic type at production-house density (mask/stagger, speech or beat lock) — `motion-design.md`.
+4. Showreel kinetic type — `motion-design.md` and `kinetic-type.md`. The bar to match is dense real footage plus that type (comparison bar in client-sizzle.md). Six-part skeleton before the build. Score hook / phone / motion / variety / brand / sound on the contact sheet and `phone.jpg` before a full render.
 5. Hard **brand-qa.md** gate + frame snapshots before anything leaves the box.
 6. Stay on the sizzle until the user explicitly pivots. Do not open Flashtalk / AI talk-head / lookalike paths
    mid-job without a clear ask + Rights/spend clearance.

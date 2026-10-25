@@ -20,7 +20,7 @@ The storyboard is what the edit builder and humans both read.
 1. **Time** — `t0` / `t1` (seconds)
 2. **Brief beat** — which PDF/script beat it serves (skip none)
 3. **Picture** — description + source (still/video/render) + in-point
-4. **On-screen words** — kinetic / lower-third / none
+4. **On-screen words** — kinetic / lower-third / none. Kinetic shots name the on-screen line (2–6 words) and follow showreel type in `motion-design.md` (one display face, one UI face, one accent; no invented UI).
 5. **Voice** — narrator / interview / mute
 6. **Audio** — music / duck / SFX
 7. **Story intent** — one line
@@ -40,6 +40,24 @@ The storyboard is what the edit builder and humans both read.
 3. Ingest only `HAVE` (and approved `ID`) into the edit; keep `NEED`/`TEMP` out of client drafts unless labelled.
 4. Edit builder reads `storyboard.json` — do not invent shots not on the board.
 5. Brand QA (`brand-qa.md`) on the rendered cut; storyboard HTML is not a substitute for frame snapshots of the MP4.
+
+## Direction block (once per film)
+
+Source: [HyperFrames storyboards](https://hyperframes.heygen.com/prompting/storyboards). Say this once. Shots inherit it. The machine shape stays the shot list above; these fields sit beside it (`direction` on the example JSON).
+
+- **Message** — one sentence. A shot that does not serve it comes off the board.
+- **Arc** — for a kinetic sizzle, Hook → Build → Punch → Resolve, mapped onto the brief beats.
+- **Audience** — who it is for, in a phrase.
+- **Mood** — one energy line. Pacing agrees with it.
+- **Two-color** — ground and ink. A bigger moment gets bigger by scale, weight, inversion, or density. A third hue is the one brand accent, and only on emphasis words.
+- **One breather** — name the calmer shot. It is a held read, not a second animation pass. It still does not freeze (ambient idle in `motion-design.md`).
+- **Callback** — plant a motif (a door, a word, a mark) and say how it returns, denser.
+- **Spectacle** — one beat, named, or it gets dropped (`motion-design.md`).
+- **Standing negatives** — the ban list in `motion-design.md`, plus no invented UI, no Flashtalk drift, no `HYPERFRAMES_SKIP_SKILLS`.
+
+Each shot still names picture, words, and kinetic recipe. Also name, in one line each when they are not obvious: **type** (hook, proof, cta), **persuasion** (before/after, enumeration, callback), **beat** (recognition, punch, resolve), **focal** (the one thing the eye hits).
+
+The open board is `examples/storyboard/` (fictional Harbor Atelier, all four statuses, a named spectacle, no client media).
 
 ## Anti-patterns
 - Skipping the board and jumping to Flashtalk / AI talk-heads
