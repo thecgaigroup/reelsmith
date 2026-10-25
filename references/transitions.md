@@ -14,7 +14,8 @@ Sources: [HyperFrames transitions](https://hyperframes.heygen.com/prompting/tran
 2. **Hard cut when continuity holds.** If a shape, screen, prop, or word carries across, cut. A match cut beats a dissolve. In Remotion that is no `TransitionSeries.Transition`, or `none` from `@remotion/transitions/none`.
 3. **The join is one move.** Do not fade the outgoing shot out and then fade the next one in. That dips to empty. Both shots hand off together.
 4. **Name a real block.** On HyperFrames, name a block the skill already ships. Do not invent `page-curl` or guess GLSL. The starter kit already depends on `@remotion/transitions@4.0.538`. Do not add `@hyperframes/shader-transitions` or any other package from this doc.
-5. **Write the split on the storyboard.** Example: hard cut throughout, one whip into the takeover.
+5. **Write the split on the storyboard.** Example: hard cut throughout, one whip into the takeover. End the join on a beat (`b(n)` in `music.md`).
+6. **A one-shape morph is a launch accent, not a new primary.** On `product-launch`, one container may change size and radius while its content swaps (`templates.md`). On a client sizzle the primary stays a hard cut. Do not morph display type.
 
 ## Duration
 

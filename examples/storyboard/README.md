@@ -1,6 +1,6 @@
 # Storyboard example (pattern only)
 
-Production boards stay with the job (not in this repo). See `references/storyboard.md` for the required fields and HTML craft bar.
+Production boards stay with the job (not in this repo). See `references/storyboard.md` for the required fields, the frame-numbered BRIEF (`fps`, then `round(t * fps)`), and the HTML craft bar.
 
 Copy `storyboard.json` and `storyboard.html` for a new board. Do not author from the reduced snippet below — the file also carries `direction`, `kinetic`, `spring`, and `seam`. Core fields the edit builder expects:
 

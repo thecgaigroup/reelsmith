@@ -7,6 +7,7 @@
 | Master / broadcast-safe | -16 LUFS (Apple podcasts, many streaming) | -1 dBTP | `master` preset |
 | EBU broadcast | -23 LUFS | -1 dBTP | TV delivery only |
 Platforms turn loud uploads down but rarely turn quiet ones up, so -14 is the safe middle.
+Hits and the bed share one cue sheet (`music.md`). A mix that is mostly silence between short hits will not reach −14 without crushing; keep a sustained bed and measure the encoded file.
 Reelsmith mixes in one pass: VO normalized, music ducked about 10-14 dB under speech (sidechain), then two-pass
 `loudnorm` (measured values, `linear=true`). Remotion output needs `export.py loudnorm`. Verify:
 `ffmpeg -i x.mp4 -filter_complex ebur128=peak=true -f null -` (read I and Peak in the summary).

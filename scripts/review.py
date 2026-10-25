@@ -193,7 +193,7 @@ def check(video, out, preset=None, expect=None, credits=None, job=None):
            "| Brand | Looks and sounds like the brand, not like a template? | |",
            "| CTA | Clear next step, on screen long enough, says where to go? | |", "",
            "## Kinetic type (client sizzle and custom kinetic; score 1-10)", "",
-           "Leave blank on a plain template cut. Otherwise score after looking at `contact.jpg` and `phone.jpg`.",
+           "Leave blank on a plain template cut. Otherwise score as a fresh reviewer, from BRIEF stills plus `contact.jpg` and `phone.jpg`, not from memory of the comp.",
            "Fix the three worst and re-check before a delivery render. Each score should be 8 or higher.",
            "Rules: `references/motion-design.md`. This table does not change the auto result.", "",
            "| Area | Question | Score |", "|---|---|---|",

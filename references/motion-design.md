@@ -1,5 +1,5 @@
 ---
-description: Load after client-sizzle.md for ambient idle, bans, camera words, and the one spectacle. Recipe ids and timing live in kinetic-type.md. Seams live in transitions.md.
+description: Load after client-sizzle.md for taste numbers (timing, easing, choreography), ambient idle, bans, camera words, and the one spectacle. Recipe ids live in kinetic-type.md. Seams live in transitions.md. Cues live in music.md.
 ---
 
 # Motion design rules
@@ -91,7 +91,7 @@ Fail the shot on a client or custom kinetic piece:
 A template may still fall back to a branded gradient when media is missing (`templates.md`). That fallback is not a client-sizzle shot.
 
 ### Product and UI films
-Use real screenshots, the real logo, and the brand colors. Crop and move the real interface. List the assets before animating. Never redraw buttons, dashboards, or marks from imagination. Paid image or video generation does not fill a missing UI (`ai-generation.md`).
+Use real screenshots, the real logo, and the brand colors. Crop and move the real interface. List the assets before animating. Never redraw buttons, dashboards, or marks from imagination. Paid image or video generation does not fill a missing UI (`ai-generation.md`). A product beat sits in a device frame and cuts on `b(n)` (`templates.md` house launch recipes). Cues share that clock (`music.md`).
 
 ### Which renderer
 | Prefer | When |
@@ -104,8 +104,8 @@ Use real screenshots, the real logo, and the brand colors. Crop and move the rea
 Before a delivery render, and before a client draft leaves the box:
 1. Draft or stills at each beat. HyperFrames: `$HF snapshot --at …`. Remotion: `npx remotion still` at those frames. Then `review.py check` so `contact.jpg` and `phone.jpg` exist.
 2. Look at the sheets. Automatic checks do not judge type.
-3. Score 1–10: **hook** (first 2 s), **phone** (readable on `phone.jpg`), **motion** (weight, no dead frames), **variety** (a new event every 2–4 s), **brand** (real logo, colors, type; none of the banned defaults), **sound** (on the beat grid).
-4. Fix the three worst scores. Repeat until each is 8 or higher, then render full quality.
+3. Score 1–10 as a fresh reviewer, from the stills: **hook** (first 2 s), **phone** (readable on `phone.jpg`), **motion** (weight, no dead frames), **variety** (a new event every 2–4 s), **brand** (real logo, colors, type; none of the banned defaults), **sound** (on the beat grid, `music.md`).
+4. Fix the three worst scores. Repeat until each is 8 or higher, then render full quality. The author of the comp does not grade it (`brand-qa.md`).
 5. Hunt overlaps during swaps, slides with no ease, blurry type, and a pop at a loop seam.
 
 `review.py` prints this table into `review.md`. It does not change pass/fail. The generic 1–5 rubric in that file stays for every job.
@@ -158,16 +158,74 @@ iart reveal curve, when you need a cubic-bezier instead of a named GSAP ease: `c
 
 Drone orbit, extruded type, and glitch are not the client default.
 
-## Choreography one-liners
+## Taste layer
 
-From [LottieFiles/motion-design-skill](https://github.com/LottieFiles/motion-design-skill). Do not vendor that repo.
+Numbers an agent can apply. Sources are cited under Scout notes. Do not install those repos. House springs in `kinetic-type.md` still win on display type, logos, and numbers: **0% overshoot**. UI chrome may use the small spring already in Showreel kinetic type (`back.out(1.15)` at most). Squash, elastic, and bounce are not a client-sizzle entrance.
 
-- Name the emotional intent before the ease.
-- Each move is setup → action → resolution.
-- One primary action, a secondary support, ambient idle under both.
-- Travel stays inside about a third of the frame.
-- One hero. At most two or three things active at once.
+Name the feeling before the ease (`brand.motion.energy`, or `voice.tone` from `brand-kit.md`). Map energy to a base duration, then scale:
+
+| Energy | Base | Quick (×0.5) | Slow (×1.5) | Dramatic (×2) |
+|---|---|---|---|---|
+| Low (premium, calm) | 500 ms | 250 ms | 750 ms | 1000 ms |
+| Medium (most client sizzles) | 300 ms | 150 ms | 450 ms | 600 ms |
+| High (launch sting) | 180 ms | 90 ms | 270 ms | 360 ms |
+
+Element caps, then multiply by distance (50 px ×0.8, 100 px ×1.0, 200 px ×1.3, 300 px ×1.5, full frame ×1.8–2.0). A type reveal still caps near 800 ms (`kinetic-type.md`). Exit duration is 65–75% of the entrance. Entrance eases out. Exit eases in. A move that stays on screen eases in-out. Ambient loops use `sine.inOut`. Linear is for rotation, progress, and timers, not for position.
+
+| Element | Duration | Ease |
+|---|---|---|
+| Cursor press, toggle | 80–180 ms | snappy UI; tiny overshoot allowed |
+| Icon, chip, badge | 150–250 ms | `power2.out` |
+| Card | 200–350 ms | `power2.out` / `power3.out` |
+| Panel | 300–400 ms | `power3.out` |
+| Display line, default | ~700 ms | `elegant-editorial` |
+| Short hook word | ~400 ms | `snappy-headline` |
+| Logo lockup | ~950 ms | `heavy-logo` |
+| Ambient idle | 2–8 s | 1–2% breathing scale |
+
+At 24 fps, quick is 4–6 frames, standard 8–12, deliberate 16–24. At 30 fps multiply those frame counts by 1.25. At 60 fps multiply by 2.5. A hit-stop on an impact is 1–2 frames, then motion returns. The hold after a result is part of the timing, not a bug, as long as the frame is not frozen (ambient idle).
+
+Stagger, same ease family, vary only the start: characters 20–40 ms, lines 60–100 ms, a dramatic cascade 100–200 ms. The whole cascade stays under 500 ms, except `kinetic-center-build`, which is sequential on purpose. Exits stagger in reverse. A shared trigger starts its elements within 50 ms of each other.
+
+### Disney micro principles (selected)
+
+Apply these. Skip the rest of any upstream skill tree.
+
+| Principle | Apply | Do not |
+|---|---|---|
+| Squash and stretch | UI chrome only. Impact 2–4 frames, recovery 4–8. Keep volume (wider means shorter). | Display words, logos, premium holds |
+| Anticipation | 100–200 ms, 10–20% of the main move, opposite direction, on a panel or cursor | Moves under 150 ms, and mask reveals of type |
+| Staging | One hero. Supports sit at 40–60% opacity and enter 100–200 ms earlier | Blur on glyphs. A second focal |
+| Pose to pose | `fromTo` or `spring` from time. Every frame is seekable | Simulating frame 0..N to reach N |
+| Follow-through | Child or shadow 50–150 ms behind the parent. Housing lands a frame later | A second ease on the word itself |
+| Slow in / slow out | Table above | Linear slides |
+| Arcs | Objects and camera: about 5 px of perpendicular offset when energy is low, up to 20 px when energy is high | Glyph paths. `mask-reveal-up` stays on axis |
+| Secondary action | 30–50% of the primary amplitude, 50–100 ms later, a different ease (shadow, plate) | A particle burst |
+| Timing contrast | A fast hit reads fast because the shot before it was slower. One hold per idea | Uniform duration on every element |
+| Exaggeration | The one named spectacle. Premium type stays at 0% | Confetti, glow, a bounce on the lockup |
+| Solid drawing | One light direction. Scale and position agree | `will-change` or a filter on scaled type |
+| Appeal | Varied timing, no abrupt stop, idle under the hold | Jerky cuts inside a shot, a frozen last second |
+
+### Choreography
+
+Each shot is setup (20–30% of its length), action (30–40%), resolution (30–40%). Inside the shot, leave 100–200 ms of settled read before the next idea. A beat-locked cut can be the punctuation. Do not add a fade to make that gap.
+
+- One hero. Supports are quieter in distance and ease.
+- Elements share an origin. Mixed entry directions read as noise.
+- Counter-motion: the background shifts against the hero at 20–30% of the hero's travel.
+- Depth speed: foreground 1.0, mid 0.5, background 0.2.
+- Travel past about a third of the frame gets an intermediate key or an arc.
+- With three or more moving elements, at most a third of them are in transit at once.
+- Overshoot budget, after the house rule: premium and display type 0%. UI success 5–10% and still inside `back.out(1.15)`. Celebration overshoot belongs only on the named spectacle.
 
 ## Gallery themes (style only)
 
-Browse the free [MotionVideo gallery](https://motionvideo.xyz/) for density, not for files. Useful public themes: Bold kinetic type, Kinetic type music machine, Pencil line, Beat-synced generative, Photo print launch, Claude motion designer showreel. Do not buy or paste the paid pack. A photo-print or product launch still uses real screenshots and the real logo.
+Browse the free [MotionVideo gallery](https://motionvideo.xyz/) for density, not for files. Useful public themes: Bold kinetic type, Kinetic type music machine, Pencil line, Beat-synced generative, Photo print launch, Claude motion designer showreel. Do not buy or paste the paid pack. A photo-print or product launch still uses real screenshots and the real logo. Launch beats follow the house recipes in `templates.md`.
+
+## Scout notes
+
+Principles rewritten here. Nothing from these repos is installed.
+
+- [LottieFiles/motion-design-skill](https://github.com/LottieFiles/motion-design-skill) — duration tables, directional easing, stagger budgets, choreography shares.
+- [dylantarre/animation-principles](https://github.com/dylantarre/animation-principles) — selected Disney-12 micros (timing frames, anticipation, follow-through, staging). The rest of that tree stays out.
+- House overrides that those sources do not share: 0% overshoot on display type, no blur on glyphs, no third `seek(t)` renderer.

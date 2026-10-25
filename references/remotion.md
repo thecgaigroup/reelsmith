@@ -1,5 +1,5 @@
 ---
-description: Load for feature-explainer, or for a client sizzle whose type locks to speech. Not the default sizzle engine. useCurrentFrame and spring only. Typewriter is string slicing.
+description: Load for feature-explainer, for a client sizzle whose type locks to speech, or for a campaign matrix after the master locks. Not the default sizzle engine. useCurrentFrame and spring only. Typewriter is string slicing.
 ---
 
 # Remotion (narrated explainers)
@@ -37,6 +37,21 @@ Prefer Remotion when type locks to speech, or the job is a series / data-driven 
 - One display face, one UI face, one accent, from the brand bundle. Mask or clip; do not fade the whole card in. Real screenshots and logos only.
 - A typewriter is `text.slice(0, n)` from the frame. Never per-character opacity (`kinetic-type.md`).
 - Stills at each beat (`npx remotion still`) before the full render, then the same contact-sheet scores as HyperFrames (`motion-design.md`). Client sizzle that is a designed page, not a word-locked explainer, stays on HyperFrames.
+
+## Campaign cuts (two hooks × three formats)
+
+After the master scores 8 or higher (`brand-qa.md`), extra cuts are props on one composition. Do not rebuild the film per aspect.
+
+```tsx
+type CampaignProps = {
+  hook: "a" | "b";
+  format: "16x9" | "9x16" | "1x1";
+};
+```
+
+`calculateMetadata` sets width, height, and duration from `format`. The two hooks are copy and the first shot, not two designs. On a Remotion master, render the six cells from those props. A HyperFrames master stays one composition: change aspect with the project resolution, and swap the hook in the copy. Skills stay on. Do not start a third renderer. Real UI stays the same screens (`templates.md`). This is tier C in `client-sizzle.md`.
+
+`seek` is the frame index. The same frame twice is the same pixels. CSS animations do not render.
 
 ## Rules
 - All motion from `useCurrentFrame()` + `interpolate`/`spring`; CSS animations don't render.

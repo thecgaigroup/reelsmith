@@ -39,6 +39,8 @@ Remotion: `brand.py bundle brand.json --out public`, then set `brandFile: "brand
    (Space Grotesk, Inter, Manrope and Sora are safe Google fonts).
 Always run `validate`. If primary on bg is below 3:1, use primary for shapes only and fg for text.
 
+Record two lines motion will read, and do not invent them: what the first second should feel like (up to three words in `voice.tone`) and one thing the picture must never do (add it to `voice.avoid`). Missing hex codes get asked for, or sampled with `from-site` and confirmed. Do not write a second `brand.md` or `MOTION.md`. `brand.json` is the intake.
+
 ## Rules
 - Logo at least `min_height_pct` of frame height, on its own clear space, and never stretched. Use the white or
   `on_dark` version on dark backgrounds.

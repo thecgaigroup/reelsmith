@@ -1,5 +1,5 @@
 ---
-description: Load first for an awards, partner, or client sizzle from real footage (about 30–60s). Holds the density-and-type bar, the anti-patterns, and the six-part skeleton. Then load storyboard.md, kinetic-type.md, transitions.md, motion-design.md, hyperframes.md, and brand-qa.md.
+description: Load first for an awards, partner, or client sizzle from real footage (about 30–60s). Holds the density-and-type bar, the anti-patterns, and the six-part skeleton. Then load storyboard.md (BRIEF), kinetic-type.md, transitions.md, motion-design.md (taste numbers), music.md (cue sheet), hyperframes.md, and brand-qa.md. Remotion only when type locks to speech.
 ---
 
 # Client sizzle (footage-first editorial)
@@ -14,7 +14,7 @@ Fail the draft if you see any of these:
 
 - `HYPERFRAMES_SKIP_SKILLS=1`, or a comp written before `/hyperframes` is loaded
 - One still per beat, or a grey card, when phone / iPad / Day-Of selects exist
-- Centered title on a gradient, or a fade-in as the whole idea
+- Centered gradient title card, or a free fade as the whole idea
 - Invented UI, or a Flashtalk / interview TEMP the user did not ask for
 - Paid image or video generation used to fill a hole
 
@@ -23,8 +23,9 @@ Do these instead:
 - Several real pictures per beat. A new picture or a new type event every 2–4s.
 - Storyboard first (`storyboard.md`, copy `examples/storyboard/`). HAVE plays. ID waits. NEED and TEMP stay out of the client draft unless labelled.
 - Default type is house recipe `mask-reveal-up`, built in GSAP (`kinetic-type.md`). It is not a HyperFrames registry block.
-- One named spectacle (`motion-design.md`). One primary seam and at most two accents (`transitions.md`).
-- `brand-qa.md` and the six scores before a delivery render.
+- One named spectacle (`motion-design.md`). One primary seam and at most two accents (`transitions.md`). Taste numbers (timing, easing, choreography) live in that same file.
+- Cues on `b(n)`, the same clock as the picture (`music.md`).
+- Frame-numbered BRIEF, then stills, then a fresh reviewer to 8+ (`storyboard.md`, `brand-qa.md`).
 - HyperFrames skills on for the whole job. Remotion only when type locks to speech.
 
 ## Skeleton (fill this before the build)
@@ -45,9 +46,11 @@ Beats:
 
 Copy: "<every on-screen line, quoted>".
 
-Technique: hard cut on most seams. One accent: whip-pan. House recipes only — do not ask for a block named mask-reveal-up. If speech is on screen, one caption block for the section (caption-editorial-emphasis or caption-clip-wipe).
+Technique: hard cut on most seams. One accent: whip-pan. House recipes only — do not ask for a block named mask-reveal-up. Timing from motion-design.md. If speech is on screen, one caption block for the section (caption-editorial-emphasis or caption-clip-wipe).
 
-Negatives: no fade-card titles, no grey selects, no invented UI, no corner labels, no frame borders, no glitch default, no Flashtalk, no interview TEMP, no paid gen, no HYPERFRAMES_SKIP_SKILLS.
+BRIEF: one line per shot, f{frame}–f{frame} at the render fps (storyboard.md). Cues on b(n), same clock as the picture (music.md).
+
+Negatives: no centered gradient title cards, no free fades, no grey selects, no invented UI, no corner labels, no frame borders, no glitch default, no Flashtalk, no interview TEMP, no paid gen, no HYPERFRAMES_SKIP_SKILLS.
 ```
 
 Speech-locked type uses Remotion instead of `/hyperframes`, same six parts, `useCurrentFrame` + `spring` (`remotion.md`).
@@ -89,7 +92,7 @@ Copy `examples/storyboard/storyboard.json` and `storyboard.html`. Swap beats, wo
 
 Default engine is HyperFrames. Load `/hyperframes` before writing the comp (`hyperframes.md`). Never set `HYPERFRAMES_SKIP_SKILLS`. Remotion (`remotion.md`) only when words lock to speech. Do not add a third renderer.
 
-Type moves: `kinetic-type.md`. Seams: `transitions.md`. Speech on screen: `captions.md`. Bans and the spectacle: `motion-design.md`.
+Type moves: `kinetic-type.md`. Seams: `transitions.md`. Taste numbers and bans: `motion-design.md`. Cues: `music.md`. Speech on screen: `captions.md`. Gate: `brand-qa.md`.
 
 ## Kinetic type
 Implement `mask-reveal-up` unless the storyboard names another house recipe. One display face, one UI face, one accent. No overshoot on display type. Real screenshots and the real logo. Zero typos (`brand-qa.md`). Score hook / phone / motion / variety / brand / sound before a delivery render.
@@ -102,9 +105,12 @@ Implement `mask-reveal-up` unless the storyboard names another house recipe. One
 
 ## Audio
 - Music bed on a beat grid (`beats.py`); duck under interview/VO.
+- Cue sheet on that same grid (`music.md`). One impact, one riser. Idle stays quiet.
 - Prefer real interview audio when present; captions speech-locked.
 - Free local VO (Kokoro) only when the brief allows; never substitute robotic TTS for a hero interview line without approval.
 - Loudness: ~−14 LUFS, ≤ −1 dBTP.
+
+A product beat inside this film uses the house launch recipes (`templates.md`): real UI in a device, cursor as a function of time, bar-accurate cuts. The sizzle primary seam stays a hard cut.
 
 ## Workflow
 1. Read brief + brand rules; list every beat.
@@ -114,6 +120,16 @@ Implement `mask-reveal-up` unless the storyboard names another house recipe. One
 5. Draft render → `review.py check` + manual brand QA snapshots. Fill the kinetic scores in `review.md` before a delivery render.
 6. Fix → user yes → delivery render + export presets.
 7. Deliver MP4 + timecoded shot list + note which beats used real media.
+
+## Effort (one brand per session)
+
+| Tier | When | Stop when |
+|---|---|---|
+| A. Lock | First session on this brand | BRIEF is filled, key-frame stills are Read, six scores exist. Do not open a second brand in this session. |
+| B. Worst three | Any score is under 8 | Fix only those three. Re-snapshot those frames. Score again. |
+| C. Campaign | The master is 8+ and the user wants more cuts | Same picture. Two hooks × three formats (`remotion.md`). Do not redesign. |
+
+HyperFrames skills stay on at every tier. Never `HYPERFRAMES_SKIP_SKILLS`.
 
 ## Anti-patterns (learned)
 The fail list at the top of this file is the bar. These two are easy to miss beside it:

@@ -17,6 +17,7 @@
 - **Beat grid / music:** `beats.py grid track.mp3 -o beatgrid.json` (librosa -> `hyperframes beats` -> fixed BPM);
   `beats.py snap beatgrid.json --durations 3,2.5,4 --unit bar`; `beats.py fit track.mp3 --seconds 22 -o bed.mp3`
   (trims to a bar line, fades out); `beats.py synth -o bed.mp3 --bpm 120 --seconds 30 --mood bright` (free fallback).
+  SFX cues use that same grid (`music.md`). Do not add a separate sound package.
 
 ## Spoken / raw takes (post)
 Use this when the job is cutting talking-head, interview, or other raw spoken selects. Client sizzles stay

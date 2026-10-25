@@ -36,7 +36,7 @@ ASPECTS = {
     "1x1":  {"W": 1080, "H": 1080, "safe": (0.08, 0.09, 0.08, 0.08), "h1": 8.6, "h2": 6.4, "body": 4.0, "kicker": 2.8, "ratio": "1:1"},
 }
 ENERGY = {"calm": (96, "calm", "bar"), "medium": (112, "bright", "bar"), "high": (124, "bright", "half")}
-HF = os.environ.get("REELSMITH_HF", "npx --yes hyperframes@0.8.188").split()
+HF = os.environ.get("REELSMITH_HF", "npx --yes hyperframes@0.8.197").split()
 CACHE = Path(os.environ.get("REELSMITH_CACHE", Path.home() / ".cache" / "reelsmith"))
 
 # ---------------------------------------------------------------- utils

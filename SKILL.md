@@ -4,10 +4,13 @@ description: >-
   Use when the user asks for a video. Client or awards sizzle from real footage:
   read references/client-sizzle.md first (dense footage + kinetic type, six-part
   skeleton, HyperFrames skills ON — never HYPERFRAMES_SKIP_SKILLS), then
-  storyboard.md, kinetic-type.md, transitions.md, motion-design.md, brand-qa.md,
-  and hyperframes.md. Use remotion.md only when type locks to speech; captions.md
-  when speech is on screen. Also promo, launch, recap, testimonial, how-to,
-  slides, explainer, social clips. Paid AI only after a quote.
+  storyboard.md (frame-numbered BRIEF), kinetic-type.md, transitions.md,
+  motion-design.md (taste numbers), music.md (cue sheet on the same clock),
+  hyperframes.md, and brand-qa.md (stills, fresh reviewer, scores to 8+).
+  Use remotion.md only when type locks to speech or a locked master needs a
+  campaign matrix; captions.md when speech is on screen. Also promo, launch,
+  recap, testimonial, how-to, slides, explainer, social clips. Paid AI only
+  after a quote.
 ---
 # Reelsmith
 
@@ -29,8 +32,8 @@ kinetic type, correct logos — not grey placeholders or a talk-head TEMP divert
 ## Route the job
 | Job | Use | Read |
 |---|---|---|
-| **Awards / partner / client sizzle from real selects** | **client-sizzle**, HyperFrames skills ON | **client-sizzle.md** first, then storyboard.md, kinetic-type.md, transitions.md, motion-design.md, hyperframes.md, brand-qa.md. remotion.md only if speech-locked. captions.md if speech is on screen |
-| Launch reel, feature drop, promo | template `product-launch` (music-led) | templates.md, music.md |
+| **Awards / partner / client sizzle from real selects** | **client-sizzle**, HyperFrames skills ON | **client-sizzle.md** first, then storyboard.md, kinetic-type.md, transitions.md, motion-design.md, music.md, hyperframes.md, brand-qa.md. remotion.md only if speech-locked or for a campaign matrix. captions.md if speech is on screen |
+| Launch reel, feature drop, promo | template `product-launch` (music-led) | templates.md (house launch recipes), music.md, motion-design.md |
 | Event highlights from photos | `event-recap` | templates.md, stock-media.md |
 | Customer quotes / reviews | `testimonial` | templates.md |
 | Teaser, "coming soon", date reveal (loopable) | `countdown-teaser` | templates.md |
@@ -38,7 +41,7 @@ kinetic type, correct logos — not grey placeholders or a talk-head TEMP divert
 | Talk/booth/kiosk loop, animated deck | `slides-presentation` (`--loop`) | templates.md |
 | Tutorial, walkthrough, onboarding (+ YouTube chapters) | `howto-tutorial` | templates.md, youtube-publishing.md |
 | Narrated product explainer with captions | `feature-explainer` (Remotion; `render.sh`) | remotion.md |
-| Custom kinetic piece, overlay, alpha, GIF | HyperFrames by hand (Remotion if speech-locked) | hyperframes.md, motion-design.md, kinetic-type.md, transitions.md, brand-qa.md |
+| Custom kinetic piece, overlay, alpha, GIF | HyperFrames by hand (Remotion if speech-locked) | hyperframes.md, motion-design.md, kinetic-type.md, transitions.md, music.md, brand-qa.md |
 | Diagrams / math, Lottie, cut user footage, transcribe | Manim, Lottie, auto-editor, parakeet | helpers.md |
 | Script or VO lines | 2–3 options + `script_lint.py` | scriptwriting.md, voiceover.md |
 | Captions (SRT/VTT/ASS, burn-in) | `captions.py` | captions.md |
@@ -55,10 +58,11 @@ Load in this order, and do not skip ahead to a render:
 2. `storyboard.md` — copy `examples/storyboard/` and swap in the real beats.
 3. `kinetic-type.md` — implement a house recipe (default `mask-reveal-up`). Do not pass house ids to HyperFrames as registry blocks.
 4. `transitions.md` — one primary seam, at most two accents. Name only real blocks.
-5. `motion-design.md` — ambient idle, bans, one named spectacle.
-6. `hyperframes.md` — default engine. Skills on. Never `HYPERFRAMES_SKIP_SKILLS=1`.
-7. `remotion.md` only when type locks to speech. `captions.md` when speech is on screen.
-8. `brand-qa.md` before a draft leaves. Score hook / phone / motion / variety / brand / sound.
+5. `motion-design.md` — taste numbers, ambient idle, bans, one named spectacle.
+6. `music.md` — cue sheet on the same beat grid as the picture. −14 LUFS (`loudness-accessibility.md`).
+7. `hyperframes.md` — default engine. Skills on. Never `HYPERFRAMES_SKIP_SKILLS=1`.
+8. `remotion.md` only when type locks to speech, or for a campaign matrix after the master locks. `captions.md` when speech is on screen.
+9. `brand-qa.md` before a draft leaves. BRIEF frames, fresh reviewer, scores to 8+.
 Stay on this lane until the user explicitly pivots. No Flashtalk or interview TEMP mid-job.
 
 ## Workflow (templates)

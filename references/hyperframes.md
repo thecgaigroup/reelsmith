@@ -5,12 +5,12 @@ description: Load for every client sizzle (default engine) and for custom HyperF
 # HyperFrames (manual authoring)
 
 Templates generate HyperFrames projects for you. Use this for custom pieces, overlays and GIFs.
-HyperFrames is Apache-2.0 and pinned at 0.8.188 (bump only after a test render passes).
+HyperFrames is Apache-2.0 and pinned at 0.8.197. The move from 0.8.188 is a patch line: `doctor`, `lint`, `check`, `snapshot --at`, and `render -o` are the same commands. Snapshot waits for image layers a seek reveals. Multiple `<audio>` clips mix by summing. GSAP stays a local file (`gsap@3`, currently 3.15.0).
 
 ## Setup (once)
 1. Node 22.12+. If older, unpack a portable Node 22 LTS (nodejs.org linux-x64) to `/workspace/tools/node22/` and
    prepend its `bin` to PATH for HyperFrames only.
-2. `export HYPERFRAMES_NO_TELEMETRY=1`; `HF="npx --yes hyperframes@0.8.188"`.
+2. `export HYPERFRAMES_NO_TELEMETRY=1`; `HF="npx --yes hyperframes@0.8.197"`.
    **Do not set `HYPERFRAMES_SKIP_SKILLS=1` for client sizzle / custom craft** — load project skills (`AGENTS.md` / `CLAUDE.md`: `/hyperframes`, `/media-use`, treatments) first. Skip skills only for throwaway smoke tests.
 3. `$HF doctor` (Chrome + FFmpeg). Save GSAP once to `/workspace/tools/gsap.min.js` (jsdelivr `gsap@3/dist/gsap.min.js`).
 4. Kokoro TTS: venv `pip install kokoro-onnx soundfile`, `HYPERFRAMES_PYTHON=<venv>/bin/python`.
@@ -31,7 +31,7 @@ HyperFrames is Apache-2.0 and pinned at 0.8.188 (bump only after a test render p
    Alpha/GIF: `--format mov|webm|gif` (webm alpha is VP9: decode with `-c:v libvpx-vp9`).
 
 ## Kinetic type
-Prefer HyperFrames when the piece is a designed page: client sizzle, custom kinetic, overlays, logo grids. The paused timeline **is** `seek(t)` — register it and drive every pose from timeline time. Display type uses `power3.out` or `expo.out` (no overshoot). UI chrome may use `back.out(1.15)`. One display face, one UI face, one accent. Do not set `will-change` or a CSS filter on type the camera scales (the glyphs go soft). Real screenshots and logos only. Client default reveal is a mask/clip word or line stagger (`kinetic-type.md`). Name seams from `transitions.md` — one primary, one or two accents — and only name blocks the HyperFrames skill actually has. Skills stay on; do not set `HYPERFRAMES_SKIP_SKILLS`. Speech-locked series work belongs on Remotion (`remotion.md`). Principles: `motion-design.md`.
+Prefer HyperFrames when the piece is a designed page: client sizzle, custom kinetic, overlays, logo grids. The paused timeline **is** `seek(t)` — register it and drive every pose from timeline time. Seek the same `t` twice, and seek backwards, before you trust a frame. Write hits as `b(n)` (`music.md`). Taste numbers: `motion-design.md`. Display type uses `power3.out` or `expo.out` (no overshoot). UI chrome may use `back.out(1.15)`. One display face, one UI face, one accent. Do not set `will-change` or a CSS filter on type the camera scales (the glyphs go soft). Real screenshots and logos only. Client default reveal is a mask/clip word or line stagger (`kinetic-type.md`). Name seams from `transitions.md` — one primary, one or two accents — and only name blocks the HyperFrames skill actually has. Skills stay on; do not set `HYPERFRAMES_SKIP_SKILLS`. Speech-locked series work belongs on Remotion (`remotion.md`). Principles: `motion-design.md`.
 
 Premium motion, ambient idle, and the density contract: `motion-design.md`. Caption block names: `captions.md`. Seams, including `beat-freeze-cut` and match cuts: `transitions.md`.
 

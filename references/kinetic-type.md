@@ -23,7 +23,7 @@ Sources: [Movez](https://x.com/0xMovez/status/2104216919033192746), the free [Mo
 
 Mask or clip, staggered by **line** (a read) or **word** (a tagline). Character splits only for a one- or two-word hit.
 
-- Line stagger 60–100 ms. Word stagger 40–70 ms. Character stagger 20–40 ms. Cap a reveal near 800 ms.
+- Line stagger 60–100 ms. Word stagger 40–70 ms. Character stagger 20–40 ms. Cap a reveal near 800 ms. The cascade stays under 500 ms unless the recipe is `kinetic-center-build`. Duration bases, exits at 65–75% of the entrance, and anticipation (UI only) are the taste layer in `motion-design.md`. Do not put anticipation on `mask-reveal-up`.
 - Ease: `power3.out`, `expo.out`, or `cubic-bezier(0.16, 1, 0.3, 1)`. No overshoot on the words.
 - Preview-only CSS (not the render): `animation-delay: calc(var(--i) * 40ms)`. The render uses a GSAP or Remotion stagger of that same 40 ms. CSS animations do not seek.
 - Something new every 2–4 s (a new line, a cut, or a UI state). A card that only fades in fails.
@@ -138,4 +138,4 @@ Centered title on a gradient, fade-in as the whole idea, corner labels and frame
 
 ## Before the full render
 
-Score hook / phone / motion / variety / brand / sound (`brand-qa.md`). Variety means a new event every 2–4 s. If the sheet is fade cards and one still per beat, it is not done.
+Score hook / phone / motion / variety / brand / sound as a fresh reviewer, from stills (`brand-qa.md`). Variety means a new event every 2–4 s. If the sheet is fade cards and one still per beat, it is not done. Cues for those hits are `b(n)` in `music.md`.

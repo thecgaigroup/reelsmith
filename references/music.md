@@ -38,3 +38,41 @@ scene cuts to it (templates choose `beat`, `half` or `bar` units).
   `sidechaincompress` (the pipeline does this), using 8-frame ramps.
 - Fade in 0.5 s and out 1.5 s; end on a downbeat.
 - Master with two-pass loudnorm to -14 LUFS integrated and -1.5 dBTP for social (see loudness-accessibility.md).
+
+## Sound on the beat
+
+Picture and sound share one clock. Write the cue sheet on the storyboard (`storyboard.md`), in the same times as the shots. Do not keep a second timeline in a side file the comp does not read.
+
+```js
+const b = (n) => n * (60 / bpm); // beat n, in seconds. A half-beat is b(n + 0.5).
+```
+
+HyperFrames tweens and `<audio data-start>` use `b(n)`. Remotion uses `Math.round(b(n) * fps)`. When a track exists, `beats.py grid` is the table (`beats`, `downbeats`, `bars`). A cue is a grid time, or that time plus a few milliseconds of attack. It is not a number typed from memory.
+
+| On screen | Sound | Gain |
+|---|---|---|
+| Word or line lands | Short whoosh, then a soft blip | 0.12–0.20 |
+| Chip, badge, cursor click | Click or pop. Pitch rises across a run | 0.15–0.25 |
+| Build into the spectacle | One riser, ending on the hit | ~0.20 |
+| Spectacle or logo slam | One impact | 0.25–0.35 |
+| End mark | Chime, in the bed's key | ~0.15 |
+| Drift, grain, idle | Silence | — |
+
+Accent. Continuous motion stays quiet. One impact and one riser per film. Hero hits sit at 0.25–0.35, support at 0.08–0.20, and the bed ducks under speech and under the impact. Pan follows on-screen x, from −1 to +1. Tonal hits stay in one key.
+
+### Hits without a new package
+
+The bed stays the licensed track or `beats.py synth`. When the brief wants hits, synthesize them with Python stdlib or ffmpeg. Do not add an npm audio library, and do not vendor a sound-design skill.
+
+Shape, not a dependency: a kick is a sine that drops in pitch with a short decay; a hat is a short burst of high noise; an impact is a low sine plus noise, decay under about 200 ms; a whoosh is band-limited noise swept upward. Place the hit so its **peak** lands on `b(n)`, not merely its start.
+
+Master to about −14 LUFS integrated. Leave headroom so the encoded AAC file stays at or under −1 dBTP (`loudness-accessibility.md`). A bed of tiny hits and silence will not reach −14 without crushing. Lengthen the bed. Do not slam a limiter to fake the number.
+
+HyperFrames: one `<audio id="…">` per stem, with `data-start`, `data-duration`, and `data-track-index`. Do not call `play()`. From 0.8.197 the renderer sums multiple audio clips. Remotion: a `<Sequence from={frame}>` per cue, then `export.py loudnorm` on the final, because Remotion does not normalize.
+
+Check: every transient sits on a grid line or a hair after it. A hit between lines is a hardcoded time or a stale file. Seek the picture to that `b(n)` and read the frame (`brand-qa.md`). This repo does not ship an `sfx` package. The pattern is this section.
+
+## Scout notes
+
+- [whaleyxbt/claude-motion](https://github.com/whaleyxbt/claude-motion) — cue sheet on the picture's timeline, gain hierarchy, −14 LUFS, stdlib generators. Not installed.
+- [Sunwood-ai-labs/hyperframes-motion-reel-skill](https://github.com/Sunwood-ai-labs/hyperframes-motion-reel-skill) — `b(n)` beat grid, code-generated kick and impact on that same grid. Not installed. HyperFrames skills stay the HeyGen ones, and they stay on.
