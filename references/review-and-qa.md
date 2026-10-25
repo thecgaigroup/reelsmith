@@ -21,10 +21,12 @@ The agent must also look at the images: clipped or overflowing text, literal `*`
 blank scenes, logo legibility, text inside safe zones, spelling of names and numbers, and credits present.
 
 ## Kinetic type, before the full render
-For client sizzle and hand-authored kinetic pieces, look at `contact.jpg` and `phone.jpg` (or HyperFrames
-snapshots at each beat) **before** a delivery render. `review.md` includes a 1–10 table: hook, phone, motion,
-variety, brand, sound. Fill it. Fix the three worst scores and re-check until each is 8 or higher. Rules and
-banned defaults: `motion-design.md`. The table does not change `review.py` pass/fail. The 1–5 rubric below
+For client sizzle and hand-authored kinetic pieces, pull stills at the BRIEF frame numbers (`storyboard.md`)
+**before** you trust playback. HyperFrames: `$HF snapshot --at`. Remotion: `npx remotion still --frame=N`.
+Then look at `contact.jpg` and `phone.jpg`. `review.md` includes a 1–10 table: hook, phone, motion,
+variety, brand, sound. Score it as a fresh reviewer, from the stills, not from memory of the comp.
+Fix the three worst scores and re-check until each is 8 or higher. Rules and
+banned defaults: `motion-design.md`. Gate: `brand-qa.md`. The table does not change `review.py` pass/fail. The 1–5 rubric below
 stays for every job. Template cuts can leave the kinetic table blank.
 
 ## Approve

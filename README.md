@@ -21,9 +21,9 @@ Click a preview to open the full MP4 (with sound). All of these were rendered by
 - `SKILL.md`: the skill (concise; routes to `references/`).
 - `getting-started/SKILL.md`: first-run setup (engines, free voice, brand kit, optional keys).
 - `references/`: brand kit, capabilities and keys, templates, scriptwriting, voiceover, music, stock media,
-  captions, platform specs, loudness and accessibility, motion design (showreel kinetic type), kinetic type recipes,
-  transitions, review and QA, YouTube publishing, HyperFrames, Remotion, AI generation (quotes only), helpers,
-  client sizzle, brand QA, storyboard.
+  captions, platform specs, loudness and accessibility, motion design (showreel kinetic type and taste numbers), kinetic type recipes,
+  transitions, music (beat grid and a cue sheet on that same clock), review and QA, YouTube publishing, HyperFrames, Remotion, AI generation (quotes only), helpers,
+  client sizzle, brand QA, storyboard (the frame-numbered BRIEF). House launch recipes live in `references/templates.md`.
 - `scripts/`: `capabilities.py`, `brand.py`, `reelsmith.py`, `script_lint.py`, `beats.py`, `stock.py`, `captions.py`,
   `review.py`, `export.py`, `youtube_prep.py`, `presets.json`. Python 3.10+ standard library; Pillow and librosa optional.
 - `templates/`: product-launch, event-recap, testimonial, countdown-teaser, stat-callout, slides-presentation

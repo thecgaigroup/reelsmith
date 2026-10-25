@@ -1,4 +1,5 @@
 node_modules/
+.hyperframes/
 out/
 renders/
 __pycache__/

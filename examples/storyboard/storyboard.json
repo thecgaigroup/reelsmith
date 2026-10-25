@@ -2,6 +2,7 @@
   "title": "Harbor Atelier \u2014 open example",
   "note": "Fictional awards sizzle for the skill. No client media, no paid-gen stills, no files under src. Pattern only. See README.md.",
   "runtime": 45.0,
+  "fps": 30,
   "aspect": "16:9",
   "direction": {
     "message": "One night in their room, told with their pictures.",

@@ -1,5 +1,5 @@
 ---
-description: Load on every client sizzle, right after client-sizzle.md. Copy examples/storyboard/ and replace the fictional beats. HAVE plays, ID waits, NEED and TEMP stay labelled and out of the client draft.
+description: Load on every client sizzle, right after client-sizzle.md. Copy examples/storyboard/ and replace the fictional beats. The JSON is the frame-numbered BRIEF. HAVE plays, ID waits, NEED and TEMP stay labelled and out of the client draft.
 ---
 
 # Storyboard (client sizzle source of truth)
@@ -29,6 +29,21 @@ The storyboard is what the edit builder and humans both read.
 6. **Audio** — music / duck / SFX
 7. **Story intent** — one line
 8. **Status** — `HAVE` \| `ID` (identity confirm) \| `NEED` \| `TEMP` (placeholder by design)
+9. **Cue** — `b(n)` from `music.md`, or `none`. Same clock as `t0`.
+
+## BRIEF (frame-numbered)
+
+The storyboard JSON is the BRIEF. Do not add a second spec the edit can drift from. Set `fps` (30 unless the render is 60). For each shot, frame numbers are `round(t * fps)`.
+
+Write one line per shot before the build, and keep it next to the board:
+
+```
+f{frame0}–f{frame1}  {t0}–{t1}s  {id}  {picture}  |  {words}  |  {kinetic}  |  {cue}
+```
+
+`frame0 = round(t0 * fps)`, `frame1 = round(t1 * fps)`. Snapshot those times and Read the stills before trusting playback (`brand-qa.md`). A product shot also names the device (phone or laptop) and the real screen (`templates.md`).
+
+The open example sets `"fps": 30` in `examples/storyboard/storyboard.json`.
 
 ## HTML craft bar (keep these)
 - Dark screening-room theme; display + body + mono font trio

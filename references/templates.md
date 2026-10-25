@@ -22,7 +22,7 @@ A template = `template.json` (contract: slots, budgets, required, aspects, energ
 
 Notes per template
 - **product-launch / event-recap / countdown:** pass `--music`. Scene lengths snap to bars/half-bars. Countdown
-  numbers scale on a steady background (no luminance flashes, WCAG 2.3.1).
+  numbers scale on a steady background (no luminance flashes, WCAG 2.3.1). Product-launch also follows the house recipes below.
 - **testimonial:** only real quotes the user has permission to use. Name, role, company and rating are optional.
 - **stat-callout:** `source` is required and shown on screen. Numbers count up; the bar chart uses brand colors.
 - **slides-presentation:** slide kinds: title, section, bullets, stat, quote, image, question. Deck chrome shows
@@ -42,6 +42,28 @@ images, credited in `_media/credits.json`). Never hotlink. Missing media fall ba
 Each slot has a character budget (for example `title: 28`). Over budget -> the contract check warns and the
 build shrinks type. Better: rewrite shorter. `script_lint.py script.json --preset reels` checks VO pace,
 on-screen text length, the 3-second hook and the CTA (see scriptwriting.md).
+
+## House launch recipes
+
+For `product-launch`, and for a product beat inside a client sizzle. Short rules. Do not install a launch skill, and do not render with Playwright. HyperFrames (skills on) or Remotion is the path. Taste numbers: `motion-design.md`. Cues: `music.md`. Frames: `storyboard.md`.
+
+1. **Real UI in a device.** A real screenshot or capture sits inside a phone or a laptop frame. A close-up may crop the top and bottom. The device edge stays visible so the shot still reads as a device. Full-bleed invented chrome is a fail. Missing screens are not filled with generated UI.
+2. **The cursor drives the change.** Position comes from the closed-form spring in `motion-design.md`. The click lands on a beat. Press scale lasts a few frames. The path is written down. It is not `Math.random()`. One cursor.
+3. **One-shape morph.** On a launch reel, one container may change width, height, and corner radius while the content inside swaps. The outgoing content leaves early, at about 65–75% of the enter time. A few pixels of blur on the swap clear before the hold. Do not morph display type. On a client sizzle the primary seam stays a hard cut (`transitions.md`). A morph is one accent, and only when the same real screen is what continues.
+4. **Bar-accurate cuts.** Every event is `b(n)` on the `beats.py` grid. One visual change per beat. The result holds long enough to read (about 1–2 s, still on the grid). The biggest reveal is a downbeat. `seek(t)` is the paused GSAP timeline or `useCurrentFrame()`, including a seek backwards.
+5. **Beat SFX.** The cue sheet uses the same `b(n)` as the picture. One impact on the drop. The bed is the licensed track or `beats.py synth`.
+
+Storyboard the beats before the build. Snapshot the open, the device, the drop, and the end, and Read those stills before a delivery render (`brand-qa.md`).
+
+### Campaign cuts
+
+After the master scores 8 or higher, a second hook and the other aspects are props, not a new film. Two hooks × three formats: `remotion.md`. Do not redesign the UI per cell.
+
+## Scout notes
+
+- [AbubakrChan/product-launch-motion](https://github.com/AbubakrChan/product-launch-motion) — cursor-driven UI, one-shape morph, beat SFX. The Playwright subframe renderer is not adopted.
+- [kaventro/motion-designer](https://github.com/kaventro/motion-designer) — real UI in a device frame, cuts written as beats, `seek(t)` checked out of order. Not installed.
+- [charlie947/motion-graphics-skills](https://github.com/charlie947/motion-graphics-skills) — launch shape (one sentence, real screens, CTA that holds) and brand intake. Intake is two lines on `brand.json` (`brand-kit.md`), not a new `MOTION.md`.
 
 ## Adding a template
 Copy the smallest template folder, rename it, edit `template.json`, and write `build(content, ctx) -> scenes` using

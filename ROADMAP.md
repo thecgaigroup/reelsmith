@@ -6,7 +6,7 @@ Parked work. Do not start these until the current release gates elsewhere are st
 
 **Status:** in the skill
 
-Awards, partner, and client sizzles now require a storyboard before the edit — `storyboard.json` plus HTML (proportional timeline, brief-beat alignment, shot cards, HAVE/ID/NEED/TEMP) — and a brand QA gate before anything leaves the box. See [references/storyboard.md](references/storyboard.md), [references/client-sizzle.md](references/client-sizzle.md), and [references/brand-qa.md](references/brand-qa.md). The generic pattern (no client media) is in [examples/storyboard/](examples/storyboard/). Showreel kinetic type for that lane is in [references/motion-design.md](references/motion-design.md) (2026-10-25).
+Awards, partner, and client sizzles now require a storyboard before the edit — `storyboard.json` plus HTML (proportional timeline, brief-beat alignment, shot cards, HAVE/ID/NEED/TEMP) — and a brand QA gate before anything leaves the box. See [references/storyboard.md](references/storyboard.md), [references/client-sizzle.md](references/client-sizzle.md), and [references/brand-qa.md](references/brand-qa.md). The generic pattern (no client media) is in [examples/storyboard/](examples/storyboard/). Showreel kinetic type for that lane is in [references/motion-design.md](references/motion-design.md) (2026-10-25). Taste numbers, the cue sheet, house launch recipes, and the BRIEF / fresh-reviewer gate are in the skill as of the same day (section below).
 
 ## Fold in local FFmpeg edit helpers (no sidecar)
 
@@ -74,7 +74,7 @@ Written as original recipes in [references/motion-design.md](references/motion-d
 
 ### Still parked
 
-1. **Optional:** synthesize SFX on the beat grid (the public `sfx.mjs` idea) as a first-party helper next to `beats.py`. Do not vendor a course file.
+1. **Optional code:** a first-party SFX helper next to `beats.py`. The cue-sheet pattern (same `b(n)` as the picture, −14 LUFS, kick/impact ideas) is already in [references/music.md](references/music.md). Do not vendor a course file, and do not add that helper until a job needs generated hits the bed cannot cover.
 2. **Directed prompt file** — GOAL / TIME / LOOK / MOTION / SHOTS / BANNED / QA. The rules now live in `motion-design.md`. A separate prompt pack is unnecessary unless a job asks.
 3. **impeccable-style visual lints** — still the parked design/motion item above. The kinetic scores are a checklist, not a new checker.
 
@@ -92,7 +92,7 @@ Written as original recipes in [references/motion-design.md](references/motion-d
 
 - **[guanmo-ai/awesome-ai-motion](https://github.com/guanmo-ai/awesome-ai-motion)**
 - **[athemeroy/awesome-claude-5-5-videos](https://github.com/athemeroy/awesome-claude-5-5-videos)** — the “awesome-opus-5-5-videos” URL Movez cites [redirects here](https://github.com/athemeroy/awesome-opus-5-5-videos).
-- **[LottieFiles/motion-design-skill](https://github.com/LottieFiles/motion-design-skill)** — one-liners are in `motion-design.md`. Do not vendor the repo.
+- **[LottieFiles/motion-design-skill](https://github.com/LottieFiles/motion-design-skill)** — timing, easing, and choreography numbers are in `motion-design.md`. Do not vendor the repo.
 
 ### Reference only (do not fold as dependencies)
 
@@ -100,6 +100,24 @@ Written as original recipes in [references/motion-design.md](references/motion-d
 - Skip: [ClaudeAnimationBase](https://github.com/JohnHeibel/ClaudeAnimationBase), [buildwithhanif/claude-animation-skill](https://github.com/buildwithhanif/claude-animation-skill), [WinterArc21/Battle-of-Austerlitz-Film](https://github.com/WinterArc21/Battle-of-Austerlitz-Film) — niche cartoon or long-form, not the Reelsmith template path.
 
 **When:** the parked remainder waits until other release gates are stable, unless the owner asks for a spike sooner.
+
+## Taste, sound, harness, launch recipes (2026-10-25)
+
+**Status:** in the skill. Docs plus the HyperFrames pin and the vendored lottie-web player. No sidecar, no Playwright studio, no vendored skill tree.
+
+| Folded into | From | What landed |
+|---|---|---|
+| [references/motion-design.md](references/motion-design.md) | [LottieFiles/motion-design-skill](https://github.com/LottieFiles/motion-design-skill), [dylantarre/animation-principles](https://github.com/dylantarre/animation-principles) | Duration bases, directional easing, stagger budgets, selected Disney-12 micros. Display type stays at 0% overshoot. |
+| [references/music.md](references/music.md) | [whaleyxbt/claude-motion](https://github.com/whaleyxbt/claude-motion), [Sunwood-ai-labs/hyperframes-motion-reel-skill](https://github.com/Sunwood-ai-labs/hyperframes-motion-reel-skill) | Cue sheet on the picture clock, `b(n)`, stdlib kick/impact ideas, −14 LUFS. No `sfx` package. |
+| [references/templates.md](references/templates.md) | [AbubakrChan/product-launch-motion](https://github.com/AbubakrChan/product-launch-motion), [kaventro/motion-designer](https://github.com/kaventro/motion-designer) | House launch recipes: device-framed real UI, cursor as a function of time, one-shape morph as a launch accent, bar-accurate cuts. |
+| [references/storyboard.md](references/storyboard.md), [references/brand-qa.md](references/brand-qa.md), [references/review-and-qa.md](references/review-and-qa.md) | Asteri and rewind02 craft rules, applied without fetching posts | Frame-numbered BRIEF, stills before playback, fresh reviewer, worst three, scores to 8+, `seek(t)`. |
+| [references/client-sizzle.md](references/client-sizzle.md) | same | One brand per session (lock / worst-three / campaign). Skills stay on. |
+| [references/remotion.md](references/remotion.md) | beamnxw-style campaign matrix, light | Two hooks × three formats as props after the master locks. |
+| [references/brand-kit.md](references/brand-kit.md) | [charlie947/motion-graphics-skills](https://github.com/charlie947/motion-graphics-skills) brand-intake | Feeling and one never, stored on `brand.json`. No `MOTION.md`. |
+
+**Pinned:** HyperFrames `0.8.188` → `0.8.197` (lint and check pass on `hyperframes-example/` and `lottie-example/`). Remotion `4.0.538` and GSAP `3.15.0` were already the latest stable and were left there. Vendored lottie-web `5.12.2` → `5.13.0` (check and snapshot still pass). No Remotion lockfile change.
+
+**Skipped on purpose:** CapCut, FilmCraft, paid MotionVideo packs, Manim/3b1b as a new path, influencer-growth packs, [iart-ai/motion-skills](https://github.com/iart-ai/motion-skills) (an index; the verify loop and vertical safe zone are already house rules), Playwright subframe rendering, `HYPERFRAMES_SKIP_SKILLS` on client work.
 
 ## Liquid chrome / reflective metal look (optional Three.js path)
 
