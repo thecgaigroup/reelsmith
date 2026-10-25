@@ -25,6 +25,15 @@ Without the kit: `npx create-video@latest --yes --blank`, then `npx remotion add
 6. **Remotion doesn't normalize loudness:** `python3 scripts/export.py loudnorm in.mp4 out.mp4` on every final.
 7. Captions: `npx tsx scripts/export-captions.ts <slug>` -> words.json -> `captions.py build`.
 
+## Kinetic type
+Prefer Remotion when type locks to speech, or the job is a series / data-driven plan in this kit. The frame number **is** `seek(t)`: `useCurrentFrame()` plus `interpolate` / `spring` only.
+- Display type and logo lockups: `spring({ frame, fps, config: { damping: 200, mass: 1, stiffness: 80, overshootClamping: true } })`. Presets: `kinetic-type.md`. Seams: `transitions.md` (the half-beat rule below still governs feature-explainer templates).
+- UI chrome: `spring({ frame, fps, config: { damping: 14, mass: 0.7, stiffness: 160 } })` — a hair of overshoot, not a bounce on the words.
+- A value with several targets is the sum of one spring per change from its own start frame. Do not store velocity in a ref.
+- One display face, one UI face, one accent, from the brand bundle. Mask or clip; do not fade the whole card in. Real screenshots and logos only.
+- A typewriter is `text.slice(0, n)` from the frame. Never per-character opacity (`kinetic-type.md`).
+- Stills at each beat (`npx remotion still`) before the full render, then the same contact-sheet scores as HyperFrames (`motion-design.md`). Client sizzle that is a designed page, not a word-locked explainer, stays on HyperFrames.
+
 ## Rules
 - All motion from `useCurrentFrame()` + `interpolate`/`spring`; CSS animations don't render.
 - Beat = `fps*60/bpm` frames; transition = half a beat; Sequence = scene frames + outgoing transition.

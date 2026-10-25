@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Harbor Atelier — open example</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #0c0e12; color: #f4efe6; font: 16px/1.45 "Iowan Old Style", Palatino, Georgia, serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-weight: 500; letter-spacing: -0.03em; font-size: 40px; margin: 0 0 8px; }
+  h2 { font: 13px/1 ui-monospace, monospace; letter-spacing: 0.14em; text-transform: uppercase; color: #c4a574; margin: 36px 0 12px; }
+  p.lede, .note { color: #c9c2b6; }
+  .meta { display: grid; grid-template-columns: 160px 1fr; gap: 6px 16px; font: 14px/1.4 ui-monospace, monospace; }
+  .meta dt { color: #8aa4b5; }
+  .meta dd { margin: 0; }
+  .track { position: relative; height: 28px; background: #16191f; border-radius: 4px; margin: 8px 0 18px; }
+  .beat, .shotbar { position: absolute; top: 3px; height: 22px; border-radius: 3px; font: 11px/22px ui-monospace, monospace; color: #0c0e12; text-align: center; overflow: hidden; }
+  .shotbar { color: #f4efe6; }
+  table { width: 100%; border-collapse: collapse; font: 14px/1.4 ui-monospace, monospace; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #2a2e36; vertical-align: top; }
+  th { color: #8aa4b5; font-weight: 500; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card { background: #14171c; border: 1px solid #2a2e36; border-radius: 10px; padding: 14px 14px 8px; }
+  .card header { display: flex; gap: 8px; align-items: center; font: 12px/1 ui-monospace, monospace; }
+  .chip { color: #f4efe6; border-radius: 99px; padding: 3px 8px; }
+  .when { color: #c9c2b6; margin-left: auto; }
+  .frame { margin-top: 12px; min-height: 72px; border: 1px solid; border-radius: 6px; display: flex; flex-direction: column; justify-content: flex-end; padding: 8px 10px; background: #0c0e12; font: 12px/1.3 ui-monospace, monospace; }
+  .frame span { color: #c9c2b6; }
+  h3 { margin: 12px 0 4px; letter-spacing: -0.03em; font-size: 26px; font-weight: 500; }
+  dl { display: grid; grid-template-columns: 110px 1fr; gap: 4px 8px; font: 13px/1.35 ui-monospace, monospace; }
+  dt { color: #8aa4b5; }
+  dd { margin: 0; }
+  code { color: #e8b86d; }
+  .note { font: 13px/1.4 ui-monospace, monospace; }
+  @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } .meta { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <p class="lede">Open example · no client media · no paid-gen stills</p>
+  <h1>Harbor Atelier — open example</h1>
+  <p class="lede">Fictional awards sizzle for the skill. No client media, no paid-gen stills, no files under src. Pattern only. See README.md. 45s, hard-cut primary, one whip accent. Payoff about every 2–4s. Claude’s comparison cut is the density bar this pattern is practicing: real pictures plus a named type recipe, not a fade card.</p>
+  <h2>Direction</h2>
+  <dl class="meta">
+    <dt>Message</dt><dd>One night in their room, told with their pictures.</dd>
+    <dt>Arc</dt><dd>Hook (OPEN) → Build (STUDIO, EXPAND) → Punch (POWER, TAKEOVER) → Resolve (END)</dd>
+    <dt>Audience</dt><dd>An awards jury and the partners on the end card.</dd>
+    <dt>Mood</dt><dd>Medium energy, hard cuts, one whip.</dd>
+    <dt>Two-color</dt><dd>Ground #0c0e12, ink #f4efe6. Accent only on emphasis words.</dd>
+    <dt>Breather</dt><dd>07 — interview b-roll. Held read, captions, no second animation.</dd>
+    <dt>Callback</dt><dd>The door still in 01 returns as the closing picture in 13.</dd>
+    <dt>Spectacle</dt><dd>05 — 42 PIECES, spring-scale-in on the real install photo. The one exaggeration.</dd>
+    <dt>Negatives</dt><dd>No fade-card titles, no grey selects, no invented UI, no corner labels, no glitch default, no Flashtalk or interview TEMP, no HYPERFRAMES_SKIP_SKILLS, no paid gen.</dd>
+    <dt>Seams</dt><dd>hard cut. Accent: 09 whip-pan into takeover</dd>
+  </dl>
+  <h2>Beats</h2>
+  <div class="track"><div class="beat" style="left:0.000%;width:11.556%;background:#c4a574" title="Hook the night in one line, then the name.">OPEN</div><div class="beat" style="left:11.556%;width:12.889%;background:#8aa4b5" title="The room, then the person we may not yet name.">STUDIO</div><div class="beat" style="left:24.444%;width:13.778%;background:#d07a5a" title="The work, in their pictures and their number.">EXPAND</div><div class="beat" style="left:38.222%;width:14.222%;background:#c46b8a" title="Real speech under music. No stand-in host.">POWER</div><div class="beat" style="left:52.444%;width:25.778%;background:#7d9a72" title="Stage, screen, crowd. One missing partner stays off the cut.">TAKEOVER</div><div class="beat" style="left:78.222%;width:21.778%;background:#e8e0d4" title="Temp line labelled, then the real lockup and the logo row.">END</div></div>
+  <h2>Shots by status</h2>
+  <div class="track"><div class="shotbar" style="left:0.000%;width:5.333%;background:#1f6b45" title="01 HAVE">01</div><div class="shotbar" style="left:5.333%;width:6.222%;background:#1f6b45" title="02 HAVE">02</div><div class="shotbar" style="left:11.556%;width:6.667%;background:#1f6b45" title="03 HAVE">03</div><div class="shotbar" style="left:18.222%;width:6.222%;background:#8a6a1f" title="04 ID">04</div><div class="shotbar" style="left:24.444%;width:6.667%;background:#1f6b45" title="05 HAVE">05</div><div class="shotbar" style="left:31.111%;width:7.111%;background:#1f6b45" title="06 HAVE">06</div><div class="shotbar" style="left:38.222%;width:7.111%;background:#1f6b45" title="07 HAVE">07</div><div class="shotbar" style="left:45.333%;width:7.111%;background:#1f6b45" title="08 HAVE">08</div><div class="shotbar" style="left:52.444%;width:6.222%;background:#1f6b45" title="09 HAVE">09</div><div class="shotbar" style="left:58.667%;width:6.222%;background:#1f6b45" title="10 HAVE">10</div><div class="shotbar" style="left:64.889%;width:6.222%;background:#1f4d8a" title="11 NEED">11</div><div class="shotbar" style="left:71.111%;width:7.111%;background:#1f6b45" title="12 HAVE">12</div><div class="shotbar" style="left:78.222%;width:7.111%;background:#6b3a6e" title="13 TEMP">13</div><div class="shotbar" style="left:85.333%;width:7.111%;background:#1f6b45" title="14 HAVE">14</div><div class="shotbar" style="left:92.444%;width:7.556%;background:#1f6b45" title="15 HAVE">15</div></div>
+  <table>
+    <thead><tr><th>Beat</th><th>Time</th><th>Requirement</th><th>Shots</th></tr></thead>
+    <tbody><tr><td>OPEN</td><td>0.0–5.2s</td><td>Hook the night in one line, then the name.</td><td>01, 02</td></tr><tr><td>STUDIO</td><td>5.2–11.0s</td><td>The room, then the person we may not yet name.</td><td>03, 04</td></tr><tr><td>EXPAND</td><td>11.0–17.2s</td><td>The work, in their pictures and their number.</td><td>05, 06</td></tr><tr><td>POWER</td><td>17.2–23.6s</td><td>Real speech under music. No stand-in host.</td><td>07, 08</td></tr><tr><td>TAKEOVER</td><td>23.6–35.2s</td><td>Stage, screen, crowd. One missing partner stays off the cut.</td><td>09, 10, 11, 12</td></tr><tr><td>END</td><td>35.2–45.0s</td><td>Temp line labelled, then the real lockup and the logo row.</td><td>13, 14, 15</td></tr></tbody>
+  </table>
+  <h2>Shot cards</h2>
+  <div class="grid">
+    <article class="card" id="s01">
+      <header>
+        <span class="id">01</span>
+        <span class="chip" style="background:#1f6b45">HAVE</span>
+        <span class="when">0.0–2.4s · OPEN</span>
+      </header>
+      <div class="frame" style="border-color:#c4a574">
+        <b>phone / door-still</b>
+        <span>In the cut.</span>
+      </div>
+      <h3>ONE ROOM</h3>
+      <dl>
+        <dt>Picture</dt><dd>Phone still of the studio door, full frame, their colors. Not a gradient.</dd>
+        <dt>Kinetic</dt><dd><code>mask-reveal-up</code> · <code>elegant-editorial</code></dd>
+        <dt>Seam</dt><dd>cut from black</dd>
+        <dt>Voice / audio</dt><dd>mute · Bed in on the downbeat.</dd>
+        <dt>Focal</dt><dd>ONE ROOM on the real door</dd>
+        <dt>Job</dt><dd>hook · counterexample · recognition</dd>
+        <dt>Intent</dt><dd>Hook in under 3s with type on a real picture.</dd>
+      </dl>
+      
+    </article>
+    <article class="card" id="s02">
+      <header>
+        <span class="id">02</span>
+        <span class="chip" style="background:#1f6b45">HAVE</span>
+        <span class="when">2.4–5.2s · OPEN</span>
+      </header>
+      <div class="frame" style="border-color:#c4a574">
+        <b>phone / door-still</b>
+        <span>In the cut.</span>
+      </div>
+      <h3>HARBOR ATELIER</h3>
+      <dl>
+        <dt>Picture</dt><dd>Same door, push in. The name builds on the picture.</dd>
+        <dt>Kinetic</dt><dd><code>kinetic-center-build</code> · <code>elegant-editorial</code></dd>
+        <dt>Seam</dt><dd>hard cut, shared door</dd>
+        <dt>Voice / audio</dt><dd>mute · Bed.</dd>
+        <dt>Focal</dt><dd>HARBOR ATELIER</dd>
+        <dt>Job</dt><dd>hook · distillation · the name lands</dd>
+        <dt>Intent</dt><dd>Second payoff before 6s. Match cut, no dissolve.</dd>
+      </dl>
+      
+    </article>
+    <article class="card" id="s03">
+      <header>
+        <span class="id">03</span>
+        <span class="chip" style="background:#1f6b45">HAVE</span>
+        <span class="when">5.2–8.2s · STUDIO</span>
+      </header>
+      <div class="frame" style="border-color:#8aa4b5">
+        <b>day-of / floor-wide</b>
+        <span>In the cut.</span>
+      </div>
+      <h3>NIGHT STUDIO</h3>
+      <dl>
+        <dt>Picture</dt><dd>Day-Of wide loop of the floor, 3s, real practicals.</dd>
+        <dt>Kinetic</dt><dd><code>mask-reveal-up</code> · <code>elegant-editorial</code></dd>
+        <dt>Seam</dt><dd>hard cut</dd>
+        <dt>Voice / audio</dt><dd>mute · Bed.</dd>
+        <dt>Focal</dt><dd>the wide floor</dd>
+        <dt>Job</dt><dd>benefit_highlight · place · the room is real</dd>
+        <dt>Intent</dt><dd>The room is a place, not a title card.</dd>
+      </dl>
+      
+    </article>
+    <article class="card" id="s04">
+      <header>
+        <span class="id">04</span>
+        <span class="chip" style="background:#8a6a1f">ID</span>
+        <span class="when">8.2–11.0s · STUDIO</span>
+      </header>
+      <div class="frame" style="border-color:#8aa4b5">
+        <b>day-of / group-still</b>
+        <span>Stays off the client draft until the status changes.</span>
+      </div>
+      <h3>— no type —</h3>
+      <dl>
+        <dt>Picture</dt><dd>Group still. One face is not cleared. Do not feature it.</dd>
+        <dt>Kinetic</dt><dd><code>none</code> · <code>—</code></dd>
+        <dt>Seam</dt><dd>hard cut if ID clears; otherwise omit</dd>
+        <dt>Voice / audio</dt><dd>mute · Bed.</dd>
+        <dt>Focal</dt><dd>the unconfirmed face, not shown</dd>
+        <dt>Job</dt><dd>social_proof · withhold · tension — identity</dd>
+        <dt>Intent</dt><dd>Identity hold. Board only until someone says yes.</dd>
+      </dl>
+      <p class="note">Not in the client draft until ID is approved. Do not replace with a generated host.</p>
+    </article>
+    <article class="card" id="s05">
+      <header>
+        <span class="id">05</span>
+        <span class="chip" style="background:#1f6b45">HAVE</span>
+        <span class="when">11.0–14.0s · EXPAND</span>
+      </header>
+      <div class="frame" style="border-color:#d07a5a">
+        <b>still / install-42</b>
+        <span>In the cut.</span>
+      </div>
+      <h3>42 PIECES</h3>
+      <dl>
+        <dt>Picture</dt><dd>Install photo, crop on the work. Real count from the brief.</dd>
+        <dt>Kinetic</dt><dd><code>spring-scale-in</code> · <code>snappy-headline</code></dd>
+        <dt>Seam</dt><dd>hard cut</dd>
+        <dt>Voice / audio</dt><dd>mute · Accent on the number.</dd>
+        <dt>Focal</dt><dd>42 PIECES</dd>
+        <dt>Job</dt><dd>proof · numbered enumeration · punch</dd>
+        <dt>Intent</dt><dd>Proof, one number, their photograph.</dd>
+      </dl>
+      
+    </article>
+    <article class="card" id="s06">
+      <header>
+        <span class="id">06</span>
+        <span class="chip" style="background:#1f6b45">HAVE</span>
+        <span class="when">14.0–17.2s · EXPAND</span>
+      </header>
+      <div class="frame" style="border-color:#d07a5a">
+        <b>phone / hands-loop</b>
+        <span>In the cut.</span>
+      </div>
+      <h3>CUT ON THE FLOOR</h3>
+      <dl>
+        <dt>Picture</dt><dd>Detail loop of hands on the work. No invented UI.</dd>
+        <dt>Kinetic</dt><dd><code>mask-reveal-up</code> · <code>elegant-editorial</code></dd>
+        <dt>Seam</dt><dd>hard cut</dd>
+        <dt>Voice / audio</dt><dd>mute · Bed.</dd>
+        <dt>Focal</dt><dd>hands on the work</dd>
+        <dt>Job</dt><dd>benefit_highlight · process · making</dd>
+        <dt>Intent</dt><dd>Line reveal on a new picture inside 4s.</dd>
+      </dl>
+      
+    </article>
+    <article class="card" id="s07">
+      <header>
+        <span class="id">07</span>
+        <span class="chip" style="background:#1f6b45">HAVE</span>
+        <span class="when">17.2–20.4s · POWER</span>
+      </header>
+      <div class="frame" style="border-color:#c46b8a">
+        <b>interview / hands-broll</b>
+        <span>In the cut.</span>
+      </div>
+      <h3>— no type —</h3>
+      <dl>
+        <dt>Picture</dt><dd>B-roll of the speaker&#x27;s hands and the room. Captions on the real line. Not a talk-head card.</dd>
+        <dt>Kinetic</dt><dd><code>none</code> · <code>—</code></dd>
+        <dt>Seam</dt><dd>hard cut</dd>
+        <dt>Voice / audio</dt><dd>interview · Duck the bed under the real line.</dd>
+        <dt>Focal</dt><dd>the spoken line, captions only</dd>
+        <dt>Job</dt><dd>proof · testimony · breather</dd>
+        <dt>Intent</dt><dd>Speech stays speech. Do not swap in an interview TEMP.</dd>
+      </dl>
+      
+    </article>
+    <article class="card" id="s08">
+      <header>
+        <span class="id">08</span>
+        <span class="chip" style="background:#1f6b45">HAVE</span>
+        <span class="when">20.4–23.6s · POWER</span>
+      </header>
+      <div class="frame" style="border-color:#c46b8a">
+        <b>day-of / room-angle</b>
+        <span>In the cut.</span>
+      </div>
+      <h3>LISTEN</h3>
+      <dl>
+        <dt>Picture</dt><dd>Same room, new angle. Two words only.</dd>
+        <dt>Kinetic</dt><dd><code>per-character-rise</code> · <code>snappy-headline</code></dd>
+        <dt>Seam</dt><dd>hard cut</dd>
+        <dt>Voice / audio</dt><dd>interview · Duck.</dd>
+        <dt>Focal</dt><dd>LISTEN</dd>
+        <dt>Job</dt><dd>punch · emphasis word · the word hits</dd>
+        <dt>Intent</dt><dd>Type hit on the phrase, still their picture.</dd>
+      </dl>
+      
+    </article>
+    <article class="card" id="s09">
+      <header>
+        <span class="id">09</span>
+        <span class="chip" style="background:#1f6b45">HAVE</span>
+        <span class="when">23.6–26.4s · TAKEOVER</span>
+      </header>
+      <div class="frame" style="border-color:#7d9a72">
+        <b>day-of / stage-wide</b>
+        <span>In the cut.</span>
+      </div>
+      <h3>— no type —</h3>
+      <dl>
+        <dt>Picture</dt><dd>Stage wide from the night.</dd>
+        <dt>Kinetic</dt><dd><code>none</code> · <code>—</code></dd>
+        <dt>Seam</dt><dd>whip-pan accent</dd>
+        <dt>Voice / audio</dt><dd>mute · Bed back up on the downbeat.</dd>
+        <dt>Focal</dt><dd>the stage wide</dd>
+        <dt>Job</dt><dd>energy · cut to the night · takeover</dd>
+        <dt>Intent</dt><dd>The one accent seam in the film.</dd>
+      </dl>
+      
+    </article>
+    <article class="card" id="s10">
+      <header>
+        <span class="id">10</span>
+        <span class="chip" style="background:#1f6b45">HAVE</span>
+        <span class="when">26.4–29.2s · TAKEOVER</span>
+      </header>
+      <div class="frame" style="border-color:#7d9a72">
+        <b>screen / product-crop</b>
+        <span>In the cut.</span>
+      </div>
+      <h3>— no type —</h3>
+      <dl>
+        <dt>Picture</dt><dd>Real screen recording, cropped. Do not redraw the UI.</dd>
+        <dt>Kinetic</dt><dd><code>none</code> · <code>—</code></dd>
+        <dt>Seam</dt><dd>match cut on the screen shape</dd>
+        <dt>Voice / audio</dt><dd>mute · Bed.</dd>
+        <dt>Focal</dt><dd>the real screen</dd>
+        <dt>Job</dt><dd>proof · product · continuity</dd>
+        <dt>Intent</dt><dd>Continuity is the screen. Hard cut, no warp.</dd>
+      </dl>
+      
+    </article>
+    <article class="card" id="s11">
+      <header>
+        <span class="id">11</span>
+        <span class="chip" style="background:#1f4d8a">NEED</span>
+        <span class="when">29.2–32.0s · TAKEOVER</span>
+      </header>
+      <div class="frame" style="border-color:#7d9a72">
+        <b>need / west-quay-clip</b>
+        <span>Stays off the client draft until the status changes.</span>
+      </div>
+      <h3>WITH WEST QUAY</h3>
+      <dl>
+        <dt>Picture</dt><dd>West Quay partner clip. Not in the vault.</dd>
+        <dt>Kinetic</dt><dd><code>mask-reveal-up</code> · <code>elegant-editorial</code></dd>
+        <dt>Seam</dt><dd>omit until HAVE</dd>
+        <dt>Voice / audio</dt><dd>mute · Bed.</dd>
+        <dt>Focal</dt><dd>the missing partner, off the cut</dd>
+        <dt>Job</dt><dd>gap · omission · honest NEED</dd>
+        <dt>Intent</dt><dd>Honest gap. The client draft skips this shot.</dd>
+      </dl>
+      <p class="note">Do not paint a grey card and do not generate a lookalike. Drop the shot or wait.</p>
+    </article>
+    <article class="card" id="s12">
+      <header>
+        <span class="id">12</span>
+        <span class="chip" style="background:#1f6b45">HAVE</span>
+        <span class="when">32.0–35.2s · TAKEOVER</span>
+      </header>
+      <div class="frame" style="border-color:#7d9a72">
+        <b>day-of / crowd-loop</b>
+        <span>In the cut.</span>
+      </div>
+      <h3>FULL ROOM</h3>
+      <dl>
+        <dt>Picture</dt><dd>Crowd loop, faces small, no hero close-up.</dd>
+        <dt>Kinetic</dt><dd><code>stagger-from-center</code> · <code>snappy-headline</code></dd>
+        <dt>Seam</dt><dd>hard cut</dd>
+        <dt>Voice / audio</dt><dd>mute · Bed.</dd>
+        <dt>Focal</dt><dd>FULL ROOM</dd>
+        <dt>Job</dt><dd>social_proof · crowd · density</dd>
+        <dt>Intent</dt><dd>Density through the montage. New words, new picture.</dd>
+      </dl>
+      
+    </article>
+    <article class="card" id="s13">
+      <header>
+        <span class="id">13</span>
+        <span class="chip" style="background:#6b3a6e">TEMP</span>
+        <span class="when">35.2–38.4s · END</span>
+      </header>
+      <div class="frame" style="border-color:#e8e0d4">
+        <b>phone / door-still</b>
+        <span>Stays off the client draft until the status changes.</span>
+      </div>
+      <h3>SEE YOU INSIDE</h3>
+      <dl>
+        <dt>Picture</dt><dd>Closing still of the door, real.</dd>
+        <dt>Kinetic</dt><dd><code>mask-reveal-up</code> · <code>elegant-editorial</code></dd>
+        <dt>Seam</dt><dd>hard cut</dd>
+        <dt>Voice / audio</dt><dd>mute · Bed.</dd>
+        <dt>Focal</dt><dd>the door, words unlabelled as final</dd>
+        <dt>Job</dt><dd>callback · return of the door · temp line</dd>
+        <dt>Intent</dt><dd>The line is not locked. Label it. Do not ship it as final copy.</dd>
+      </dl>
+      <p class="note">Picture can be reused. Words stay off the delivery until the client locks the line.</p>
+    </article>
+    <article class="card" id="s14">
+      <header>
+        <span class="id">14</span>
+        <span class="chip" style="background:#1f6b45">HAVE</span>
+        <span class="when">38.4–41.6s · END</span>
+      </header>
+      <div class="frame" style="border-color:#e8e0d4">
+        <b>logo / harbor-mark</b>
+        <span>In the cut.</span>
+      </div>
+      <h3>HARBOR</h3>
+      <dl>
+        <dt>Picture</dt><dd>Solid brand field, then the real mark.</dd>
+        <dt>Kinetic</dt><dd><code>typewriter-collapse-spring</code> · <code>heavy-logo</code></dd>
+        <dt>Seam</dt><dd>hard cut</dd>
+        <dt>Voice / audio</dt><dd>mute · Bed, hit on the mark.</dd>
+        <dt>Focal</dt><dd>the real mark</dd>
+        <dt>Job</dt><dd>cta · callback + distillation · resolve</dd>
+        <dt>Intent</dt><dd>One end sting. Real logo file only.</dd>
+      </dl>
+      
+    </article>
+    <article class="card" id="s15">
+      <header>
+        <span class="id">15</span>
+        <span class="chip" style="background:#1f6b45">HAVE</span>
+        <span class="when">41.6–45.0s · END</span>
+      </header>
+      <div class="frame" style="border-color:#e8e0d4">
+        <b>logo / row-have-only</b>
+        <span>In the cut.</span>
+      </div>
+      <h3>— no type —</h3>
+      <dl>
+        <dt>Picture</dt><dd>Even row of HAVE marks only. West Quay is absent until NEED clears. No empty plate.</dd>
+        <dt>Kinetic</dt><dd><code>none</code> · <code>heavy-logo</code></dd>
+        <dt>Seam</dt><dd>settle, no transition</dd>
+        <dt>Voice / audio</dt><dd>mute · Bed out on the bar.</dd>
+        <dt>Focal</dt><dd>the HAVE logo row</dd>
+        <dt>Job</dt><dd>cta · partners · resolve</dd>
+        <dt>Intent</dt><dd>Hold the row. Equal size, equal gaps.</dd>
+      </dl>
+      
+    </article></div>
+</main>
+</body>
+</html>

@@ -192,6 +192,17 @@ def check(video, out, preset=None, expect=None, credits=None, job=None):
            "| Craft | Type hierarchy, motion easing, consistent spacing, nothing cramped at phone size? | |",
            "| Brand | Looks and sounds like the brand, not like a template? | |",
            "| CTA | Clear next step, on screen long enough, says where to go? | |", "",
+           "## Kinetic type (client sizzle and custom kinetic; score 1-10)", "",
+           "Leave blank on a plain template cut. Otherwise score after looking at `contact.jpg` and `phone.jpg`.",
+           "Fix the three worst and re-check before a delivery render. Each score should be 8 or higher.",
+           "Rules: `references/motion-design.md`. This table does not change the auto result.", "",
+           "| Area | Question | Score |", "|---|---|---|",
+           "| Hook | Does the first 2 seconds land, rather than a fade-in title card? | |",
+           "| Phone | Can you read the hook and the logo on `phone.jpg`? | |",
+           "| Motion | Does motion have weight, with no overshoot on big type and no dead beat? | |",
+           "| Variety | Does something new happen every 2-4 seconds? | |",
+           "| Brand | Real logo, colors, and UI; none of the banned defaults? | |",
+           "| Sound | Do cuts and hits land on the beat, with loudness in range? | |", "",
            f"Auto result: **{'PASS' if auto_pass else 'FAIL'}**. Approved: **no** (run `review.py approve {out}` after the user says yes)."]
     (out / "review.md").write_text("\n".join(md) + "\n")
     for r in rows:

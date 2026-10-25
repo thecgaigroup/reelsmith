@@ -11,6 +11,9 @@ Run before any client draft leaves the box. Fail = do not send.
 6. **Flash / accessibility** — ≤3 flashes/s; captions on speech.
 7. **AI disclosure** — only when AI faces/voices/gen media are in the cut; not required for licensed real footage alone.
 8. **Contact sheet** — snapshot open, mid (power/talent), takeover, end; Read PNGs before delivery.
+9. **Kinetic type** — showreel rules in `motion-design.md`: one display face, one UI face, one accent; mask/stagger; no overshoot on display type; something new every 2–4s. Fail banned defaults (centered title on a gradient, everything fading in, corner labels, frame borders, glow on UI chrome, generic particle bursts, blurry scaled text, invented UI).
+10. **Scores before full render** — after looking at the contact sheet and `phone.jpg`, score 1–10: hook, phone, motion, variety, brand, sound. Fix the three worst. Do not send a client draft while any score is under 8. `review.py` prints the table; you still have to fill it.
+11. **Comparison bar** — the cut is dense real footage plus kinetic type (`client-sizzle.md`). Fail a skills-skipped animatic, a fade-card title, a sparse select when footage exists, or an interview TEMP / Flashtalk drift the user did not ask for.
 
 ## Commands
 ```bash

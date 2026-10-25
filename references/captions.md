@@ -29,6 +29,19 @@ Placement: inside the preset safe zone, above the bottom UI (Reels and TikTok: a
 the default layout), and never covering faces or on-screen text. Size: at least 4.5% of frame height in
 vertical, 3.5% in 16:9. Contrast at least 4.5:1 (WCAG 1.4.3).
 
+## HyperFrames caption blocks
+
+For type authored inside a composition, name one block for the section. Source: [captions catalog](https://hyperframes.heygen.com/prompting/captions-catalog). Do not invent a name. Do not mix two styles in one section. Switch only at a section break. These are not the burn-in path above, and they are not a matte-behind-a-speaker unless the composition already cuts the subject out.
+
+| Tone | Blocks |
+|---|---|
+| Hype | `caption-kinetic-slam` (one full-screen word per beat), `caption-highlight` (line stays, one word hot) |
+| Editorial | `caption-editorial-emphasis` (size contrast on one or two emphasis words), `caption-clip-wipe` |
+| Clean / corporate | `caption-clip-wipe`, `caption-weight-shift` |
+| Karaoke | `caption-pill-karaoke`, `caption-highlight` |
+
+`caption-glitch-rgb`, `caption-particle-burst`, and `caption-neon-glow` are not client-sizzle defaults. Transcript words come from `$HF transcribe` or `captions.py`. Emphasis words: one or two, from `kinetic-type.md`.
+
 Upload SRT/VTT as sidecars wherever the platform allows (YouTube, LinkedIn, X, Facebook). Burn in for
 Reels, TikTok and Shorts, where many people watch muted.
 

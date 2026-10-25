@@ -17,3 +17,14 @@
 - **Beat grid / music:** `beats.py grid track.mp3 -o beatgrid.json` (librosa -> `hyperframes beats` -> fixed BPM);
   `beats.py snap beatgrid.json --durations 3,2.5,4 --unit bar`; `beats.py fit track.mp3 --seconds 22 -o bed.mp3`
   (trims to a bar line, fades out); `beats.py synth -o bed.mp3 --bpm 120 --seconds 30 --mood bright` (free fallback).
+
+## Spoken / raw takes (post)
+Use this when the job is cutting talking-head, interview, or other raw spoken selects. Client sizzles stay
+storyboard-first (`storyboard.md`); this does not replace that board.
+
+Pattern only — do **not** install [browser-use/video-use](https://github.com/browser-use/video-use) or add it as a dependency.
+
+1. **Transcript first.** Transcribe with the tools above (`$HF transcribe` or WhisperX). Read words and times. Do not dump every frame into the prompt.
+2. **EDL, then confirm.** Write a short list: source, in, out, why (keep / drop filler / drop a false start). Show it. Do not cut until the user says yes.
+3. **Cut.** `auto-editor` for silence, or ffmpeg trims from the approved list. Fade audio about 30 ms across each cut so it does not pop. Burn captions with `captions.py`.
+4. **Filmstrip self-eval.** `review.py check` and look at `contact.jpg` plus a frame on each cut before anyone sees the cut. Hunt jumps, pops, captions under UI, and dead air. Fix and re-check.

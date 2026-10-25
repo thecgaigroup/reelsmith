@@ -22,8 +22,14 @@ HyperFrames is Apache-2.0 and pinned at 0.8.188 (bump only after a test render p
    timeline synchronously. Use `fromTo` with explicit end states (cold seeks). Don't mix `translate(-50%)` with
    GSAP x/y. Variables: `<html data-composition-variables='[…]'>` and `window.__hyperframes.getVariables()`.
 4. Loop: `$HF lint` -> `$HF check` -> `$HF snapshot --at t1,t2,t3`, then Read the contact sheet.
+   On a kinetic or client piece, score that sheet before step 5 (`motion-design.md`). Do not jump to a delivery render on a fade-in title card.
 5. `$HF render -o out/x.mp4 --quality delivery` (`draft` for drafts; `--workers 2` if OOM).
    Alpha/GIF: `--format mov|webm|gif` (webm alpha is VP9: decode with `-c:v libvpx-vp9`).
+
+## Kinetic type
+Prefer HyperFrames when the piece is a designed page: client sizzle, custom kinetic, overlays, logo grids. The paused timeline **is** `seek(t)` — register it and drive every pose from timeline time. Display type uses `power3.out` or `expo.out` (no overshoot). UI chrome may use `back.out(1.15)`. One display face, one UI face, one accent. Do not set `will-change` or a CSS filter on type the camera scales (the glyphs go soft). Real screenshots and logos only. Client default reveal is a mask/clip word or line stagger (`kinetic-type.md`). Name seams from `transitions.md` — one primary, one or two accents — and only name blocks the HyperFrames skill actually has. Skills stay on; do not set `HYPERFRAMES_SKIP_SKILLS`. Speech-locked series work belongs on Remotion (`remotion.md`). Principles: `motion-design.md`.
+
+Premium motion, ambient idle, and the density contract: `motion-design.md`. Caption block names: `captions.md`. Seams, including `beat-freeze-cut` and match cuts: `transitions.md`.
 
 See `hyperframes-example/` (a sizzle) and `lottie-example/` (Lottie seeked by the runtime).
 

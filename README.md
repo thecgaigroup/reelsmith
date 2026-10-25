@@ -21,8 +21,9 @@ Click a preview to open the full MP4 (with sound). All of these were rendered by
 - `SKILL.md`: the skill (concise; routes to `references/`).
 - `getting-started/SKILL.md`: first-run setup (engines, free voice, brand kit, optional keys).
 - `references/`: brand kit, capabilities and keys, templates, scriptwriting, voiceover, music, stock media,
-  captions, platform specs, loudness and accessibility, motion design, review and QA, YouTube publishing,
-  HyperFrames, Remotion, AI generation (quotes only), helpers, client sizzle, brand QA, storyboard.
+  captions, platform specs, loudness and accessibility, motion design (showreel kinetic type), kinetic type recipes,
+  transitions, review and QA, YouTube publishing, HyperFrames, Remotion, AI generation (quotes only), helpers,
+  client sizzle, brand QA, storyboard.
 - `scripts/`: `capabilities.py`, `brand.py`, `reelsmith.py`, `script_lint.py`, `beats.py`, `stock.py`, `captions.py`,
   `review.py`, `export.py`, `youtube_prep.py`, `presets.json`. Python 3.10+ standard library; Pillow and librosa optional.
 - `templates/`: product-launch, event-recap, testimonial, countdown-teaser, stat-callout, slides-presentation
@@ -46,7 +47,7 @@ Reelsmith and `getting-started/SKILL.md` as its getting-started skill, then run 
 (for example `.cursor/skills/reelsmith` or `~/.claude/skills/reelsmith`).
 
 ## Roadmap
-Parked fold-in work — local FFmpeg helpers and selected design/motion ideas, with no sidecar packages — is in [ROADMAP.md](ROADMAP.md).
+Showreel kinetic type, transitions, and an open storyboard are in the skill. Parked fold-ins and skips (MotionVideo paid pack, FilmCraft, CapCut, snapcn Pro, 3D/extrude and glitch defaults) are in [ROADMAP.md](ROADMAP.md). No sidecar packages.
 
 ## Notes
 - Needs ffmpeg and Node 22.12+ (HyperFrames). Kokoro (free local voice), librosa, Manim and WhisperX install on first use.

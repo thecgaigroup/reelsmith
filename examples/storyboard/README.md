@@ -29,3 +29,7 @@ Minimal shape the edit builder expects in `storyboard.json`:
 ```
 
 Generate a human HTML view (timeline + shot cards + HAVE/ID/NEED/TEMP chips) from that JSON before long renders. Status chips replace grey “FOOTAGE TBD” cards.
+
+## This folder
+
+`storyboard.json` and `storyboard.html` are a fictional 45s Harbor Atelier board: dense beats, a kinetic recipe on type shots, all four statuses, one named spectacle (shot 05), a breather (shot 07), and a door callback. Nothing here is client media. NEED and TEMP are on the board and marked to stay out of a client draft. ID waits for a yes. Open the HTML in a browser; it does not fetch the JSON.
