@@ -1,3 +1,7 @@
+---
+description: Load for every client sizzle (default engine) and for custom HyperFrames work. Skills stay on. Never set HYPERFRAMES_SKIP_SKILLS on that work. Setup, paused timeline, and the render loop live here.
+---
+
 # HyperFrames (manual authoring)
 
 Templates generate HyperFrames projects for you. Use this for custom pieces, overlays and GIFs.

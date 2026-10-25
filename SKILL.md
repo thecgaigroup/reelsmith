@@ -1,12 +1,13 @@
 ---
 name: reelsmith
 description: >-
-  Use when the user asks for a video — client/awards sizzle from real footage,
-  promo, launch or teaser, event recap, testimonial, data/stat story, how-to,
-  animated slides or kiosk loop, narrated explainer, social clip (Reels, Shorts,
-  TikTok, LinkedIn, X), captions, overlay or GIF. Footage-first editorial
-  sizzles, templates, HyperFrames/Remotion craft with skills on, brand QA, then
-  review and export. Paid AI optional and quoted first.
+  Use when the user asks for a video. Client or awards sizzle from real footage:
+  read references/client-sizzle.md first (dense footage + kinetic type, six-part
+  skeleton, HyperFrames skills ON — never HYPERFRAMES_SKIP_SKILLS), then
+  storyboard.md, kinetic-type.md, transitions.md, motion-design.md, brand-qa.md,
+  and hyperframes.md. Use remotion.md only when type locks to speech; captions.md
+  when speech is on screen. Also promo, launch, recap, testimonial, how-to,
+  slides, explainer, social clips. Paid AI only after a quote.
 ---
 # Reelsmith
 
@@ -28,7 +29,7 @@ kinetic type, correct logos — not grey placeholders or a talk-head TEMP divert
 ## Route the job
 | Job | Use | Read |
 |---|---|---|
-| **Awards / partner / client sizzle from real selects** | **client-sizzle** (HyperFrames or Remotion) | **client-sizzle.md**, **storyboard.md**, brand-qa.md, motion-design.md, kinetic-type.md, transitions.md, hyperframes.md or remotion.md |
+| **Awards / partner / client sizzle from real selects** | **client-sizzle**, HyperFrames skills ON | **client-sizzle.md** first, then storyboard.md, kinetic-type.md, transitions.md, motion-design.md, hyperframes.md, brand-qa.md. remotion.md only if speech-locked. captions.md if speech is on screen |
 | Launch reel, feature drop, promo | template `product-launch` (music-led) | templates.md, music.md |
 | Event highlights from photos | `event-recap` | templates.md, stock-media.md |
 | Customer quotes / reviews | `testimonial` | templates.md |
@@ -48,14 +49,17 @@ Licenses: HyperFrames is Apache-2.0. Remotion is free for individuals and teams 
 a license (ask once if commercial). Music, stock, fonts: licensed, credited (`stock.py credit`, `credits.json`).
 
 ## Client sizzle (mandatory when it fits)
-Read **references/client-sizzle.md** end to end. Summary:
-1. Map every brief beat; skip none.
-2. Author storyboard (JSON + HTML) — see storyboard.md; open pattern in examples/storyboard/ — then ingest real selects (phone/iPad/Day-Of first).
-3. Build HyperFrames or Remotion with **skills on** — never `HYPERFRAMES_SKIP_SKILLS=1` on this lane.
-4. Showreel kinetic type — `motion-design.md` and `kinetic-type.md`. The bar to match is dense real footage plus that type (comparison bar in client-sizzle.md). Six-part skeleton before the build. Score hook / phone / motion / variety / brand / sound on the contact sheet and `phone.jpg` before a full render.
-5. Hard **brand-qa.md** gate + frame snapshots before anything leaves the box.
-6. Stay on the sizzle until the user explicitly pivots. Do not open Flashtalk / AI talk-head / lookalike paths
-   mid-job without a clear ask + Rights/spend clearance.
+Read **references/client-sizzle.md** first and fill its six-part skeleton before any build.
+Load in this order, and do not skip ahead to a render:
+1. `client-sizzle.md` — bar, anti-patterns, skeleton.
+2. `storyboard.md` — copy `examples/storyboard/` and swap in the real beats.
+3. `kinetic-type.md` — implement a house recipe (default `mask-reveal-up`). Do not pass house ids to HyperFrames as registry blocks.
+4. `transitions.md` — one primary seam, at most two accents. Name only real blocks.
+5. `motion-design.md` — ambient idle, bans, one named spectacle.
+6. `hyperframes.md` — default engine. Skills on. Never `HYPERFRAMES_SKIP_SKILLS=1`.
+7. `remotion.md` only when type locks to speech. `captions.md` when speech is on screen.
+8. `brand-qa.md` before a draft leaves. Score hook / phone / motion / variety / brand / sound.
+Stay on this lane until the user explicitly pivots. No Flashtalk or interview TEMP mid-job.
 
 ## Workflow (templates)
 1. **Script:** write 2–3 options (hook in 3 s, one idea per scene, CTA last) at about 2.5 words/s; lint them.

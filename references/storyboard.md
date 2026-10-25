@@ -1,3 +1,7 @@
+---
+description: Load on every client sizzle, right after client-sizzle.md. Copy examples/storyboard/ and replace the fictional beats. HAVE plays, ID waits, NEED and TEMP stay labelled and out of the client draft.
+---
+
 # Storyboard (client sizzle source of truth)
 
 For awards / partner / client sizzles, build a **storyboard before the edit**.
@@ -20,7 +24,7 @@ The storyboard is what the edit builder and humans both read.
 1. **Time** — `t0` / `t1` (seconds)
 2. **Brief beat** — which PDF/script beat it serves (skip none)
 3. **Picture** — description + source (still/video/render) + in-point
-4. **On-screen words** — kinetic / lower-third / none. Kinetic shots name the on-screen line (2–6 words) and follow showreel type in `motion-design.md` (one display face, one UI face, one accent; no invented UI).
+4. **On-screen words** — kinetic / lower-third / none. Kinetic shots name the on-screen line (2–6 words) and a house recipe from `kinetic-type.md` (default `mask-reveal-up`, implemented in GSAP or Remotion, not passed as a HyperFrames block). One display face, one UI face, one accent (`motion-design.md`). No invented UI.
 5. **Voice** — narrator / interview / mute
 6. **Audio** — music / duck / SFX
 7. **Story intent** — one line

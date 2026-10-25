@@ -1,8 +1,21 @@
+---
+description: Load on a client sizzle or custom kinetic piece, after client-sizzle.md. House recipe ids are implemented in GSAP or Remotion. They are not HyperFrames registry block names.
+---
+
 # Kinetic type recipes
 
-House recipes for client sizzle and custom kinetic pieces. Principles, bans, and the critique loop stay in `motion-design.md`. Seams stay in `transitions.md`. This file is the catalog an agent picks from.
+Implement these in the composition. Do not install animate-text, iart-ai, or a MotionVideo pack. HyperFrames skills stay on.
 
-Do not install [pixel-point/animate-text](https://github.com/pixel-point/animate-text), [iart-ai/kinetic-typography-skills](https://github.com/iart-ai/kinetic-typography-skills), or the MotionVideo paid pack. The ids below are public names, rewritten as Reelsmith GSAP / Remotion moves. HyperFrames skills stay on. No new packages.
+## Which id goes where
+
+| Id | Pass it to |
+|---|---|
+| `mask-reveal-up`, `per-character-rise`, `kinetic-center-build`, `spring-scale-in`, `typewriter`, `typewriter-collapse-spring`, `stagger-from-center`, `stagger-from-edges`, `soft-blur-in`, `bottom-up-letters`, `top-down-letters`, `focus-blur-resolve`, `shared-axis-y`, `short-slide-right`, `short-slide-down` | Your GSAP timeline or Remotion `spring` / `interpolate`. **Not** a `/hyperframes` registry block. |
+| `snappy-headline`, `elegant-editorial`, `heavy-logo` | The spring preset table below. Remotion: fields inside `config`, including `overshootClamping`. |
+| `text-match-cut`, `match-cut`, `svg-mask-reveal`, `lt-mask-reveal`, `kinetic-type-swap`, `paper-collage-reveal`, `curtain-reveal` | `/hyperframes` only if that block is in the loaded skill catalog. |
+| `whip-pan`, `slide`, `caption-editorial-emphasis`, `caption-clip-wipe`, `caption-kinetic-slam`, `caption-highlight` | Real seam and caption blocks. See `transitions.md` and `captions.md`. |
+
+If a house id is not in the table's HyperFrames row, describe the move in the prompt. Do not invent a block name.
 
 Sources: [Movez](https://x.com/0xMovez/status/2104216919033192746), the free [MotionVideo gallery](https://motionvideo.xyz/), public animate-text ids, and public HyperFrames / iart-ai reveal patterns.
 
@@ -82,14 +95,15 @@ Public animate-text ids, rewritten. Not a package. Blur recipes resolve to sharp
 | `short-slide-right` | The line slides in; words appear by opacity in order | Tagline. No scale-up |
 | `short-slide-down` | Words drop into a centered stack of at most three lines | Tagline |
 
-### HyperFrames catalog, when skills are on
+### HyperFrames blocks (only these names)
 
-Name these if they match the shot. Do not copy the demo copy. Do not add a package.
+Use a block only when the loaded `/hyperframes` catalog lists it. Otherwise implement the house recipe.
 
-- `kinetic-center-build` — same house recipe as above.
-- `text-match-cut` — the word is the seam (`transitions.md`).
-- Transcript captions — words from `$HF transcribe`, then one caption block for the section (`captions.md`). Not a second style on the same section.
-- `paper-collage-reveal` and `curtain-reveal` — a single handmade reveal. Seed it (motion rule 8). Not the default entrance.
+- `text-match-cut` or `match-cut` — the shared word or shape is the seam.
+- `svg-mask-reveal`, `lt-mask-reveal` — a mask reveal the catalog already ships. The default line reveal is still the house recipe `mask-reveal-up` if those blocks are the wrong layout.
+- `kinetic-type-swap` — a word swap. Not `kinetic-center-build` (that one you build).
+- `paper-collage-reveal`, `curtain-reveal` — one handmade reveal, seeded. Not the default entrance.
+- Transcript captions — `$HF transcribe`, then one caption block for the section (`captions.md`).
 
 ### Scene arc
 
@@ -120,7 +134,7 @@ Name the recipe on the storyboard shot (`storyboard.md`). The open example is `e
 
 ## Still banned
 
-Centered title on a gradient, fade-in as the whole idea, corner labels and frame borders, glow on UI chrome, particle bursts, blurry scaled text, invented UI. 3D extrusion is not a default. Letter-morph components from paid catalogs stay parked (`ROADMAP.md`).
+Centered title on a gradient, fade-in as the whole idea, corner labels and frame borders, glow on UI chrome, particle bursts, blurry scaled text, invented UI. Do not extrude type. Do not use a paid letter-morph component.
 
 ## Before the full render
 

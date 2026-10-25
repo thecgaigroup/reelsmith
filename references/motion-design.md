@@ -1,3 +1,7 @@
+---
+description: Load after client-sizzle.md for ambient idle, bans, camera words, and the one spectacle. Recipe ids and timing live in kinetic-type.md. Seams live in transitions.md.
+---
+
 # Motion design rules
 
 Distilled from the HyperFrames motion guide, classic animation principles, and platform best practices.
@@ -68,14 +72,11 @@ function spring01(t, stiffness, damping) {
 ```
 
 ### Faces, accent, pace
-- One display face (`brand.fonts.heading`), one UI face (`brand.fonts.body`; `mono` only for code or figures), one accent (`colors.accent`, else `colors.primary`). More faces or accents only when the brief names them.
+Timing, stagger, and recipe ids are in `kinetic-type.md`. Do not restate them in the prompt.
+- One display face (`brand.fonts.heading`), one UI face (`brand.fonts.body`; `mono` only for code or figures), one accent (`colors.accent`, else `colors.primary`).
 - Lock static type before motion: display line-height ~1.05–1.15, tracking from the brand font (typically −1% to −3%).
-- Split: **line** for a premium read, **word** for a tagline, **character** only for a short hit (one or two words).
-- Mask or clip reveals. Do not fade the whole card in as the idea. Stagger words 40–70 ms, lines 60–100 ms. Cap a reveal near 800 ms.
-- 2–6 words on a kinetic card. One idea per screen. Hook in the first 1–3 s, often about five words of large type.
-- Something new every 2–4 s: a new line, a cut, or a UI state. A dead beat fails review.
 - Accent color only on the speech-locked or beat-locked word. The rest of the line stays high-contrast `fg` on `bg`.
-- Hits and cuts land on the `beats.py` grid. Music is the supplied track, a credited bed, or `beats.py synth`. Code-synthesized SFX stays parked (`ROADMAP.md`). Loudness stays about −14 LUFS, at most −1 dBTP.
+- Hits and cuts land on the `beats.py` grid. Music is the supplied track, a credited bed, or `beats.py synth`. Do not block the job on synthesized SFX. Loudness stays about −14 LUFS, at most −1 dBTP.
 
 ### Banned defaults
 Fail the shot on a client or custom kinetic piece:
@@ -155,7 +156,7 @@ iart reveal curve, when you need a cubic-bezier instead of a named GSAP ease: `c
 | parallax | two or three layers, different rates |
 | crane | vertical drift |
 
-Drone orbit and real 3D cameras stay off the client default (`ROADMAP.md`).
+Drone orbit, extruded type, and glitch are not the client default.
 
 ## Choreography one-liners
 

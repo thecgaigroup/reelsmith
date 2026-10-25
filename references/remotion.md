@@ -1,3 +1,7 @@
+---
+description: Load for feature-explainer, or for a client sizzle whose type locks to speech. Not the default sizzle engine. useCurrentFrame and spring only. Typewriter is string slicing.
+---
+
 # Remotion (narrated explainers)
 
 Use the shipped kit: `remotion-starter-kit.tgz` (complete project; brand-driven theme, layout units, captions,

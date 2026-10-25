@@ -1,3 +1,7 @@
+---
+description: Load when speech is on screen or a sidecar SRT/VTT is required. One HyperFrames caption block per section. Burn-in and sidecar profiles live here.
+---
+
 # Captions
 
 Captions come from word timings, never from guesswork, when timings exist:
