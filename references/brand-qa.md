@@ -1,3 +1,7 @@
+---
+description: Load before a client draft leaves the box, after review.py contact.jpg and phone.jpg exist. Fails skills-skipped animatics, fade-card type, sparse selects, and interview-TEMP drift.
+---
+
 # Brand QA gate (client video)
 
 Run before any client draft leaves the box. Fail = do not send.

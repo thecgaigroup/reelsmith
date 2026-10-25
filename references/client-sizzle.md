@@ -1,39 +1,64 @@
+---
+description: Load first for an awards, partner, or client sizzle from real footage (about 30–60s). Holds the density-and-type bar, the anti-patterns, and the six-part skeleton. Then load storyboard.md, kinetic-type.md, transitions.md, motion-design.md, hyperframes.md, and brand-qa.md.
+---
+
 # Client sizzle (footage-first editorial)
 
-Use this when the job is an **awards / partner / brand sizzle** built from real selects — not a product-launch template and not an AI talk-head mock.
+Awards, partner, or brand sizzle from real selects. Not a product-launch template. Not an AI talk-head.
+
+## Bar
+
+Match a denser cut than the last Reelsmith pass on this kind of brief. That cut won on **real footage density** and **kinetic type**. The weak pass lost because skills were skipped, selects were thin, type was a fade card, and the job drifted into an interview TEMP. Rights did not force that. Do not treat the current sizzle as already at that bar.
+
+Fail the draft if you see any of these:
+
+- `HYPERFRAMES_SKIP_SKILLS=1`, or a comp written before `/hyperframes` is loaded
+- One still per beat, or a grey card, when phone / iPad / Day-Of selects exist
+- Centered title on a gradient, or a fade-in as the whole idea
+- Invented UI, or a Flashtalk / interview TEMP the user did not ask for
+- Paid image or video generation used to fill a hole
+
+Do these instead:
+
+- Several real pictures per beat. A new picture or a new type event every 2–4s.
+- Storyboard first (`storyboard.md`, copy `examples/storyboard/`). HAVE plays. ID waits. NEED and TEMP stay out of the client draft unless labelled.
+- Default type is house recipe `mask-reveal-up`, built in GSAP (`kinetic-type.md`). It is not a HyperFrames registry block.
+- One named spectacle (`motion-design.md`). One primary seam and at most two accents (`transitions.md`).
+- `brand-qa.md` and the six scores before a delivery render.
+- HyperFrames skills on for the whole job. Remotion only when type locks to speech.
+
+## Skeleton (fill this before the build)
+
+Paste into the HyperFrames prompt. Six parts. Quote the copy. Timestamps come from the storyboard.
+
+```
+/hyperframes
+Skills on. Do not set HYPERFRAMES_SKIP_SKILLS.
+
+Spec: 45s 1920x1080 client sizzle, 16:9 first. Brand: <brand.json>.
+
+Beats:
+- 0.0–2.4 OPEN — <picture>. Words: "<LINE>". Recipe: mask-reveal-up (implement in GSAP).
+- <t0>–<t1> <BEAT> — <picture from a real select>. Words: "<LINE>" | none.
+- Spectacle (name one shot or drop it): <id> <what happens> <when it settles>.
+- Breather (name one): <id>.
+
+Copy: "<every on-screen line, quoted>".
+
+Technique: hard cut on most seams. One accent: whip-pan. House recipes only — do not ask for a block named mask-reveal-up. If speech is on screen, one caption block for the section (caption-editorial-emphasis or caption-clip-wipe).
+
+Negatives: no fade-card titles, no grey selects, no invented UI, no corner labels, no frame borders, no glitch default, no Flashtalk, no interview TEMP, no paid gen, no HYPERFRAMES_SKIP_SKILLS.
+```
+
+Speech-locked type uses Remotion instead of `/hyperframes`, same six parts, `useCurrentFrame` + `spring` (`remotion.md`).
 
 ## When this route wins
 - Multi-beat script with named talent, partners, or event footage
-- Real photos/video already exist (Drive, vault, Day-Of, phone/iPad rips)
-- Target feels like a **client cut**, not a boardomatic of grey cards
-- Length typically 30–60s, 16:9 (also export 9:16 after lock)
+- Real photos or video already exist
+- The cut should feel like a client film, not grey cards
+- Length typically 30–60s, 16:9 (export 9:16 after lock)
 
-Do **not** divert to Fal/Higgsfield talk-heads, Flashtalk, or fictional lookalikes while this lane is open unless the user explicitly pivots.
-
-## Comparison bar
-
-On the same awards brief, the Claude cut is the quality bar. It won on **dense real footage** and **kinetic type**. Reelsmith on that pass did not match it. Rights did not force the weaker cut. Execution did: HyperFrames skills were skipped, selects were thin, type was fade cards, and the job drifted into an interview TEMP the brief did not ask for. Treat that Claude cut as the bar to reach. Do not describe the current sizzle as already there.
-
-What closed the gap on the stronger cut, and what this lane now requires:
-
-- Several real pictures per beat (phone, iPad, Day-Of), a new picture or a new type event every 2–4 s.
-- Named recipes (`kinetic-type.md`), client default mask/clip. Not a centered fade on a gradient.
-- Skills on for the whole job. Never `HYPERFRAMES_SKIP_SKILLS=1`.
-- A storyboard that tells the truth (`examples/storyboard/`): HAVE plays, ID waits, NEED and TEMP stay out of the client draft unless they are labelled.
-- One spectacle beat, written down (`motion-design.md`). One primary seam plus at most two accents (`transitions.md`).
-- brand-qa and the six scores before a delivery render.
-- Paid image/video generation stays hold (`ai-generation.md`). Do not thicken a thin select with a generated face or a fake UI.
-
-## One-shot skeleton
-
-Write this before the build. Source: [HyperFrames anatomy](https://hyperframes.heygen.com/prompting/anatomy). Six parts, all filled from the storyboard:
-
-1. **Route** — client-sizzle. `/hyperframes` with skills on, or Remotion when type locks to speech.
-2. **Spec** — length (often ~45 s), 16:9 first, brand, aspects.
-3. **Beats** — timestamps from the board. Include the breather and the spectacle.
-4. **Copy** — on-screen lines quoted. Unquoted lines get paraphrased.
-5. **Technique** — recipe id, spring preset, seam, caption block if speech is on screen.
-6. **Negatives** — fade-card type, grey selects, invented UI, corner labels, glitch-by-default, Flashtalk / interview TEMP, `HYPERFRAMES_SKIP_SKILLS`, paid gen.
+Do not open Fal, Higgsfield, or Flashtalk while this lane is open unless the user explicitly pivots.
 
 ## Beat map (default)
 Fill every beat with real media before polish. Skip none.
@@ -41,14 +66,14 @@ Fill every beat with real media before polish. Skip none.
 1. **Open** — logos / title sting (hook in ≤3s)
 2. **Studio / talent** — named people or spaces from selects
 3. **Expand** — world / IP / product language (type + B-roll)
-4. **Power / conversation** — interview or dialogue; music can duck
+4. **Power / conversation** — real interview or dialogue only when the brief already has that audio. Do not invent an interview TEMP. Music can duck.
 5. **Takeover montage** — fast cuts: event, stage, animation, game, product
 6. **End card** — lockup line + even logo row (partners)
 
 Customize beat names to the brief; keep the “no skipped beats” rule.
 
 ## Storyboard first
-Read **storyboard.md**. Author `storyboard.py` → `storyboard.json` + `storyboard.html` (timeline + shot cards + HAVE/ID/NEED/TEMP) and get user eyes on the HTML **before** a long render. The edit builder reads the JSON; do not invent off-board shots.
+Copy `examples/storyboard/storyboard.json` and `storyboard.html`. Swap beats, words, and sources. Keep HAVE / ID / NEED / TEMP. Show the HTML before a long render. The edit reads the JSON. Do not invent shots that are not on the board (`storyboard.md`).
 
 ## Selects ingest
 1. Scout small files first (phone/iPad, Day-Of MP4s/PNGs). Defer multi‑GB camera originals until selects exist.
@@ -62,22 +87,12 @@ Read **storyboard.md**. Author `storyboard.py` → `storyboard.json` + `storyboa
 | **HyperFrames + GSAP** | Default for client sizzle: custom kinetic, overlays, logo grids, page-like comps |
 | **Remotion** | Speech-locked kinetic type, word timings, data-driven or series comps — see `remotion.md` |
 
-Both stay on the existing render paths. Do not add a raw `seek(t)` browser renderer. Full type recipe: `motion-design.md` and `kinetic-type.md`. Seams: `transitions.md`. Captions in-comp: `captions.md`.
+Default engine is HyperFrames. Load `/hyperframes` before writing the comp (`hyperframes.md`). Never set `HYPERFRAMES_SKIP_SKILLS`. Remotion (`remotion.md`) only when words lock to speech. Do not add a third renderer.
 
-**Never set `HYPERFRAMES_SKIP_SKILLS=1` on client sizzle work.** Read the project `AGENTS.md` / `CLAUDE.md` skill tree (`/hyperframes`, `/media-use`, treatments) before writing or rendering. For Remotion, install/use agent skills: `npx skills add remotion-dev/skills` and kinetic-typography patterns (split/stagger/mask, word lock to speech).
+Type moves: `kinetic-type.md`. Seams: `transitions.md`. Speech on screen: `captions.md`. Bans and the spectacle: `motion-design.md`.
 
-## Kinetic type (production-house bar)
-Read **motion-design.md** (Showreel kinetic type) and apply it on this lane.
-- Static type first: tracking, weight, contrast on dark.
-- One display face (`fonts.heading`) + one UI face (`fonts.body`) + one accent, unless the brief names more.
-- Split by **word** for taglines; by **line** for longer reads; character only for short hits.
-- Mask/clip reveals + stagger (60–100ms lines, 40–70ms words). Do not fade the whole card in as the idea.
-- No overshoot on display type or logo lockups. A hair of overshoot only on UI chrome. Motion is a pure function of time (paused GSAP timeline or Remotion frame).
-- Something new every 2–4s. Hook in ≤3s. Lock the accent word to speech or a beat.
-- 2–6 words per kinetic card; one idea per screen.
-- Zero typos — run a denylist pass (common: STUDIO, POSSIBILITY, performance).
-- Product or UI shots use real screenshots, the real logo, and brand colors. Never invent a UI. This craft does not unlock paid generation (`ai-generation.md`).
-- Before a full render: contact sheet + `phone.jpg`. Score hook / phone / motion / variety / brand / sound, 1–10 (`brand-qa.md`). Fix the three worst. Do not delivery-render while any score is under 8.
+## Kinetic type
+Implement `mask-reveal-up` unless the storyboard names another house recipe. One display face, one UI face, one accent. No overshoot on display type. Real screenshots and the real logo. Zero typos (`brand-qa.md`). Score hook / phone / motion / variety / brand / sound before a delivery render.
 
 ## Brand / logo QA (hard gate before delivery)
 - Follow the brief’s logo rules exactly (e.g. which mark on light vs dark).
@@ -101,11 +116,6 @@ Read **motion-design.md** (Showreel kinetic type) and apply it on this lane.
 7. Deliver MP4 + timecoded shot list + note which beats used real media.
 
 ## Anti-patterns (learned)
-- Shipping placeholder-heavy animatics when selects exist
-- Skipping HyperFrames/Remotion skills to “go faster”
-- Leaving the sizzle lane for AI talk-head TEMP without an explicit user pivot
-- Blue/wrong logo variants or white plates when brief forbids them
-- Typo’d kinetic type
-- Centered title on a gradient, fade-in-everything, corner labels, frame borders, glow on UI chrome, particle bursts, blurry scaled text
-- Redrawing a product UI instead of using the real screenshot, logo, and colors
-- A full render before the contact-sheet scores are in
+The fail list at the top of this file is the bar. These two are easy to miss beside it:
+- The wrong logo variant, or a plate the brief forbids
+- A typo in on-screen type

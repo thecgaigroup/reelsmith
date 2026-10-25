@@ -1,3 +1,7 @@
+---
+description: Load when joining shots on a client sizzle or custom kinetic piece, after kinetic-type.md. One primary seam plus at most two accents. Name only real HyperFrames blocks or Remotion presentations in the starter kit.
+---
+
 # Transitions and polish
 
 How two shots join. Type inside a shot is `kinetic-type.md`. This does not add packages. HyperFrames skills stay on (`HYPERFRAMES_SKIP_SKILLS` stays unset on client work). The feature-explainer kit still uses a half-beat transition (`remotion.md`). Client sizzle and custom kinetic work use the bands below, snapped so the join ends on the beat grid.
