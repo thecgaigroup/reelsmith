@@ -22,7 +22,7 @@ Run before any client draft leaves the box. Fail = do not send.
 ## Commands
 ```bash
 # HyperFrames
-npx hyperframes@0.8.188 snapshot --at 1,12,28,42
+npx hyperframes@0.8.197 snapshot --at 1,12,28,42
 # Reelsmith review
 python3 scripts/review.py check VIDEO --out OUT/_review --preset youtube --job OUT/job.json
 ```

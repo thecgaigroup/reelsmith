@@ -5,12 +5,12 @@ description: Load for every client sizzle (default engine) and for custom HyperF
 # HyperFrames (manual authoring)
 
 Templates generate HyperFrames projects for you. Use this for custom pieces, overlays and GIFs.
-HyperFrames is Apache-2.0 and pinned at 0.8.188 (bump only after a test render passes).
+HyperFrames is Apache-2.0 and pinned at 0.8.197 (bump only after a test render passes).
 
 ## Setup (once)
 1. Node 22.12+. If older, unpack a portable Node 22 LTS (nodejs.org linux-x64) to `/workspace/tools/node22/` and
    prepend its `bin` to PATH for HyperFrames only.
-2. `export HYPERFRAMES_NO_TELEMETRY=1`; `HF="npx --yes hyperframes@0.8.188"`.
+2. `export HYPERFRAMES_NO_TELEMETRY=1`; `HF="npx --yes hyperframes@0.8.197"`.
    **Do not set `HYPERFRAMES_SKIP_SKILLS=1` for client sizzle / custom craft** — load project skills (`AGENTS.md` / `CLAUDE.md`: `/hyperframes`, `/media-use`, treatments) first. Skip skills only for throwaway smoke tests.
 3. `$HF doctor` (Chrome + FFmpeg). Save GSAP once to `/workspace/tools/gsap.min.js` (jsdelivr `gsap@3/dist/gsap.min.js`).
 4. Kokoro TTS: venv `pip install kokoro-onnx soundfile`, `HYPERFRAMES_PYTHON=<venv>/bin/python`.
