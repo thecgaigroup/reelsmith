@@ -5,10 +5,11 @@ description: >-
   read references/client-sizzle.md first (dense footage + kinetic type, six-part
   skeleton, HyperFrames skills ON — never HYPERFRAMES_SKIP_SKILLS), then
   storyboard.md (frame-numbered BRIEF), kinetic-type.md, transitions.md,
-  motion-design.md (taste numbers), music.md (cue sheet on the same clock),
-  hyperframes.md, and brand-qa.md (stills, fresh reviewer, scores to 8+).
+  motion-design.md (taste numbers, motion grammar), music.md (cue sheet on the same clock),
+  hyperframes.md, and brand-qa.md (stills, fresh reviewer, item-by-item, scores to 8+).
   Use remotion.md only when type locks to speech or a locked master needs a
-  campaign matrix; captions.md when speech is on screen. Also promo, launch,
+  campaign matrix. Optional product-hero notes in that file add no Three.js
+  package and do not change the engine. captions.md when speech is on screen. Also promo, launch,
   recap, testimonial, how-to, slides, explainer, social clips. Paid AI only
   after a quote.
 ---
@@ -32,7 +33,7 @@ kinetic type, correct logos — not grey placeholders or a talk-head TEMP divert
 ## Route the job
 | Job | Use | Read |
 |---|---|---|
-| **Awards / partner / client sizzle from real selects** | **client-sizzle**, HyperFrames skills ON | **client-sizzle.md** first, then storyboard.md, kinetic-type.md, transitions.md, motion-design.md, music.md, hyperframes.md, brand-qa.md. remotion.md only if speech-locked or for a campaign matrix. captions.md if speech is on screen |
+| **Awards / partner / client sizzle from real selects** | **client-sizzle**, HyperFrames skills ON | **client-sizzle.md** first, then storyboard.md, kinetic-type.md, transitions.md, motion-design.md, music.md, hyperframes.md, brand-qa.md. remotion.md only if speech-locked or for a campaign matrix. Product-hero notes in that file stay on this HyperFrames lane. captions.md if speech is on screen |
 | Launch reel, feature drop, promo | template `product-launch` (music-led) | templates.md (house launch recipes), music.md, motion-design.md |
 | Event highlights from photos | `event-recap` | templates.md, stock-media.md |
 | Customer quotes / reviews | `testimonial` | templates.md |
@@ -40,7 +41,7 @@ kinetic type, correct logos — not grey placeholders or a talk-head TEMP divert
 | Numbers, report highlight, milestone | `stat-callout` | templates.md |
 | Talk/booth/kiosk loop, animated deck | `slides-presentation` (`--loop`) | templates.md |
 | Tutorial, walkthrough, onboarding (+ YouTube chapters) | `howto-tutorial` | templates.md, youtube-publishing.md |
-| Narrated product explainer with captions | `feature-explainer` (Remotion; `render.sh`) | remotion.md |
+| Narrated product explainer with captions | `feature-explainer` (Remotion; `render.sh`) | remotion.md. Optional product-hero notes in that file only when the storyboard names a physical device. No Three.js package |
 | Custom kinetic piece, overlay, alpha, GIF | HyperFrames by hand (Remotion if speech-locked) | hyperframes.md, motion-design.md, kinetic-type.md, transitions.md, music.md, brand-qa.md |
 | Diagrams / math, Lottie, cut user footage, transcribe | Manim, Lottie, auto-editor, parakeet | helpers.md |
 | Script or VO lines | 2–3 options + `script_lint.py` | scriptwriting.md, voiceover.md |
@@ -58,11 +59,11 @@ Load in this order, and do not skip ahead to a render:
 2. `storyboard.md` — copy `examples/storyboard/` and swap in the real beats.
 3. `kinetic-type.md` — implement a house recipe (default `mask-reveal-up`). Do not pass house ids to HyperFrames as registry blocks.
 4. `transitions.md` — one primary seam, at most two accents. Name only real blocks.
-5. `motion-design.md` — taste numbers, ambient idle, bans, one named spectacle.
+5. `motion-design.md` — taste numbers, motion grammar, ambient idle, bans, one named spectacle.
 6. `music.md` — cue sheet on the same beat grid as the picture. −14 LUFS (`loudness-accessibility.md`).
 7. `hyperframes.md` — default engine. Skills on. Never `HYPERFRAMES_SKIP_SKILLS=1`.
-8. `remotion.md` only when type locks to speech, or for a campaign matrix after the master locks. `captions.md` when speech is on screen.
-9. `brand-qa.md` before a draft leaves. BRIEF frames, fresh reviewer, scores to 8+. The SageCut ladder in that file stays off. Do not require `SAGE_API_KEY`.
+8. `remotion.md` only when type locks to speech, or for a campaign matrix after the master locks. Read the optional product-hero notes there when the storyboard names a physical device. They add no Three.js package and they leave this lane on HyperFrames. `captions.md` when speech is on screen.
+9. `brand-qa.md` before a draft leaves. BRIEF frames, fresh reviewer, item-by-item on a later pass, scores to 8+. The SageCut ladder in that file stays off. Do not require `SAGE_API_KEY`.
 Stay on this lane until the user explicitly pivots. No Flashtalk or interview TEMP mid-job.
 
 ## Workflow (templates)

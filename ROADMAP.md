@@ -126,6 +126,28 @@ Written as original recipes in [references/motion-design.md](references/motion-d
 - **SageCut brand QA (optional, parked spend).** Principles and a measurement recipe in [references/brand-qa.md](references/brand-qa.md), with short pointers in [references/remotion.md](references/remotion.md) and [references/review-and-qa.md](references/review-and-qa.md). Ladder: local frame measurements (OCR/pixel: text size, blank frames, frozen frames, brand colors, delivery spec) → Sage triage when a key is present → Opus critics only on flagged frames. `gate --no-sage` is the upstream local switch (zero API). The house default for client sizzle and live footage stays the BRIEF plus `review.py`. SageCut 0.3 does not support camera footage. Sage API and Opus critics stay **HOLD** until Marc lifts paid-gen spend. Do not require `SAGE_API_KEY`. Do not install the plugin or vendor the skill tree. Sources: [levantolabs/sagecut-release](https://github.com/levantolabs/sagecut-release) (MIT), [Shann³](https://x.com/shannholmberg/status/2114396613468910070).
 - **`poster-grid` (optional recipe, in the skill).** One grid recipe in [references/kinetic-type.md](references/kinetic-type.md), beside the even end-card row, the logo grid, and template `endcard()`. `mask-reveal-up` stays the default for body and headline lines. Look reference, not installed: [Typographic poster grid](https://21st.dev/@21st/components/lp-ex-poster-grid).
 
+## Motion-video-kit craft (2026-10-26)
+
+**Status:** in the skill. Docs only. No package, no npm, no key, no Three.js runtime, no sidecar skill tree.
+
+**Source:** [echris6/motion-video-kit](https://github.com/echris6/motion-video-kit) (MIT, Copyright (c) 2026 echris6), read at `e4b1c0004080`. Adapted into house voice. The upstream tree is not vendored.
+
+| Folded into | From | What landed |
+|---|---|---|
+| [references/brand-qa.md](references/brand-qa.md), [references/review-and-qa.md](references/review-and-qa.md) | `gauntlet.md`, `critic-prompts.md` | Independent-critic loop on the existing fresh reviewer: builder ≠ judge, item-by-item FIXED / PARTLY / STILL PRESENT, a ledger, house prompts. Stills and `review.py` stay the artifacts. |
+| [references/motion-design.md](references/motion-design.md), [references/storyboard.md](references/storyboard.md) | `motion-grammar.md` | Six rules and net-new mechanisms. House timing, overshoot, idle, and the 2 s end card stay. A links-only pointer to upstream `launch-film-notes.md`. No footage. |
+| [references/remotion.md](references/remotion.md) | `product-hero-realism.md`, `three-js-patterns.md` | Optional product-hero notes: seekable `pose(t)`, realism checklist, one measured unfold as a study example. Not a dependency, and not a third renderer. |
+
+Client sizzle and HyperFrames skills-on rules are unchanged. `mask-reveal-up` stays the line default. `poster-grid` stays optional. The SageCut ladder stays optional and off. Do not require `SAGE_API_KEY`. Do not install SageCut.
+
+**Parked from the same kit:**
+
+- **`business-offers.md`** — verticals, price anchors, and the pilot-offer template. Do not quote them. Re-verify any commercial offer with the buyer. Honesty rules already in the skill (labelled concepts, no invented testimonials) cover the part that overlaps.
+- Sample commercials (`case-study-alder.md`, `case-study-duo.md`, `case-study-home-display.md`) and their footage. Not copied.
+- Upstream scripts (frozen-time, loudness, contact sheet, SFX mix) and `templates/component-lab.html`. House `review.py` and `export.py loudnorm` stay the measurements.
+
+Liquid-chrome shaders below stay parked. These notes do not start that work.
+
 ## Liquid chrome / reflective metal look (optional Three.js path)
 
 **Status:** parked  

@@ -1,5 +1,5 @@
 ---
-description: Load first for an awards, partner, or client sizzle from real footage (about 30–60s). Holds the density-and-type bar, the anti-patterns, and the six-part skeleton. Then load storyboard.md (BRIEF), kinetic-type.md, transitions.md, motion-design.md (taste numbers), music.md (cue sheet), hyperframes.md, and brand-qa.md. Remotion only when type locks to speech.
+description: Load first for an awards, partner, or client sizzle from real footage (about 30–60s). Holds the density-and-type bar, the anti-patterns, and the six-part skeleton. Then load storyboard.md (BRIEF), kinetic-type.md, transitions.md, motion-design.md (taste numbers, motion grammar), music.md (cue sheet), hyperframes.md, and brand-qa.md (fresh reviewer, item-by-item). Remotion only when type locks to speech.
 ---
 
 # Client sizzle (footage-first editorial)
@@ -25,7 +25,7 @@ Do these instead:
 - Default type is house recipe `mask-reveal-up`, built in GSAP (`kinetic-type.md`). It is not a HyperFrames registry block.
 - One named spectacle (`motion-design.md`). One primary seam and at most two accents (`transitions.md`). Taste numbers (timing, easing, choreography) live in that same file.
 - Cues on `b(n)`, the same clock as the picture (`music.md`).
-- Frame-numbered BRIEF, then stills, then a fresh reviewer to 8+ (`storyboard.md`, `brand-qa.md`).
+- Frame-numbered BRIEF, then stills, then a fresh reviewer to 8+ (`storyboard.md`, `brand-qa.md`). A later pass checks the previous report item by item. Motion grammar for the type and the seams is in `motion-design.md`.
 - HyperFrames skills on for the whole job. Remotion only when type locks to speech.
 
 ## Skeleton (fill this before the build)
@@ -90,7 +90,7 @@ Copy `examples/storyboard/storyboard.json` and `storyboard.html`. Swap beats, wo
 | **HyperFrames + GSAP** | Default for client sizzle: custom kinetic, overlays, logo grids, page-like comps |
 | **Remotion** | Speech-locked kinetic type, word timings, data-driven or series comps — see `remotion.md` |
 
-Default engine is HyperFrames. Load `/hyperframes` before writing the comp (`hyperframes.md`). Never set `HYPERFRAMES_SKIP_SKILLS`. Remotion (`remotion.md`) only when words lock to speech. Do not add a third renderer.
+Default engine is HyperFrames. Load `/hyperframes` before writing the comp (`hyperframes.md`). Never set `HYPERFRAMES_SKIP_SKILLS`. Remotion (`remotion.md`) only when words lock to speech, or for a campaign matrix after the master locks. Product-hero notes in that file are optional reading when the storyboard names a physical device. They leave this lane on HyperFrames and they add no Three.js package. Do not add a third renderer.
 
 Type moves: `kinetic-type.md`. Seams: `transitions.md`. Taste numbers and bans: `motion-design.md`. Cues: `music.md`. Speech on screen: `captions.md`. Gate: `brand-qa.md`.
 

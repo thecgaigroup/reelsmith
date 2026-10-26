@@ -1,5 +1,5 @@
 ---
-description: Load after client-sizzle.md for taste numbers (timing, easing, choreography), ambient idle, bans, camera words, and the one spectacle. Recipe ids live in kinetic-type.md. Seams live in transitions.md. Cues live in music.md.
+description: Load after client-sizzle.md for taste numbers (timing, easing, choreography), motion grammar, ambient idle, bans, camera words, and the one spectacle. Recipe ids live in kinetic-type.md. Seams live in transitions.md. Cues live in music.md.
 ---
 
 # Motion design rules
@@ -93,6 +93,8 @@ A template may still fall back to a branded gradient when media is missing (`tem
 ### Product and UI films
 Use real screenshots, the real logo, and the brand colors. Crop and move the real interface. List the assets before animating. Never redraw buttons, dashboards, or marks from imagination. Paid image or video generation does not fill a missing UI (`ai-generation.md`). A product beat sits in a device frame and cuts on `b(n)` (`templates.md` house launch recipes). Cues share that clock (`music.md`).
 
+A physical device, drawn in code, is optional and only when the storyboard names it. Notes for that beat (seekable pose, screens, light) are in `remotion.md`. They do not add a Three.js package, and they do not add a third renderer. Client sizzle stays real selects plus kinetic type, HyperFrames skills on.
+
 ### Which renderer
 | Prefer | When |
 |---|---|
@@ -106,8 +108,8 @@ A logo grid is a field of real marks at even optical size. `poster-grid` is a se
 Before a delivery render, and before a client draft leaves the box:
 1. Draft or stills at each beat. HyperFrames: `$HF snapshot --at …`. Remotion: `npx remotion still` at those frames. Then `review.py check` so `contact.jpg` and `phone.jpg` exist.
 2. Look at the sheets. Automatic checks do not judge type.
-3. Score 1–10 as a fresh reviewer, from the stills: **hook** (first 2 s), **phone** (readable on `phone.jpg`), **motion** (weight, no dead frames), **variety** (a new event every 2–4 s), **brand** (real logo, colors, type; none of the banned defaults), **sound** (on the beat grid, `music.md`).
-4. Fix the three worst scores. Repeat until each is 8 or higher, then render full quality. The author of the comp does not grade it (`brand-qa.md`).
+3. Score 1–10 as a fresh reviewer, from the stills: **hook** (first 2 s; frame 0 is already a finished composition), **phone** (readable on `phone.jpg`), **motion** (weight, no dead frames), **variety** (a new event every 2–4 s), **brand** (real logo, colors, type; none of the banned defaults), **sound** (on the beat grid, `music.md`).
+4. Fix the three worst scores. Repeat until each is 8 or higher, then render full quality. The author of the comp does not grade it. A later pass marks each prior finding FIXED, PARTLY, or STILL PRESENT (`brand-qa.md`).
 5. Hunt overlaps during swaps, slides with no ease, blurry type, and a pop at a loop seam.
 
 `review.py` prints this table into `review.md`. It does not change pass/fail. The generic 1–5 rubric in that file stays for every job.
@@ -220,6 +222,58 @@ Each shot is setup (20–30% of its length), action (30–40%), resolution (30�
 - With three or more moving elements, at most a third of them are in transit at once.
 - Overshoot budget, after the house rule: premium and display type 0%. UI success 5–10% and still inside `back.out(1.15)`. Celebration overshoot belongs only on the named spectacle.
 
+## Motion grammar
+
+Six rules and a mechanism catalog, adapted from [echris6/motion-video-kit](https://github.com/echris6/motion-video-kit) `business-motion-film/references/motion-grammar.md` (MIT, Copyright (c) 2026 echris6; read at `e4b1c0004080`). That file distills 28 SaaS launch films. Timing, stagger, overshoot, idle, and the end-card hold stay the house numbers above (sizzle ideas about 1.5–4 s, end card at least 2 s, idle 1–2%). This section names grammar and moves those numbers did not.
+
+These are storyboard ideas. They are not new recipe ids, not HyperFrames registry blocks, and not a second seam language. `transitions.md` still names the real blocks. One primary seam, at most two accents. HyperFrames skills stay on.
+
+### Six rules
+
+1. **The foreground is the transition.** A headline, logo, or shape scales through the camera while the next scene is already underneath. The join has no empty gap (`transitions.md`: both shots hand off together). The traveling shape may streak. Readable type that remains does not take a CSS filter.
+2. **One persistent actor.** A selected photo, cursor, card, rail, or measured shape keeps its identity across shots. A run of unrelated reveals reads as a slideshow, however clean each reveal is.
+3. **Density is hierarchy.** One primary move keeps going. Supports stagger around it, with a little tertiary detail (an edge sweep, a status tick), overlapping. At most a third of the moving elements are in transit at once (choreography, above).
+4. **Change speed.** A readable hold, a fast exit, a slowing arrival. Durations and eases are the taste table above. Linear stays on rotation, progress, and timers.
+5. **A hard cut can be the smooth join.** When subject, scale, direction, and material continue, cut. Motion continues after the cut. Client sizzle keeps a hard cut as the primary seam.
+6. **Cause, then effect.** A scan produces findings, a prompt produces an artifact, a button produces a state. The result is true, or it is labelled as a concept. Invented product UI stays banned.
+
+### Composition
+
+- On a feature beat the lead subject fills most of the usable frame. The studied proportion is about 60–85%. Platform safe zones still win (`platform-specs.md`), especially the top 13% and bottom 32% on a vertical cut.
+- Vary the setup across the film: physical macro, wide space, plan view, UI close-up, typographic hit. Repeating "heading over three cards" wastes the catalog below.
+- Hand an object across a seam at the same pixel. Pre-position the destination so the carried object lands on it.
+- Through a run of similar shots, keep one wipe direction and one title position. The outgoing title leaves before the wipe. The incoming title enters after it.
+- Frame 0 is a finished composition. A reading hold still breathes (ambient idle). The end card stays readable for at least 2 s.
+
+A 30 s product film in the studied set used about 12–15 compositions inside the house pace. A client sizzle still fills its six beats with real selects. Extra compositions sit inside those beats.
+
+### Mechanism catalog
+
+Write the one you need onto the storyboard. Build it in GSAP on the paused timeline, or with `useCurrentFrame` when the job is Remotion. Do not add a package.
+
+| Mechanism | What it does | Studied in |
+|---|---|---|
+| Foreground fly-through | The claim or logo scales past the camera and reveals a scene that is already in place | Contra, Wonder, Bolt |
+| Logo-as-portal | The brand shape grows until its opening is the next frame | Bolt |
+| Selection → expansion | A selected frame expands into the workspace of the next beat | Wonder, AsideHQ |
+| Materializing result | A shell appears, then its regions fill in order, then the completed state holds | Replit |
+| Persistent rails | A path survives a text swap and connects two states | Replit |
+| Continuous canvas | The camera travels one layout. The selected item stays sharp. Neighbours may blur. Glyphs that the camera scales stay sharp | Replit |
+| Artifact ring | Small artifacts orbit one stable sentence | Taste |
+| Card stack / fan | Screens arrive and occlude, or one card becomes a fan, or a fan resolves to one | Bevel, Tembo |
+| Perspective fold | A panel folds to a strip. The next panel rises out of it | AgentArcade |
+| Exploded layers | A physical product separates into real layers, then recombines. Optional, and only when the storyboard names a physical beat (`remotion.md`) | Work Louder |
+| Registered decomposition | The source stays recognisable while regions lift into categories | Extend |
+| Wall → one actor | A field of items collapses to one subject, then that subject produces a result | Contra |
+| Carousel emphasis | One bright active item. Neighbours recede | MadeThis |
+| Request → picker → confirmation | A message stays anchored while a sheet rises, a choice is made, and the state confirms | Poke |
+| Colour-field handoff | One soft field behind a real lockup, once, and only if the storyboard names it. A centered gradient title card stays banned | Conduit |
+| Tile chapter break | A grid of tiles as a single accent between chapters, storyboard-named. Not a new primary seam, and not a new block name | Pilot Protocol |
+
+### Launch-film notes (links only)
+
+Per-film links and timestamps live in upstream [launch-film-notes.md](https://github.com/echris6/motion-video-kit/blob/main/business-motion-film/references/launch-film-notes.md). The films stay with their owners. Do not download them into this repo, and do not redistribute the footage. Strongest motion references named there: Contra, Wonder, Bolt, Work Louder, Replit, Extend, Poke, AsideHQ. Reach numbers on those posts are studio claims.
+
 ## Gallery themes (style only)
 
 Browse the free [MotionVideo gallery](https://motionvideo.xyz/) for density, not for files. Useful public themes: Bold kinetic type, Kinetic type music machine, Pencil line, Beat-synced generative, Photo print launch, Claude motion designer showreel. Do not buy or paste the paid pack. A photo-print or product launch still uses real screenshots and the real logo. Launch beats follow the house recipes in `templates.md`.
@@ -231,3 +285,4 @@ Principles rewritten here. Nothing from these repos is installed.
 - [LottieFiles/motion-design-skill](https://github.com/LottieFiles/motion-design-skill) — duration tables, directional easing, stagger budgets, choreography shares.
 - [dylantarre/animation-principles](https://github.com/dylantarre/animation-principles) — selected Disney-12 micros (timing frames, anticipation, follow-through, staging). The rest of that tree stays out.
 - House overrides that those sources do not share: 0% overshoot on display type, no blur on glyphs, no third `seek(t)` renderer.
+- [echris6/motion-video-kit](https://github.com/echris6/motion-video-kit) (MIT, Copyright (c) 2026 echris6) — six motion-grammar rules and the mechanism catalog above. Timing numbers in that file that repeat this page were left out. `business-offers.md`, sample commercials, and their scripts were not folded.
