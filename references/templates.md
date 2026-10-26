@@ -55,6 +55,10 @@ For `product-launch`, and for a product beat inside a client sizzle. Short rules
 
 Storyboard the beats before the build. Snapshot the open, the device, the drop, and the end, and Read those stills before a delivery render (`brand-qa.md`).
 
+### Optional poster grid
+
+`poster-grid` is one grid recipe in `kinetic-type.md`. Use it when the storyboard names it. The template ending stays `endcard()` (logo, kicker, CTA, URL). The partner lockup stays the even end-card row (`brand-qa.md`). `mask-reveal-up` stays the default for body and headline lines. Do not install a poster-grid package.
+
 ### Campaign cuts
 
 After the master scores 8 or higher, a second hook and the other aspects are props, not a new film. Two hooks × three formats: `remotion.md`. Do not redesign the UI per cell.

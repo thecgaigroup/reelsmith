@@ -100,6 +100,8 @@ Use real screenshots, the real logo, and the brand colors. Crop and move the rea
 | **Remotion** | Speech-locked kinetic type, a series, or a data-driven plan in the shipped kit. Word timings and `spring()`. |
 | **Neither a raw browser `seek(t)` loop** | Reelsmith does not ship a third renderer. |
 
+A logo grid is a field of real marks at even optical size. `poster-grid` is a separate optional type grid in `kinetic-type.md`. Body and headline lines stay `mask-reveal-up`.
+
 ### Critique before the full render
 Before a delivery render, and before a client draft leaves the box:
 1. Draft or stills at each beat. HyperFrames: `$HF snapshot --at …`. Remotion: `npx remotion still` at those frames. Then `review.py check` so `contact.jpg` and `phone.jpg` exist.
