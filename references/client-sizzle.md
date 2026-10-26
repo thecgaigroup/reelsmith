@@ -99,7 +99,7 @@ Implement `mask-reveal-up` unless the storyboard names another house recipe. One
 
 ## Brand / logo QA (hard gate before delivery)
 - Follow the brief’s logo rules exactly (e.g. which mark on light vs dark).
-- Even end-card row: equal optical size, consistent gaps, no random plates behind marks unless brief requires.
+- Even end-card row: equal optical size, consistent gaps, no random plates behind marks unless brief requires. That row is the end-card default. `poster-grid` is optional, and only when the storyboard names it (`kinetic-type.md`).
 - Snapshot frames at open / power / takeover / end; Read them before sending.
 - See also `brand-qa.md`.
 

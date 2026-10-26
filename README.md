@@ -47,7 +47,7 @@ Reelsmith and `getting-started/SKILL.md` as its getting-started skill, then run 
 (for example `.cursor/skills/reelsmith` or `~/.claude/skills/reelsmith`).
 
 ## Roadmap
-Showreel kinetic type, transitions, and an open storyboard are in the skill. Parked fold-ins and skips (MotionVideo paid pack, FilmCraft, CapCut, snapcn Pro, 3D/extrude and glitch defaults) are in [ROADMAP.md](ROADMAP.md). No sidecar packages.
+Showreel kinetic type, transitions, and an open storyboard are in the skill. An optional SageCut measurement ladder and an optional `poster-grid` recipe are documented for this publish; Sage API spend stays parked. Other parked fold-ins and skips (MotionVideo paid pack, FilmCraft, CapCut, snapcn Pro, 3D/extrude and glitch defaults) are in [ROADMAP.md](ROADMAP.md). No sidecar packages.
 
 ## Notes
 - Needs ffmpeg and Node 22.12+ (HyperFrames). Kokoro (free local voice), librosa, Manim and WhisperX install on first use.

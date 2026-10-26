@@ -37,6 +37,11 @@ Prefer Remotion when type locks to speech, or the job is a series / data-driven 
 - One display face, one UI face, one accent, from the brand bundle. Mask or clip; do not fade the whole card in. Real screenshots and logos only.
 - A typewriter is `text.slice(0, n)` from the frame. Never per-character opacity (`kinetic-type.md`).
 - Stills at each beat (`npx remotion still`) before the full render, then the same contact-sheet scores as HyperFrames (`motion-design.md`). Client sizzle that is a designed page, not a word-locked explainer, stays on HyperFrames.
+- Body and headline lines stay `mask-reveal-up` unless the storyboard names another house recipe. `poster-grid` is one optional grid (`kinetic-type.md`).
+
+## Optional frame ladder (demo)
+
+A Remotion motion-graphics review can follow the SageCut ladder in `brand-qa.md` after the stills and `review.py`: local OCR and pixel checks first (`gate --no-sage`, zero API), Sage triage only with a key, Opus critics only on flagged frames. That is the cost cut versus sending every frame to a critic. Sage API and Opus critic spend stay **HOLD** with the rest of paid-gen spend. Do not require `SAGE_API_KEY`. SageCut 0.3 does not support camera footage. The house gate is still the BRIEF and `brand-qa.md`. Do not install the plugin.
 
 ## Campaign cuts (two hooks × three formats)
 

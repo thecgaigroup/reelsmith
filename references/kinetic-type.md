@@ -11,6 +11,7 @@ Implement these in the composition. Do not install animate-text, iart-ai, or a M
 | Id | Pass it to |
 |---|---|
 | `mask-reveal-up`, `per-character-rise`, `kinetic-center-build`, `spring-scale-in`, `typewriter`, `typewriter-collapse-spring`, `stagger-from-center`, `stagger-from-edges`, `soft-blur-in`, `bottom-up-letters`, `top-down-letters`, `focus-blur-resolve`, `shared-axis-y`, `short-slide-right`, `short-slide-down` | Your GSAP timeline or Remotion `spring` / `interpolate`. **Not** a `/hyperframes` registry block. |
+| `poster-grid` | Optional grid recipe below. GSAP or Remotion. Not a line reveal, and not a registry block. |
 | `snappy-headline`, `elegant-editorial`, `heavy-logo` | The spring preset table below. Remotion: fields inside `config`, including `overshootClamping`. |
 | `text-match-cut`, `match-cut`, `svg-mask-reveal`, `lt-mask-reveal`, `kinetic-type-swap`, `paper-collage-reveal`, `curtain-reveal` | `/hyperframes` only if that block is in the loaded skill catalog. |
 | `whip-pan`, `slide`, `caption-editorial-emphasis`, `caption-clip-wipe`, `caption-kinetic-slam`, `caption-highlight` | Real seam and caption blocks. See `transitions.md` and `captions.md`. |
@@ -129,8 +130,28 @@ One accent on a payoff word, not a scribble on the sentence. HyperFrames modes: 
 | Tagline that builds | `kinetic-center-build` | `elegant-editorial` |
 | Stat or single word | `spring-scale-in` | `snappy-headline` |
 | Hook or end mark | `typewriter-collapse-spring` | `heavy-logo` on the mark |
+| Typographic poster, only when the storyboard names it | `poster-grid` | `elegant-editorial` on the cells |
 
 Name the recipe on the storyboard shot (`storyboard.md`). The open example is `examples/storyboard/`.
+
+## Grid recipes
+
+Line recipes above stay as they are. `mask-reveal-up` stays the default for body and headline lines.
+
+| Treatment | Where it lives | When |
+|---|---|---|
+| Even end-card row | `brand-qa.md`, `client-sizzle.md` | Default partner and logo lockup. Even optical size, equal gaps, one row or one simple grid. Real marks. |
+| Logo grid | HyperFrames page (`hyperframes.md`, `motion-design.md`) | A field of real marks inside a sizzle. Same optical-size rule. |
+| Template end card | `endcard()` in `templates.md` | Default template ending: logo, kicker, CTA, URL. |
+| `poster-grid` | This section | Optional. Only when the storyboard names it. |
+
+### `poster-grid` (optional)
+
+One grid recipe among the rows above. A typographic poster: words and short items sit on a grid and move to introduce one idea. About 6 s. 16:9, 9:16, and 1:1. Colors and faces come from the brand (one display face, one UI face, one accent). Items are the real words or the real marks.
+
+Build it in GSAP or Remotion as a function of time. Cells may mask-reveal with `elegant-editorial` (0% overshoot). The card is not the default line reveal. Partner end cards stay the even row. Template endings stay `endcard()`.
+
+Do not install a registry block. Look reference: [Typographic poster grid](https://21st.dev/@21st/components/lp-ex-poster-grid) (listed MIT). That install asks for a 21st API key. Reelsmith does not take the dependency.
 
 ## Still banned
 

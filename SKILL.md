@@ -62,7 +62,7 @@ Load in this order, and do not skip ahead to a render:
 6. `music.md` — cue sheet on the same beat grid as the picture. −14 LUFS (`loudness-accessibility.md`).
 7. `hyperframes.md` — default engine. Skills on. Never `HYPERFRAMES_SKIP_SKILLS=1`.
 8. `remotion.md` only when type locks to speech, or for a campaign matrix after the master locks. `captions.md` when speech is on screen.
-9. `brand-qa.md` before a draft leaves. BRIEF frames, fresh reviewer, scores to 8+.
+9. `brand-qa.md` before a draft leaves. BRIEF frames, fresh reviewer, scores to 8+. The SageCut ladder in that file stays off. Do not require `SAGE_API_KEY`.
 Stay on this lane until the user explicitly pivots. No Flashtalk or interview TEMP mid-job.
 
 ## Workflow (templates)

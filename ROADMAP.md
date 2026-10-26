@@ -119,6 +119,13 @@ Written as original recipes in [references/motion-design.md](references/motion-d
 
 **Skipped on purpose:** CapCut, FilmCraft, paid MotionVideo packs, Manim/3b1b as a new path, influencer-growth packs, [iart-ai/motion-skills](https://github.com/iart-ai/motion-skills) (an index; the verify loop and vertical safe zone are already house rules), Playwright subframe rendering, `HYPERFRAMES_SKIP_SKILLS` on client work.
 
+## Optional / parked (2026-10-26)
+
+**Status:** documented. Neither item is the default. No package, no key, no version bump. Distinct from the taste, sound, and harness pack above.
+
+- **SageCut brand QA (optional, parked spend).** Principles and a measurement recipe in [references/brand-qa.md](references/brand-qa.md), with short pointers in [references/remotion.md](references/remotion.md) and [references/review-and-qa.md](references/review-and-qa.md). Ladder: local frame measurements (OCR/pixel: text size, blank frames, frozen frames, brand colors, delivery spec) → Sage triage when a key is present → Opus critics only on flagged frames. `gate --no-sage` is the upstream local switch (zero API). The house default for client sizzle and live footage stays the BRIEF plus `review.py`. SageCut 0.3 does not support camera footage. Sage API and Opus critics stay **HOLD** until Marc lifts paid-gen spend. Do not require `SAGE_API_KEY`. Do not install the plugin or vendor the skill tree. Sources: [levantolabs/sagecut-release](https://github.com/levantolabs/sagecut-release) (MIT), [Shann³](https://x.com/shannholmberg/status/2114396613468910070).
+- **`poster-grid` (optional recipe, in the skill).** One grid recipe in [references/kinetic-type.md](references/kinetic-type.md), beside the even end-card row, the logo grid, and template `endcard()`. `mask-reveal-up` stays the default for body and headline lines. Look reference, not installed: [Typographic poster grid](https://21st.dev/@21st/components/lp-ex-poster-grid).
+
 ## Liquid chrome / reflective metal look (optional Three.js path)
 
 **Status:** parked  

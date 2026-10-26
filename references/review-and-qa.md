@@ -29,6 +29,10 @@ Fix the three worst scores and re-check until each is 8 or higher. Rules and
 banned defaults: `motion-design.md`. Gate: `brand-qa.md`. The table does not change `review.py` pass/fail. The 1–5 rubric below
 stays for every job. Template cuts can leave the kinetic table blank.
 
+## Optional SageCut (off)
+
+Not this gate. The measurement ladder, `gate --no-sage` (local measurements, zero API), and the hold on Sage and Opus spend are in `brand-qa.md`. SageCut 0.3 does not support camera footage. Client sizzle and live footage stay on the BRIEF stills and `review.py`. Do not require `SAGE_API_KEY`. Do not install the plugin.
+
 ## Approve
 Send the user `preview.mp4` or the sheets plus `review.md`. Only when they say yes:
     review.py approve out/_review --by "user in chat"
