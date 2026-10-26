@@ -71,6 +71,7 @@ Source: [HyperFrames storyboards](https://hyperframes.heygen.com/prompting/story
 - **Two-color** — ground and ink. A bigger moment gets bigger by scale, weight, inversion, or density. A third hue is the one brand accent, and only on emphasis words.
 - **One breather** — name the calmer shot. It is a held read, not a second animation pass. It still does not freeze (ambient idle in `motion-design.md`).
 - **Callback** — plant a motif (a door, a word, a mark) and say how it returns, denser.
+- **Actor** — one object that keeps its identity across shots (motion grammar in `motion-design.md`). Frame 0 of the open is a finished composition.
 - **Spectacle** — one beat, named, or it gets dropped (`motion-design.md`).
 - **Standing negatives** — the ban list in `motion-design.md`, plus no invented UI, no Flashtalk drift, no `HYPERFRAMES_SKIP_SKILLS`.
 
