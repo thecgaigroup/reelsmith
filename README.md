@@ -22,7 +22,7 @@ Click a preview to open the full MP4 (with sound). All of these were rendered by
 - `getting-started/SKILL.md`: first-run setup (engines, free voice, brand kit, optional keys).
 - `references/`: brand kit, capabilities and keys, templates, scriptwriting, voiceover, music, stock media,
   captions, platform specs, loudness and accessibility, motion design (showreel kinetic type, taste numbers, and motion grammar), kinetic type recipes,
-  transitions, music (beat grid and a cue sheet on that same clock), review and QA, YouTube publishing, HyperFrames, Remotion, AI generation (quotes only), helpers,
+  transitions, music (beat grid, cue sheet, launch sync taps and bed-relative levels), review and QA, YouTube publishing, HyperFrames (harness: reference, then data, then motion), Remotion, AI generation (quotes only), helpers,
   client sizzle, brand QA, storyboard (the frame-numbered BRIEF). House launch recipes live in `references/templates.md`.
 - `scripts/`: `capabilities.py`, `brand.py`, `reelsmith.py`, `script_lint.py`, `beats.py`, `stock.py`, `captions.py`,
   `review.py`, `export.py`, `youtube_prep.py`, `presets.json`. Python 3.10+ standard library; Pillow and librosa optional.
@@ -47,7 +47,7 @@ Reelsmith and `getting-started/SKILL.md` as its getting-started skill, then run 
 (for example `.cursor/skills/reelsmith` or `~/.claude/skills/reelsmith`).
 
 ## Roadmap
-Showreel kinetic type, transitions, and an open storyboard are in the skill. An optional SageCut measurement ladder and an optional `poster-grid` recipe are documented; Sage API spend stays parked. Motion grammar, the independent-critic loop, and optional product-hero notes from [motion-video-kit](https://github.com/echris6/motion-video-kit) (MIT) are in the skill. That fold adds no Three.js package. Pricing templates from that kit stay parked. Other parked fold-ins and skips (MotionVideo paid pack, FilmCraft, CapCut, snapcn Pro, 3D/extrude and glitch defaults) are in [ROADMAP.md](ROADMAP.md). No sidecar packages.
+Showreel kinetic type, transitions, and an open storyboard are in the skill. An optional SageCut measurement ladder and an optional `poster-grid` recipe are documented; Sage API spend stays parked. Motion grammar, the independent-critic loop, and optional product-hero notes from [motion-video-kit](https://github.com/echris6/motion-video-kit) (MIT) are in the skill. That fold adds no Three.js package. Pricing templates from that kit stay parked. Launch-film sound (sync taps, bed-relative levels, a role bank, a measured SFX check) and a six-station harness (reference, data, story, frames, a one-line timing fix, then the master) are in the skill as of 2026-10-27. That fold adds no sound bank and no Remotion skill tree. Other parked fold-ins and skips (MotionVideo paid pack, FilmCraft, CapCut, snapcn Pro, 3D/extrude and glitch defaults) are in [ROADMAP.md](ROADMAP.md). No sidecar packages.
 
 ## Notes
 - Needs ffmpeg and Node 22.12+ (HyperFrames). Kokoro (free local voice), librosa, Manim and WhisperX install on first use.

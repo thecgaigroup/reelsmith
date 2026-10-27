@@ -74,7 +74,7 @@ Written as original recipes in [references/motion-design.md](references/motion-d
 
 ### Still parked
 
-1. **Optional code:** a first-party SFX helper next to `beats.py`. The cue-sheet pattern (same `b(n)` as the picture, −14 LUFS, kick/impact ideas) is already in [references/music.md](references/music.md). Do not vendor a course file, and do not add that helper until a job needs generated hits the bed cannot cover.
+1. **Optional code:** a first-party SFX helper next to `beats.py`. The cue-sheet pattern (same `b(n)` as the picture, −14 LUFS, kick/impact ideas) is already in [references/music.md](references/music.md). The 2026-10-27 earshot fold did not start this helper: sync taps and the role bank are docs. Generated hits stay the stdlib sketches. Do not vendor a course file or a sound bank, and do not add that helper until a job needs generated hits the bed cannot cover.
 2. **Directed prompt file** — GOAL / TIME / LOOK / MOTION / SHOTS / BANNED / QA. The rules now live in `motion-design.md`. A separate prompt pack is unnecessary unless a job asks.
 3. **impeccable-style visual lints** — still the parked design/motion item above. The kinetic scores are a checklist, not a new checker.
 
@@ -147,6 +147,19 @@ Client sizzle and HyperFrames skills-on rules are unchanged. `mask-reveal-up` st
 - Upstream scripts (frozen-time, loudness, contact sheet, SFX mix) and `templates/component-lab.html`. House `review.py` and `export.py loudnorm` stay the measurements.
 
 Liquid-chrome shaders below stay parked. These notes do not start that work.
+
+## Scout dig (2026-10-27)
+
+**Status:** in the skill. Docs only. No package, no npm, no key, no sound bank, no new skill tree.
+
+**Sources:** [LexnLin — earshot v0.4](https://x.com/LexnLin/status/2113393065427620076), [Leonxlnx/earshot](https://github.com/Leonxlnx/earshot) (MIT). [francescoinweb3 — six-file harness](https://x.com/francescoinweb3/status/2114428225103261971), with the [five-step chain](https://x.com/francescoinweb3/status/2111190424647782538) and the [five mistakes](https://x.com/francescoinweb3/status/2111918374301155804). Principles rewritten in house voice. Upstream trees are not vendored.
+
+| Folded into | What landed |
+|---|---|
+| [references/music.md](references/music.md), [references/templates.md](references/templates.md), [references/review-and-qa.md](references/review-and-qa.md), [references/loudness-accessibility.md](references/loudness-accessibility.md) | Launch SFX: `offset_ms` sync taps, `bed_db` levels, a role bank on the cue sheet, timeline / sheet / critique checks on house artifacts. Shapes stay stdlib and ffmpeg. |
+| [references/hyperframes.md](references/hyperframes.md), [references/remotion.md](references/remotion.md), [references/storyboard.md](references/storyboard.md), [references/scriptwriting.md](references/scriptwriting.md), [references/client-sizzle.md](references/client-sizzle.md) | Six stations mapped onto house files: reference on the direction block, sourced data, story before motion, the existing comp, a one-line timing fix, stills, then the user's yes. |
+
+**Left upstream:** the earshot sound bank, `skills/earshot`, `skills/real-sound`, forge recipes, and the MCP server. An optional local CPU MCP is future work, out of scope for this fold, and not a Reelsmith dependency. No paid audio model. Francesco's Remotion-and-motion-design skill pack is not a second tree here. HyperFrames stays the sizzle engine. Skills stay on. The SageCut ladder and the motion-video-kit fold are unchanged.
 
 ## Liquid chrome / reflective metal look (optional Three.js path)
 

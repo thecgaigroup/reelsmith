@@ -1,5 +1,5 @@
 ---
-description: Load first for an awards, partner, or client sizzle from real footage (about 30–60s). Holds the density-and-type bar, the anti-patterns, and the six-part skeleton. Then load storyboard.md (BRIEF), kinetic-type.md, transitions.md, motion-design.md (taste numbers, motion grammar), music.md (cue sheet), hyperframes.md, and brand-qa.md (fresh reviewer, item-by-item). Remotion only when type locks to speech.
+description: Load first for an awards, partner, or client sizzle from real footage (about 30–60s). Holds the density-and-type bar, the anti-patterns, and the six-part skeleton. Then load storyboard.md (BRIEF), kinetic-type.md, transitions.md, motion-design.md (taste numbers, motion grammar), music.md (cue sheet, sync taps), hyperframes.md (harness: reference, then data, then motion), and brand-qa.md (fresh reviewer, item-by-item). Remotion only when type locks to speech.
 ---
 
 # Client sizzle (footage-first editorial)
@@ -24,7 +24,7 @@ Do these instead:
 - Storyboard first (`storyboard.md`, copy `examples/storyboard/`). HAVE plays. ID waits. NEED and TEMP stay out of the client draft unless labelled.
 - Default type is house recipe `mask-reveal-up`, built in GSAP (`kinetic-type.md`). It is not a HyperFrames registry block.
 - One named spectacle (`motion-design.md`). One primary seam and at most two accents (`transitions.md`). Taste numbers (timing, easing, choreography) live in that same file.
-- Cues on `b(n)`, the same clock as the picture (`music.md`).
+- Cues on `b(n)`, the same clock as the picture (`music.md`). A designed hit names its role, `offset_ms`, and `bed_db`.
 - Frame-numbered BRIEF, then stills, then a fresh reviewer to 8+ (`storyboard.md`, `brand-qa.md`). A later pass checks the previous report item by item. Motion grammar for the type and the seams is in `motion-design.md`.
 - HyperFrames skills on for the whole job. Remotion only when type locks to speech.
 
@@ -48,7 +48,9 @@ Copy: "<every on-screen line, quoted>".
 
 Technique: hard cut on most seams. One accent: whip-pan. House recipes only — do not ask for a block named mask-reveal-up. Timing from motion-design.md. If speech is on screen, one caption block for the section (caption-editorial-emphasis or caption-clip-wipe).
 
-BRIEF: one line per shot, f{frame}–f{frame} at the render fps (storyboard.md). Cues on b(n), same clock as the picture (music.md).
+BRIEF: one line per shot, f{frame}–f{frame} at the render fps (storyboard.md). Cues on b(n) plus offset_ms, same clock as the picture (music.md).
+
+Harness: reference breakdown in the direction block, sourced numbers, story (one point, one hero, hook / proof / payoff) before the comp (hyperframes.md). A note such as "the title is a beat late" changes one b(n) or t0. Do not re-roll the film.
 
 Negatives: no centered gradient title cards, no free fades, no grey selects, no invented UI, no corner labels, no frame borders, no glitch default, no Flashtalk, no interview TEMP, no paid gen, no HYPERFRAMES_SKIP_SKILLS.
 ```
@@ -105,7 +107,7 @@ Implement `mask-reveal-up` unless the storyboard names another house recipe. One
 
 ## Audio
 - Music bed on a beat grid (`beats.py`); duck under interview/VO.
-- Cue sheet on that same grid (`music.md`). One impact, one riser. Idle stays quiet.
+- Cue sheet on that same grid (`music.md`). One impact, one riser or reverse swell. Designed hits name a role, `offset_ms`, and `bed_db`. Idle stays quiet.
 - Prefer real interview audio when present; captions speech-locked.
 - Free local VO (Kokoro) only when the brief allows; never substitute robotic TTS for a hero interview line without approval.
 - Loudness: ~−14 LUFS, ≤ −1 dBTP.
@@ -113,7 +115,7 @@ Implement `mask-reveal-up` unless the storyboard names another house recipe. One
 A product beat inside this film uses the house launch recipes (`templates.md`): real UI in a device, cursor as a function of time, bar-accurate cuts. The sizzle primary seam stays a hard cut.
 
 ## Workflow
-1. Read brief + brand rules; list every beat.
+1. Read brief + brand rules; list every beat. Write the reference breakdown and the sourced numbers on the board before the comp (`hyperframes.md`).
 2. Ingest selects → shot list (no grey cards).
 3. Plan approval: duration, aspects, music, VO vs interview audio, logo set.
 4. Build HyperFrames or Remotion comp with skills **on**.

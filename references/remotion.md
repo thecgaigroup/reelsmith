@@ -19,6 +19,8 @@ Without the kit: `npx create-video@latest --yes --blank`, then `npx remotion add
 @remotion/google-fonts @remotion/media-utils` and `npm i -D tsx @types/node`.
 
 ## Workflow
+Run the harness in `hyperframes.md` first (reference, then data, then story). The plan file is the motion station. Do not add a Remotion skill tree or a second motion-design skill. Taste stays `motion-design.md`.
+
 1. `python3 scripts/brand.py bundle brand.json --out public` and set `brandFile` in the plan.
 2. Write `src/plans/<slug>.ts` (scene kinds: hook, feature, stat, quote, logo/CTA; 1-3 sentence `vo` each).
 3. `npx tsx scripts/generate-voiceover.ts src/plans/<slug>.ts --dry-run`, then run it without `--dry-run`. The provider
@@ -28,6 +30,21 @@ Without the kit: `npx create-video@latest --yes --blank`, then `npx remotion add
    out/<slug>-16x9.mp4 --codec=h264 --crf=18` (draft: `--scale=0.5 --crf=28`).
 6. **Remotion doesn't normalize loudness:** `python3 scripts/export.py loudnorm in.mp4 out.mp4` on every final.
 7. Captions: `npx tsx scripts/export-captions.ts <slug>` -> words.json -> `captions.py build`.
+
+## Same six stations
+
+Speech-locked jobs and the campaign matrix use the table in `hyperframes.md`. House names, same order.
+
+| Upstream | Here |
+|---|---|
+| `spec.md` | Direction block on the storyboard. A real reference, broken into pacing, first motion, cut rhythm, payoff |
+| `data.json` | Figures in `src/plans/<slug>.ts`, each with a source. No source: stop |
+| `story.md` | One point, one hero number, hook / proof / payoff, before the composition |
+| `Scene.tsx` | The kit composition. Every on-screen value is a variable from that plan |
+| `timing.ts` | One frame offset or one `b(n)`. "The title is a beat late" changes that line |
+| `final.mp4` | Stills against the reference and the data, then `export.py loudnorm`, then the user's yes |
+
+Stiff motion is a timing and easing problem (`motion-design.md`). It is not a missing package.
 
 ## Kinetic type
 Prefer Remotion when type locks to speech, or the job is a series / data-driven plan in this kit. The frame number **is** `seek(t)`: `useCurrentFrame()` plus `interpolate` / `spring` only.
