@@ -3,6 +3,10 @@
 Write the script before any visuals, voice or spend. Always offer **2–3 options** (different hooks or
 angles) in the plan, then lint the chosen one.
 
+Lock three things before any comp: one point, one hero number, and three beats (hook, proof, payoff).
+The hero number is real and sourced (`storyboard.md`). A reel of seams with no point does not ship.
+This is the story station in the harness (`hyperframes.md`). Data is already on the board. Motion comes after.
+
 ## Speaking rates (words per second)
 | Read | wps | wpm |
 |---|---|---|

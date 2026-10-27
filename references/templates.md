@@ -51,7 +51,7 @@ For `product-launch`, and for a product beat inside a client sizzle. Short rules
 2. **The cursor drives the change.** Position comes from the closed-form spring in `motion-design.md`. The click lands on a beat. Press scale lasts a few frames. The path is written down. It is not `Math.random()`. One cursor.
 3. **One-shape morph.** On a launch reel, one container may change width, height, and corner radius while the content inside swaps. The outgoing content leaves early, at about 65–75% of the enter time. A few pixels of blur on the swap clear before the hold. Do not morph display type. On a client sizzle the primary seam stays a hard cut (`transitions.md`). A morph is one accent, and only when the same real screen is what continues.
 4. **Bar-accurate cuts.** Every event is `b(n)` on the `beats.py` grid. One visual change per beat. The result holds long enough to read (about 1–2 s, still on the grid). The biggest reveal is a downbeat. `seek(t)` is the paused GSAP timeline or `useCurrentFrame()`, including a seek backwards.
-5. **Beat SFX.** The cue sheet uses the same `b(n)` as the picture. One impact on the drop. The bed is the licensed track or `beats.py synth`.
+5. **Beat SFX.** The cue sheet uses the same `b(n)` as the picture. Fill a launch role bank (`music.md`): whoosh on the primary seam, tap or click on the cursor and the chips, one reverse swell into the drop, one impact on the drop, chime on the end mark. Each row carries `offset_ms` and `bed_db`. The bed is the licensed track or `beats.py synth`. Idle stays silent.
 
 Storyboard the beats before the build. Snapshot the open, the device, the drop, and the end, and Read those stills before a delivery render (`brand-qa.md`).
 
@@ -68,6 +68,7 @@ After the master scores 8 or higher, a second hook and the other aspects are pro
 - [AbubakrChan/product-launch-motion](https://github.com/AbubakrChan/product-launch-motion) — cursor-driven UI, one-shape morph, beat SFX. The Playwright subframe renderer is not adopted.
 - [kaventro/motion-designer](https://github.com/kaventro/motion-designer) — real UI in a device frame, cuts written as beats, `seek(t)` checked out of order. Not installed.
 - [charlie947/motion-graphics-skills](https://github.com/charlie947/motion-graphics-skills) — launch shape (one sentence, real screens, CTA that holds) and brand intake. Intake is two lines on `brand.json` (`brand-kit.md`), not a new `MOTION.md`.
+- [Leonxlnx/earshot](https://github.com/Leonxlnx/earshot) launch preset — the role bank in recipe 5 (whoosh, tap, swell, impact, chime), with sync taps and bed-relative levels in `music.md`. The sound bank is not installed.
 
 ## Adding a template
 Copy the smallest template folder, rename it, edit `template.json`, and write `build(content, ctx) -> scenes` using

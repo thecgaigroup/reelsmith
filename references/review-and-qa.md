@@ -29,6 +29,10 @@ Fix the three worst scores and re-check until each is 8 or higher. Rules and
 banned defaults: `motion-design.md`. Gate: `brand-qa.md`. The table does not change `review.py` pass/fail. The 1–5 rubric below
 stays for every job. Template cuts can leave the kinetic table blank.
 
+## Sound on the cut
+
+For a designed hit, score sound from the cue sheet. Check the sync tap, the bed-relative level, and the density (`music.md`, Measured SFX check). `review.py` still measures integrated LUFS and true peak on the encoded file. Fix the first failed row before you re-render the film. This check is separate from the visual critic below and from the SageCut ladder.
+
 ## Independent critic
 
 When a prior report exists, the fresh reviewer marks each finding FIXED, PARTLY, or STILL PRESENT and adds one ledger row. Prompts, the stop rule, and the client checks that follow a clear score are in `brand-qa.md`. SageCut stays off. Do not require `SAGE_API_KEY`. Do not install a critic tool.

@@ -143,7 +143,7 @@ The client still reviews. On one upstream 20 s spec, the critic said ship and th
 - Overlaps on every frame of a crossfade.
 - A label that matches the value on screen.
 - A glanceable layout with no dead band. Each tile earns its space.
-- Hero moves stay audible on the cue sheet (`music.md`). House loudness stays about −14 LUFS, true peak at most −1 dBTP (`loudness-accessibility.md`).
+- Hero moves stay audible on the cue sheet (`music.md`): the role's sync tap and a bed-relative level, not one gain copied onto every stem. House loudness stays about −14 LUFS, true peak at most −1 dBTP (`loudness-accessibility.md`).
 
 Studied progress on one upstream film, not a house quota: frozen time fell across four rounds, and a flat mix gained range. `review.py` remains the measurement. Their frozen-time and loudness scripts are not in this repo.
 

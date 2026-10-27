@@ -1,5 +1,5 @@
 ---
-description: Load on every client sizzle, right after client-sizzle.md. Copy examples/storyboard/ and replace the fictional beats. The JSON is the frame-numbered BRIEF. HAVE plays, ID waits, NEED and TEMP stay labelled and out of the client draft.
+description: Load on every client sizzle, right after client-sizzle.md. Copy examples/storyboard/ and replace the fictional beats. The JSON is the frame-numbered BRIEF. Reference breakdown and sourced figures land here before motion. HAVE plays, ID waits, NEED and TEMP stay labelled and out of the client draft.
 ---
 
 # Storyboard (client sizzle source of truth)
@@ -10,7 +10,7 @@ dark film-room HTML, proportional timeline, PDF-beat alignment, shot cards with 
 
 ## Why
 Grey animatic cards and mid-job talk-head pivots happen when there is no shot-level source of truth.
-The storyboard is what the edit builder and humans both read.
+The storyboard is what the edit builder and humans both read. It is the reference spec and the data file in the harness (`hyperframes.md`). Motion waits on it.
 
 ## Outputs
 | File | Role |
@@ -29,11 +29,19 @@ The storyboard is what the edit builder and humans both read.
 6. **Audio** — music / duck / SFX
 7. **Story intent** — one line
 8. **Status** — `HAVE` \| `ID` (identity confirm) \| `NEED` \| `TEMP` (placeholder by design)
-9. **Cue** — `b(n)` from `music.md`, or `none`. Same clock as `t0`.
+9. **Cue** — `b(n)` from `music.md`, or `none`. Same clock as `t0`. A designed hit also names the role, `offset_ms`, and `bed_db` (`music.md`). A launch reel uses the role bank (whoosh, tap, click, knock, reverse swell, impact, chime).
 
 ## BRIEF (frame-numbered)
 
 The storyboard JSON is the BRIEF. Do not add a second spec the edit can drift from. Set `fps` (30 unless the render is 60). For each shot, frame numbers are `round(t * fps)`.
+
+### Reference, then data
+
+The direction block is the spec. Before the shots, name one reference the user actually pointed at (or a house cut already in this repo) and write four lines: pacing, where the first motion lands, the cut rhythm, and where the payoff lands. A mood word ("clean and modern") is not a spec.
+
+Every number on screen has a source on the shot (`src`, or a `source` string) or in `content.json`. No source: stop and ask. Do not animate a guessed figure. A wrong number inside a finished move is still wrong.
+
+Story intent is filled before the comp: one point, one hero number, three beats — hook, proof, payoff (`scriptwriting.md`). A note such as "the title is a beat late" changes one `t0` or one `b(n)`. It does not rebuild the board.
 
 Write one line per shot before the build, and keep it next to the board:
 

@@ -5,8 +5,8 @@ description: >-
   read references/client-sizzle.md first (dense footage + kinetic type, six-part
   skeleton, HyperFrames skills ON — never HYPERFRAMES_SKIP_SKILLS), then
   storyboard.md (frame-numbered BRIEF), kinetic-type.md, transitions.md,
-  motion-design.md (taste numbers, motion grammar), music.md (cue sheet on the same clock),
-  hyperframes.md, and brand-qa.md (stills, fresh reviewer, item-by-item, scores to 8+).
+  motion-design.md (taste numbers, motion grammar), music.md (cue sheet, launch sync taps, bed-relative levels),
+  hyperframes.md (harness: reference, then data, then motion), and brand-qa.md (stills, fresh reviewer, item-by-item, scores to 8+).
   Use remotion.md only when type locks to speech or a locked master needs a
   campaign matrix. Optional product-hero notes in that file add no Three.js
   package and do not change the engine. captions.md when speech is on screen. Also promo, launch,
@@ -60,8 +60,8 @@ Load in this order, and do not skip ahead to a render:
 3. `kinetic-type.md` — implement a house recipe (default `mask-reveal-up`). Do not pass house ids to HyperFrames as registry blocks.
 4. `transitions.md` — one primary seam, at most two accents. Name only real blocks.
 5. `motion-design.md` — taste numbers, motion grammar, ambient idle, bans, one named spectacle.
-6. `music.md` — cue sheet on the same beat grid as the picture. −14 LUFS (`loudness-accessibility.md`).
-7. `hyperframes.md` — default engine. Skills on. Never `HYPERFRAMES_SKIP_SKILLS=1`.
+6. `music.md` — cue sheet on the same beat grid as the picture. Launch hits use `offset_ms` and `bed_db`. −14 LUFS (`loudness-accessibility.md`).
+7. `hyperframes.md` — default engine. Skills on. Harness first: reference, then data, then motion. Never `HYPERFRAMES_SKIP_SKILLS=1`.
 8. `remotion.md` only when type locks to speech, or for a campaign matrix after the master locks. Read the optional product-hero notes there when the storyboard names a physical device. They add no Three.js package and they leave this lane on HyperFrames. `captions.md` when speech is on screen.
 9. `brand-qa.md` before a draft leaves. BRIEF frames, fresh reviewer, item-by-item on a later pass, scores to 8+. The SageCut ladder in that file stays off. Do not require `SAGE_API_KEY`.
 Stay on this lane until the user explicitly pivots. No Flashtalk or interview TEMP mid-job.
