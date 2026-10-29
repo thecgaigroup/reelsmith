@@ -44,6 +44,52 @@ Mask or clip, staggered by **line** (a read) or **word** (a tagline). Character 
 
 Remotion shape: `spring({ frame: frame - start, fps, config })`. A value with several targets is the sum of one spring per change from its own start. Do not store velocity in a ref.
 
+## Six knobs
+
+One `motion.config` per title card. Six fields: split, stagger, mask, tracking, weight, overshoot. "Make it snappier" changes a number, then build, render, scrub, and tune. Frames below are at 30 fps (1 frame is about 33 ms). Divide by `fps` when the tween is built. Use the stagger, rise, and overshoot in this file and in `motion-design.md`.
+
+| Knob | Sets | House default (30 fps) | Tune |
+|---|---|---|---|
+| `split` | The unit that moves: `lines`, `words`, or `chars` | `lines` for a sentence, `words` for a tagline, `chars` for a one- or two-word hit | A very short hit can be `chars`. A sentence stays `lines`. Never split a sentence into `chars` |
+| `stagger` | Frames before the next unit starts | chars 1 f (inside 20–40 ms), words 2 f (inside 40–70 ms), lines 2–3 f (inside 60–100 ms). The cascade stays at or under 15 f (500 ms) | A line cascade may use 3–6 f. Shorten it once the cascade passes 500 ms |
+| `mask` | The clip the unit rises through. One mode per split, matching that split | `mask-reveal-up`: inner `y` from `110%` to `0` over 18–21 f (0.6–0.7 s), `power3.out` or `expo.out` (`elegant-editorial`) | Small type uses a 12–15 f rise. A heavy display face may start at `120%` |
+| `tracking` | `letterSpacing` in em on the split root. It opens, then settles on the brand tracking | `+0.15em` → brand tracking (`−0.01em` to `−0.03em`) over 20–24 f, `power3.out` | A logo or luxury resolve may open to `+0.4em`. Body and captions stay at the brand tracking. A wide tween reflows wrapped lines, so tracking moves on a `words,chars` split |
+| `weight` | The `wght` axis on a variable font (`fontVariationSettings` or `fontWeight`) | 300 → 700 over 15–24 f, `power2.inOut`, landing on the brand weight | A single-word slam may run 100 → 900. Tween `wght` only on a variable font. A static face snaps between instances. Mask the line, or lock the line box, so the width change does not jitter |
+| `overshoot` | How far the move passes the target before it lands | **0%** on display type, logos, and numbers: `power3.out`, `expo.out`, or `overshootClamping: true` (the presets above). UI labels 5–7%: `back.out(1.15)` to `back.out(1.4)` | Client sizzle, display words, and logo lockups stay at 0% |
+
+Two frames per letter is about 67 ms at 30 fps, outside the 20–40 ms character band. Use 1 frame at 30 fps. Use 2 frames per letter only at 60 fps. On the source post's scale, `back.out(1.7)` is about 10%, `back.out(1.9)` about 12%, and `back.out(2.0)` about 13%, each settling in about 6 f. Display type stays at 0%. UI labels stay at 5–7%.
+
+Config fields, times in frames: `fps`, `split`, `staggerFrames`, `mask` (`riseFrames`, `fromYPercent`, `ease`), `tracking` (`fromEm`, `toEm`, `frames`, `ease`), optional `weight` (`axis: "wght"`, `from`, `to`, `frames`, `ease`) on a variable face, `overshoot` (`pct`, `settleFrames`). `pct: 0` keeps the mask ease. The storyboard still names the recipe. These fields only tune it.
+
+```ts
+export const houseEditorial = {
+  fps: 30,
+  split: "lines",
+  staggerFrames: 2,
+  mask: { on: true, riseFrames: 21, fromYPercent: 110, ease: "power3.out" },
+  tracking: { fromEm: 0.15, toEm: -0.02, frames: 22, ease: "power3.out" },
+  overshoot: { pct: 0, settleFrames: 0 },
+};
+```
+
+### Seek rules
+
+Cut the DOM with SplitText. Tween those elements on one paused GSAP timeline. Seek that timeline from the frame. The timeline does not play.
+
+Checked at 1080×1080, 30 fps (Remotion 4.0.538, GSAP 3.15.0, SplitText registered on its own): sequential frames, stills taken out of order, a parallel render, and a scrub that visited other frames first were pixel-identical, 0 px. The h264 differed by the codec only. That render followed the three rules below.
+
+1. **Wait for the font, then split.** The face has loaded and `document.fonts.ready` has resolved before `SplitText.create`. In Remotion, hold with `delayRender()` and release with `continueRender()`. A split on the fallback face changes the line count, and the line box grows, once the real face arrives.
+2. **`autoSplit: false`.** Call `SplitText.create` once, synchronously, before the timeline is built. With `autoSplit` left on, a layout change re-splits and the lines reflow. With the font wait and `autoSplit: false`, the split line count matched the unsplit text, one line-height per line.
+3. **`seek(frame / fps)`.** Build `gsap.timeline({ paused: true })` once. Each frame calls `tl.seek(frame / fps)` from `useCurrentFrame()`, in a layout effect. The same frame is the same pixels, including a seek backwards. No callbacks (`onComplete` and the rest), no `play()`, no `"random()"` values, and no `stagger: { from: "random" }`.
+
+On HyperFrames, register that same paused timeline (`hyperframes.md`). The 0 px check is the Remotion seek above.
+
+`useGsapTimeline` (`@remotion/gsap`) builds a paused timeline, seeks `frame / fps`, and throws on callbacks, `play`, and random values. It does not support GSAP plugins (read Oct 28, 2026). Register SplitText yourself, cut the DOM before the timeline, and tween the `lines`, `words`, or `chars` it returns. The 0 px check used the hand-rolled `tl.seek(frame / fps)`. It did not run through `useGsapTimeline`.
+
+`mask` and `autoSplit` need GSAP 3.13.0 or newer. GSAP, including SplitText, is free for commercial use under the [GSAP Standard License](https://gsap.com/licensing/) (Webflow, effective Apr 30, 2025). Do not use it to build a no-code animation builder that competes with Webflow. Remotion's license stays the rule in `remotion.md`.
+
+Source: [Asteri, kinetic type in six knobs](https://x.com/Asteri_eth/status/2115126932291436649) (Oct 27, 2026). Linked notes: [Remotion + GSAP](https://remotion.dev/docs/gsap), [SplitText](https://gsap.com/docs/v3/Plugins/SplitText/). The card list at [awesome-ai-motion](https://github.com/gongnyang/awesome-ai-motion) is a reference only. Do not install it.
+
 ## Recipes
 
 All of these are a pure function of timeline time or frame. Wrapper clips (`overflow: hidden`); do not animate a CSS transition. No `will-change` on glyphs the camera scales.
