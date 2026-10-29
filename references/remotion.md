@@ -49,6 +49,7 @@ Stiff motion is a timing and easing problem (`motion-design.md`). It is not a mi
 ## Kinetic type
 Prefer Remotion when type locks to speech, or the job is a series / data-driven plan in this kit. The frame number **is** `seek(t)`: `useCurrentFrame()` plus `interpolate` / `spring` only.
 - Display type and logo lockups: `spring({ frame, fps, config: { damping: 200, mass: 1, stiffness: 80, overshootClamping: true } })`. Presets: `kinetic-type.md`. Seams: `transitions.md` (the half-beat rule below still governs feature-explainer templates).
+- Six-knob title cards (split, stagger, mask, tracking, weight, overshoot): `kinetic-type.md`. Load the font before SplitText, set `autoSplit: false`, and `seek(frame / fps)` on a paused timeline.
 - UI chrome: `spring({ frame, fps, config: { damping: 14, mass: 0.7, stiffness: 160 } })` — a hair of overshoot, not a bounce on the words.
 - A value with several targets is the sum of one spring per change from its own start frame. Do not store velocity in a ref.
 - One display face, one UI face, one accent, from the brand bundle. Mask or clip; do not fade the whole card in. Real screenshots and logos only.
