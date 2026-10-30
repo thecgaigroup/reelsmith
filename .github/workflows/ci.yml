@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "LICENSE"
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: lint, typecheck, and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: python3 -m pip install -r requirements.txt
+
+      # No eslint, ruff, mypy, or tsc project is in this tree. Remotion's
+      # `tsc --noEmit` lives in the starter kit and is not run here.
+      # These are the checks the repo already supports. None of them render.
+      - name: Lint
+        run: |
+          python3 -m compileall -q scripts templates hyperframes-example manim-example
+          python3 -c '
+          import json, pathlib, sys
+          skip = {".git", "node_modules", ".venv", "__pycache__"}
+          bad = []
+          for path in pathlib.Path(".").rglob("*.json"):
+              if skip.intersection(path.parts):
+                  continue
+              try:
+                  json.loads(path.read_text())
+              except Exception as exc:
+                  bad.append(f"{path}: {exc}")
+          if bad:
+              print("\n".join(bad))
+              sys.exit(1)
+          '
+
+      - name: Typecheck
+        run: python3 scripts/brand.py validate brand/sample-brand.json
+
+      - name: Build
+        run: python3 scripts/reelsmith.py list
