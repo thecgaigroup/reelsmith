@@ -1,0 +1,2 @@
+# Reelsmith scripts and templates use the Python 3.10+ standard library only.
+# This manifest is intentionally empty so CI can cache pip without installing packages.

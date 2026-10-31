@@ -5,7 +5,7 @@ description: Load for feature-explainer, for a client sizzle whose type locks to
 # Remotion (narrated explainers)
 
 Use the shipped kit: `remotion-starter-kit.tgz` (complete project; brand-driven theme, layout units, captions,
-lower thirds, transitions, free/paid VO script, caption export). Fastest path: `templates/feature-explainer/render.sh`.
+lower thirds, transitions, free/paid VO script, caption export). The archive is not in the current tree (`*.tgz` is gitignored). History was not rewritten, so it is still in past commits. Fastest path: `templates/feature-explainer/render.sh`.
 
 **License:** free for individuals, teams of up to 3, non-profits and evaluation. Companies of 4+ need a company
 license (remotion.pro/license). If use is commercial and the headcount is unknown, ask once and save the answer.
@@ -13,7 +13,7 @@ Otherwise, use HyperFrames (Apache-2.0).
 
 ## Setup
 1. `node -v`: 20.19+ or 22.13+.
-2. `mkdir -p /workspace/remotion-video && tar xzf remotion-starter-kit.tgz -C /workspace/remotion-video && cd $_ && npm i`.
+2. Recover `remotion-starter-kit.tgz` from an earlier commit (it is not in the current tree), then `mkdir -p /workspace/remotion-video && tar xzf remotion-starter-kit.tgz -C /workspace/remotion-video && cd $_ && npm i`.
 3. `npx remotion browser ensure`. If Chrome fails, `ldd` its `chrome-headless-shell` and apt-install missing libraries.
 Without the kit: `npx create-video@latest --yes --blank`, then `npx remotion add @remotion/transitions @remotion/media
 @remotion/google-fonts @remotion/media-utils` and `npm i -D tsx @types/node`.

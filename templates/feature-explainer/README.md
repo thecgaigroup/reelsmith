@@ -1,7 +1,7 @@
 # feature-explainer (Remotion)
 
 Narrated 24 s explainer: hook -> three numbered feature cards -> stat -> logo + CTA. Uses the
-Remotion starter kit (`remotion-starter-kit.tgz`), the shared `brand.json`, free local narration and
+Remotion starter kit (`remotion-starter-kit.tgz`, recovered from git history; it is not in the current tree), the shared `brand.json`, free local narration and
 an on-screen "AI-generated voice" label.
 
     templates/feature-explainer/render.sh out/fe --draft      # half-res review render

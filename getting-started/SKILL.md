@@ -37,7 +37,7 @@ While they answer, start one background task for the one-time setup:
 - **Free voice + beats:** a venv with `pip install kokoro-onnx soundfile librosa`; set
   `HYPERFRAMES_PYTHON=<venv>/bin/python`; check espeak-ng (apt) as the fallback. Never use `hyperframes audio
   --quality best` (cloud).
-- **Remotion** (only for narrated explainers): extract `remotion-starter-kit.tgz` into `/workspace/remotion-video/`,
+- **Remotion** (only for narrated explainers): `remotion-starter-kit.tgz` is not in the current tree (`*.tgz` is gitignored; history was not rewritten). Recover it from an earlier commit, extract it into `/workspace/remotion-video/`,
   `npm i`, `npx remotion browser ensure`, then `npx tsc --noEmit` and `npx remotion compositions`.
 - **Smoke test:** `reelsmith.py render --template countdown-teaser --aspect 9x16 --draft --out /workspace/reelsmith-out/smoke`
   and `capabilities.py`. Report one line: ready, plus what is on and off.
