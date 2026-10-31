@@ -58,6 +58,12 @@ Showreel kinetic type, transitions, and an open storyboard are in the skill. An 
 - Licenses: HyperFrames Apache-2.0; Remotion free for individuals and teams of up to 3 (remotion.pro/license);
   Manim and lottie-web MIT. Bundled music CC BY 3.0 (credit required; see `assets/music/CREDITS.txt`).
 
+## Dependency updates
+Dependabot opens weekly PRs (Mondays): minor+patch grouped per ecosystem, majors one-per-PR, security fixes separately.
+Lovit reviews and merges green minor/patch groups; any major (label it "major, needs Marc") or anything touching deploy files or Ignition-live waits for Marc.
+Intentional pins are ignored in .github/dependabot.yml (Codex 0.160.1 / @openai/codex*, Hermes 0.22.4, plus repo-specific tested pins) - do not bump them in a dependency PR.
+Dependency PRs use CI minutes; keep open PRs low and close stale ones rather than rebasing them repeatedly.
+
 ## License
 Code and docs: MIT (see `LICENSE`). Bundled third-party media and music keep their own licenses (CC0 / CC BY), listed in
 their credits files. Remotion has its own license: free for individuals and teams of up to 3, companies need a
