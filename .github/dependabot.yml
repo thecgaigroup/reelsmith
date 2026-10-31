@@ -1,0 +1,17 @@
+# .github/dependabot.yml - weekly upkeep. Minor+patch grouped per ecosystem; majors come alone.
+# Security updates are not grouped and arrive as separate PRs (needs the repo setting enabled).
+# reelsmith: github-actions at / only. hyperframes-example and lottie-example are excluded
+# (package.json, no lockfile). Root requirements.txt is comments only, so there is no pip entry.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule: { interval: "weekly", day: "monday", time: "06:00", timezone: "America/New_York" }
+    open-pull-requests-limit: 2
+    labels: ["dependencies"]
+    commit-message: { prefix: "ci" }
+    groups:
+      actions-minor-patch:
+        applies-to: version-updates
+        update-types: ["minor", "patch"]
+        patterns: ["*"]
