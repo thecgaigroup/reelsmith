@@ -1,5 +1,5 @@
 ---
-description: Load when joining shots on a client sizzle or custom kinetic piece, after kinetic-type.md. One primary seam plus at most two accents. Name only real HyperFrames blocks or Remotion presentations in the starter kit.
+description: Load when joining shots on a client sizzle, a custom kinetic piece, or a cut of generated clips (after kinetic-type.md). One primary seam plus at most two accents. Name only real HyperFrames blocks or Remotion presentations in the starter kit.
 ---
 
 # Transitions and polish
@@ -61,7 +61,31 @@ Energy sets tempo. Mood picks among the blocks in that row.
 
 Client sizzle default when the brief is silent: **hard cuts**, medium energy, one `whip-pan` / `slide` accent. Not a unique shader per seam.
 
+## Generated clips (AI footage)
+
+When the shots are generated clips (image-to-video, a music video, an AI b-roll run), the seam rules get stricter. A generator holds a face only inside one clip. Two clips never agree on it exactly, so anything that superimposes them exposes the drift that a hard cut hides.
+
+- **Hard cut is the default on every join.** Any other join needs a one-line story reason in the cut plan (an ending, a real time jump). Cut at the end of a phrase or on a confirmed musical event, never mid-word.
+- **Match across the cut:** eyeline (looks left out, the next subject sits or looks right), motion direction, and shot size. Alternate size (CU, MS, MCU). Never cut CU to CU of the same face: on generated footage that is a jump cut with a face change.
+- **A sound object or a prop carries a memory insert,** as a hard match cut on the hand, the object, or the instrument. Not a face morph and not a dissolve.
+- **No blend where faces overlap in time.** A head fade-in and a tail fade-out on the finished picture are the usual total. Both are video only and both wait for the creator's yes.
+
+Verdicts from tests on real generated clips (ffmpeg `xfade`, 1920x1080, 24 fps):
+
+| Join | Verdict | Why |
+|---|---|---|
+| Hard cut, shot size changes | **Default. Keeps identity** | New information, no superimposed frame |
+| `xfade=transition=fade` with faces on either side | **Never** | Mid-blend, two half-identities share one frame: a third face nobody approved |
+| `xfade=transition=dissolve` | **Do not use as a soft blend** | It is a random-pixel dither, not a mix. Mid-blend it sparkles and fights grain. Use `transition=fade` for a blend |
+| `xfade=transition=fade`, no face on either side | Acceptable, but a match cut usually says more | No identity at risk |
+| `xfade=transition=fadeblack` (fade through black) | **Keeps identity.** Ending or time jump only | The two pictures never superimpose. It stops the film, so not mid-sequence |
+| A 0.05 s xfade to "soften" a cut | **Never** | It blends a frame and shortens the timeline. Cut instead |
+| Fade out, then fade in, mid-film | **Never** | A dip, not a join (rule 3) |
+
+**Against one continuous song master, a cross-fade must not shorten the cut.** Render the outgoing shot `s` seconds longer (its tail is the handle) and put the xfade offset on the cut point, so every shot keeps its record in and out and the picture stays the length of the master. Recipes and offset arithmetic: `helpers.md`. Grade and grain go on once, after the joins (`finishing-look.md`).
+
 ## Remotion timing
+
 
 `TransitionSeries` overlaps the two sequences and **shortens** the total by the transition length. A transition cannot be longer than either neighbor. Two transitions cannot sit next to each other. A transition and an overlay cannot sit next to each other.
 
@@ -100,6 +124,7 @@ import { TransitionSeries } from "@remotion/transitions";
 - “Add some transitions” with no energy and no primary.
 - An invented block name.
 - `glitch` or a particle seam as the default on a client sizzle.
+- A dissolve or crossfade over a generated face, or `xfade` `dissolve` used as a soft blend.
 
 ## Not a slideshow
 
