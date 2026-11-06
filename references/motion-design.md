@@ -127,7 +127,18 @@ Source: [HyperFrames motion](https://hyperframes.heygen.com/prompting/motion). R
 7. **Genre pace.** Showreel ideas land in about 1.5–4 s. Hard cuts, not a dissolve between every idea (`transitions.md`).
 8. **Handmade stays seeded.** Paper, curtain, or a stepped hold uses one seed at the start (mulberry32 or a fixed frame index). `Math.random()` is banned. Glitch is not a default.
 
+## Retiming and holds on generated footage
+
+Generated clips are approved as delivered. Retiming or moving them changes what was approved, so these limits apply to every AI clip. Recipes with filter strings are in `helpers.md`.
+
+- **Speed-up (`setpts`) only on a non-face crop** (hands, an object, a landscape). A speed-up drops frames and invents none; 1.25x on a hand reads slightly hurried, not wrong. A punch-in crop for it is a reframe, so it needs the creator's yes.
+- **Never slow a face with `minterpolate` or the `framerate` blend.** Motion-compensated interpolation invents face pixels (softened curls and jaw in testing) and dropped the tail: 45 frames, not 48, for 1 s at 0.5x, at about 5 s of compute per second of 1080p. The blend ghosts instead. Count frames after any retime.
+- **Never retime, loop, or freeze to fill a slot** in a final cut. Ask for a longer take or recut.
+- **Still-hold push-in:** 4–8% over the hold (slow push-in, above). Upscale 2x with lanczos before `zoompan`, which rounds its crop to whole pixels and steps: measured frame-to-frame luma change 0.01–7.4 without the upscale, 0.85–3.6 with it. A hold is a flagged placeholder (animatic or gap), never a stand-in for a face clip in the final.
+- **Do not stabilise a locked or slow-drift generated shot.** Stabilising crops and rescales the approved framing and can turn model micro-wobble into a warping background. Fix a shaky clip in generation.
+
 ## Density contract and one spectacle
+
 
 From the shared preamble on [HyperFrames examples](https://hyperframes.heygen.com/prompting/examples). State it once on a client sizzle, then name **one** spectacle beat. An unnamed burst gets dropped.
 
