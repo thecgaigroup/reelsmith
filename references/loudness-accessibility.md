@@ -6,6 +6,7 @@
 | Social + YouTube | -14 LUFS | -1.5 dBTP (presets use -1.0 to -1.5) | default for every preset |
 | Master / broadcast-safe | -16 LUFS (Apple podcasts, many streaming) | -1 dBTP | `master` preset |
 | EBU broadcast | -23 LUFS | -1 dBTP | TV delivery only |
+| Music delivery (a mastered song) | as supplied | as supplied | measure and report; normalize only on the creator's yes (`review-and-qa.md`) |
 Platforms turn loud uploads down but rarely turn quiet ones up, so -14 is the safe middle.
 Hits and the bed share one cue sheet (`music.md`). On a music-led launch, each accent sits about 3–10 dB over the bed's median in the second before the cue, then the whole mix still masters to −14. A mix that is mostly silence between short hits will not reach −14 without crushing; keep a sustained bed and measure the encoded file.
 Reelsmith mixes in one pass: VO normalized, music ducked about 10-14 dB under speech (sidechain), then two-pass
