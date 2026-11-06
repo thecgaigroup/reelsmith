@@ -156,4 +156,4 @@ Not a default. Not on body copy, captions, or UI chrome. One grade for the film,
 | Soft vignette | [`vignette()`](https://www.remotion.dev/docs/effects/vignette) | Edges only. HyperFrames: a soft radial gradient over the plate, not over the type. |
 | Motion blur | [Remotion motion blur](https://www.remotion.dev/docs/motion-blur) | Whips and fast camera moves only. |
 
-Glow, bloom, and particle bursts stay on the banned list in `motion-design.md`. Polish does not excuse a thin select or a fade-card title.
+Glow, bloom, and particle bursts stay on the banned list in `motion-design.md`. Polish does not excuse a thin select or a fade-card title. A grade and grain over a footage cut (generated clips or real selects) is one pass on the joined picture: `finishing-look.md`.

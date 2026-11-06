@@ -44,6 +44,7 @@ kinetic type, correct logos — not grey placeholders or a talk-head TEMP divert
 | Narrated product explainer with captions | `feature-explainer` (Remotion; `render.sh`) | remotion.md. Optional product-hero notes in that file only when the storyboard names a physical device. No Three.js package |
 | Custom kinetic piece, overlay, alpha, GIF | HyperFrames by hand (Remotion if speech-locked) | hyperframes.md, motion-design.md, kinetic-type.md, transitions.md, music.md, brand-qa.md |
 | Diagrams / math, Lottie, cut user footage, transcribe | Manim, Lottie, auto-editor, parakeet | helpers.md |
+| Stitch, grade and deliver generated clips on a song master | ffmpeg; `review.py` on every assembly | review-and-qa.md (clip on arrival, before the stitch, music loudness), transitions.md, motion-design.md (retiming), helpers.md, finishing-look.md |
 | Script or VO lines | 2–3 options + `script_lint.py` | scriptwriting.md, voiceover.md |
 | Captions (SRT/VTT/ASS, burn-in) | `captions.py` | captions.md |
 | Platform specs, safe zones, delivery files | `export.py`, `presets.json` | platform-specs.md, loudness-accessibility.md |
@@ -97,6 +98,7 @@ HyperFrames setup and pin: references/hyperframes.md. Kokoro needs `HYPERFRAMES_
   synthetic lookalike or voice-clone.
 - Captions on anything with speech; text inside safe zones; at most 3 flashes/s; −14 LUFS, at most −1 dBTP.
 - Remotion finals: `export.py loudnorm` (it doesn't normalize).
+- A mastered song is not a reel: keep its loudness as supplied unless the creator asks (`review-and-qa.md`). Hard cuts between generated clips; no blend over faces.
 - Never auto-post or upload; prepare files for the user.
 - Prefer footage-first craft over generative shortcuts when selects exist.
 

@@ -28,7 +28,7 @@ Run the harness in `hyperframes.md` first (reference, then data, then story). Th
 4. `npx tsc --noEmit && npx remotion compositions` (never `remotion studio`).
 5. Stills: `npx remotion still <id> out/f.png --frame=N --scale=0.5`. Final: `npx remotion render <id>
    out/<slug>-16x9.mp4 --codec=h264 --crf=18` (draft: `--scale=0.5 --crf=28`).
-6. **Remotion doesn't normalize loudness:** `python3 scripts/export.py loudnorm in.mp4 out.mp4` on every final.
+6. **Remotion doesn't normalize loudness:** `python3 scripts/export.py loudnorm in.mp4 out.mp4` on every final. Exception: graphics over a song master (a music video, lyric captions). Render them silent or as alpha, composite in ffmpeg, and mux the master last with no loudnorm (`review-and-qa.md`).
 7. Captions: `npx tsx scripts/export-captions.ts <slug>` -> words.json -> `captions.py build`.
 
 ## Same six stations
