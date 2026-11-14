@@ -199,6 +199,17 @@ Build it in GSAP or Remotion as a function of time. Cells may mask-reveal with `
 
 Do not install a registry block. Look reference: [Typographic poster grid](https://21st.dev/@21st/components/lp-ex-poster-grid) (listed MIT). That install asks for a 21st API key. Reelsmith does not take the dependency.
 
+## One phrase, one way
+
+A phrase appears either typed on screen or shown as the document image, never both at once. Showing typed text over the same text in a photo reads as clutter.
+
+**Rules:**
+- Typed labels are at least about 3% of frame height (at 1080p: ~32 px minimum)
+- Document text (on a photo, a scanned letter, a telegram) stays in the photo; do not retype it as a label
+- A recreated document (code-drawn) may have typed headers or stamps; quote only real words and mark it as a recreation
+
+*Source: Moh4696/cinematic-skill (MIT, exploraX)*
+
 ## Still banned
 
 Centered title on a gradient, fade-in as the whole idea, corner labels and frame borders, glow on UI chrome, particle bursts, blurry scaled text, invented UI. Do not extrude type. Do not use a paid letter-morph component.

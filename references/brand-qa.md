@@ -26,6 +26,7 @@ The author of the comp does not grade it (builder ≠ judge). A second pass scor
 9. **Kinetic type** — showreel rules in `motion-design.md`: one display face, one UI face, one accent; mask/stagger; no overshoot on display type; something new every 2–4s. Fail the ban list: centered gradient title cards, free fades, invented product UI, corner labels, frame borders, glow on UI chrome, generic particle bursts, blurry scaled text.
 10. **Scores before full render** — fresh reviewer, stills first, then `contact.jpg` and `phone.jpg`. Six scores, worst three, each at 8 or higher before a delivery render. A later pass marks each prior finding FIXED, PARTLY, or STILL PRESENT.
 11. **Comparison bar** — the cut is dense real footage plus kinetic type (`client-sizzle.md`). Fail a skills-skipped animatic, a fade-card title, a sparse select when footage exists, or an interview TEMP / Flashtalk drift the user did not ask for.
+12. **Evidence vs illustration** — Never invent anything that looks real. Code-drawn documents (typeset letters, recreated forms) must be labelled on screen as recreations. AI stills are illustration only: never as evidence of real events, never as a stand-in for a real person's face. *Source: Moh4696/cinematic-skill (MIT, exploraX)*
 
 ## Commands
 ```bash

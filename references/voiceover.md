@@ -23,5 +23,19 @@ Show the `--dry-run` character count before any paid voice. Each scene is voiced
 Paid providers with timestamps give exact word times. Otherwise: `$HF transcribe vo.wav -e parakeet --json`
 (local; `$HF models install parakeet` once, 640 MB), or WhisperX for multi-speaker footage.
 
+## Voice-first timing
+
+Cut a scratch voice first, then time the picture to the words. Never lock the visuals before the voice.
+
+**Workflow:**
+1. Record or generate one take per section (per-line calls sound stitched; keep delivery even)
+2. Run `split_takes.py` to mark line boundaries
+3. Build the comp with `L(i)` (line start) and `W(i, "word")` from `doc` (HyperFrames) or `useCurrentFrame()` plus word timings (Remotion)
+4. Hits land on the spoken word, not on invented times
+
+**Tempo fit:** Keep time-stretch within 0.90–1.15x (the 88 s fit in `build_narration.py`). Outside that range the voice sounds wrong; cut or add lines instead.
+
+*Source: Moh4696/cinematic-skill (MIT, exploraX)*
+
 ## Ethics
 Say the voice is AI. Never clone or imitate a real person's voice without written consent.
