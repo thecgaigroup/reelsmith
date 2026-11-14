@@ -24,6 +24,7 @@ BBC guidance puts reading speed at 160–180 wpm; Netflix allows up to 20 charac
   product or idea (~35%) -> Proof, a number, quote or demo (~15%) -> Resolve + CTA (~10%).
 - **Story presets:** *executive brief* (state the conclusion first, 3 supporting points, ask);
   *product showcase* (problem, 3 features, stat, CTA); *impact story* (person, struggle, change, result, invitation).
+- **Documentary preset:** Cold open (2–5 lines, the most vivid moment) -> bridge (one step back: "Four years earlier…") -> sections (3–6 lines each, one take each, strictly forward in time) -> turn (the rival, the mistake) -> close (pay off the cold open). Chronology only moves forward after the bridge. *Source: Moh4696/cinematic-skill (MIT, exploraX)*
 - **How-to:** promise the outcome in 5 s -> numbered steps (one action each, imperative verb) -> recap -> next step.
 - **Testimonial:** the quote carries it; attribution card; at most 1–2 quotes per 20 s.
 
@@ -42,11 +43,13 @@ Show the CTA on screen as well as saying it, and hold it at least 2 s. A URL sho
 
 ## Writing for voice
 - At most 18 words per sentence (aim for 12). Use contractions. Front-load the point. Use active voice.
+- **One hero per line, key word last.** A line is one beat. Put the visual payoff at the end where the pause follows. ("December 17th, 1903. A windy beach in North Carolina." — the map pin lands on "Carolina".) *Source: Moh4696/cinematic-skill (MIT, exploraX)*
 - Write numbers the way you'd say them for TTS ("four times", "twenty twenty-six") and keep digits on screen.
   Spell out acronyms or add them to `pronunciations` in brand.json or the content file (applied to TTS only).
 - Punctuation is pacing: a period ≈ 400 ms, a dash ≈ 200 ms, a comma ≈ 100 ms. No ellipses.
 - Group in threes at most. Cut buzzwords ("revolutionary", "seamless", "leverage", "cutting-edge").
 - Never invent statistics, quotes or customers. Mark sample data in templates as illustrative.
+- **fact_notes:** One line per claim with date and source. When using documentary preset, check calendar facts (weekdays, intervals, ages). *Source: Moh4696/cinematic-skill (MIT, exploraX)*
 
 ## Template: present this in the plan
 ```

@@ -26,3 +26,25 @@ Rules:
 - No key, nothing found? Use the user's media, the shipped `templates/_media` (CC0) or a typographic scene.
 
 The test images in `templates/_media/` are CC0 from Openverse; see `templates/_media/credits.json`.
+
+## Archive rights gate
+
+When using historical archives (Wikimedia Commons, Library of Congress, NARA), only these rights clear:
+
+**Allowed:**
+- **US public domain:** Works published in the US in 1930 or earlier (as of 2026; one more year enters each January)
+- **US federal government works:** LOC staff photos, National Archives records made by federal agencies, NASA, military
+- **CC0, CC BY, CC BY-SA:** Free with credit. BY-SA requires adaptations carry the same license; note this in credits
+
+**Refused:**
+- Post-1930 press agency photos (AP, Getty, Corbis)
+- Film stills
+- NC (NonCommercial) or ND (NoDerivatives) licenses
+- Photos of living people without consent
+
+**CHECK required:**
+- **"No known copyright restrictions"** (Flickr Commons, some LOC): Not an automatic pass. Confirm the underlying archive record, not a mirror. `stock.py` marks these CHECK; `stock.py get` refuses them unless you pass `--allow-nonfree` after verifying.
+
+Always confirm the archive's original record. A Commons page or mirror can be wrong. Keep a `credits.json` per project with unclear-rights items listed last.
+
+*Source: Moh4696/cinematic-skill (MIT, exploraX)*
