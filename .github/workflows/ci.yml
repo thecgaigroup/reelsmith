@@ -59,3 +59,8 @@ jobs:
 
       - name: Build
         run: python3 scripts/reelsmith.py list
+
+      - name: Test
+        run: |
+          python3 -m pip install pytest numpy
+          python3 -m pytest scripts/test_validate_music_license.py scripts/test_compare_look.py -v
