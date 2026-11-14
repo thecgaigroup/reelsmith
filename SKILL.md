@@ -34,6 +34,7 @@ kinetic type, correct logos — not grey placeholders or a talk-head TEMP divert
 | Job | Use | Read |
 |---|---|---|
 | **Awards / partner / client sizzle from real selects** | **client-sizzle**, HyperFrames skills ON | **client-sizzle.md** first, then storyboard.md, kinetic-type.md, transitions.md, motion-design.md, music.md, hyperframes.md, brand-qa.md. remotion.md only if speech-locked or for a campaign matrix. Product-hero notes in that file stay on this HyperFrames lane. captions.md if speech is on screen |
+| Educational explainer with charts/maps/timelines (Signal Shorts format) | explainer format, ~55 s, 9:16 | explainer-format-signal-shorts.md (sits alongside product-launch as an option, not a replacement) |
 | Launch reel, feature drop, promo | template `product-launch` (music-led) | templates.md (house launch recipes), music.md, motion-design.md |
 | Event highlights from photos | `event-recap` | templates.md, stock-media.md |
 | Customer quotes / reviews | `testimonial` | templates.md |
