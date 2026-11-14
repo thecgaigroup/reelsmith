@@ -20,6 +20,20 @@ second); scene timing vs job.json (each scene long enough to read).
 The agent must also look at the images: clipped or overflowing text, literal `*`, overlaps (captions vs UI),
 blank scenes, logo legibility, text inside safe zones, spelling of names and numbers, and credits present.
 
+## Deterministic look match (optional)
+
+For pieces with an approved style frame, run `scripts/compare_look.py` to check that rendered frames stay inside
+the luma, saturation, and hue band of the picked look. This catches drift: shots rendered darker, greyer, or in
+another color cast. It does not judge composition or taste.
+
+```bash
+python3 scripts/compare_look.py --style styleframes/picked.png out/frames/*.png \
+    [--luma-band 20] [--saturation-band 0.08] [--hue-shift 20] [--json report.json]
+```
+
+Exit code 0 = all frames pass, 1 = one or more fail, 2 = cannot read. Default bands: luma ±20 (0-255),
+saturation ±0.08 (0-1), hue shift ≤20°. Adjust thresholds when the style is intentionally varied (e.g., day/night).
+
 ## Kinetic type, before the full render
 For client sizzle and hand-authored kinetic pieces, pull stills at the BRIEF frame numbers (`storyboard.md`)
 **before** you trust playback. HyperFrames: `$HF snapshot --at`. Remotion: `npx remotion still --frame=N`.
