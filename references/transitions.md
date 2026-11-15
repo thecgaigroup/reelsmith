@@ -17,6 +17,22 @@ Sources: [HyperFrames transitions](https://hyperframes.heygen.com/prompting/tran
 5. **Write the split on the storyboard.** Example: hard cut throughout, one whip into the takeover. End the join on a beat (`b(n)` in `music.md`).
 6. **A one-shape morph is a launch accent, not a new primary.** On `product-launch`, one container may change size and radius while its content swaps (`templates.md`). On a client sizzle the primary stays a hard cut. Do not morph display type.
 
+## Five kinds of boundaries
+
+Every change of scene must be one of these. "Next" is not a reason. Name the boundary type on your storyboard.
+
+| Kind | What it is | Example |
+|---|---|---|
+| **becomes** | The thing turns into the next thing | A typed line grows into a card; a word morphs into its meaning |
+| **carried** | Something stays through the change: a shape, a person, the camera's own move | A logo persists while the background cuts; a push-in continues across the seam |
+| **matched** | A cut with the subject in the same place, size, or motion vector | Two shots of a phone, centered, at the same scale |
+| **door** | A visible threshold into another ground | Through a screen, into a card, entering an interface |
+| **change of ground** | The whole frame changes color, texture, or world on the music | A beat hits and the scene shifts to a new visual environment |
+
+The word can become the thing it names. Put the next thing where the eye already is. When something carries across or a match holds, cut — the picture stays continuous and needs no dissolve.
+
+*Source: James Dimachkie/video-decompiler (MIT, github.com/JimGHTB12/video-decompiler @57a7525)*
+
 ## Duration
 
 | Energy | Length | Feels like |

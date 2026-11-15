@@ -87,6 +87,31 @@ Each shot still names picture, words, and kinetic recipe. Also name, in one line
 
 The open board is `examples/storyboard/` (fictional Harbor Atelier, all four statuses, a named spectacle, no client media).
 
+## Take-apart dossier (optional, for studying reference films)
+
+When a client or awards brief points at one exceptional film, read it before building your board. This structured breakdown captures what makes it work, so you can take its **shape and pace** without copying its **subject, words, pictures, or music**.
+
+Write a dossier in your film folder as `REFERENCE.md`, under these sections:
+
+1. **Seen.** Pin the reference: watch it, note what you observe frame by frame (stills at two frames per second), where motion lands, and where it rests. Evidence comes before interpretation.
+
+2. **Measured.** Numbers that describe the reference: duration, cuts per minute, how long type stays readable, when the loudest moments fall, where the music peaks. Measurements keep your rebuild honest — a "fast-paced" reference may cut every 1.5 seconds, or every 4, and your board must match the real number.
+
+3. **Take.** What you adopt and what stays theirs:
+   - **Spine:** The film's structure on a time ruler — its parts, topic changes, and where one moment hands to the next.
+   - **World:** What everything on screen is made of, and why that material belongs to the subject. The ground's job (a question it answers, or depth it reveals).
+   - **Formal idea:** The one move the whole film follows.
+   - **Hand-overs:** At every boundary between moments, what carries the eye across: a thing that becomes the next thing, a thing that stays, a matched cut, a visible threshold (a door), or a change of ground. "Next" is not a reason.
+   - **Weak spots:** Where the reference drops or feels thin. Do not carry those forward.
+   - **Keeps:** The shape, the order of its parts, its formal idea, its hand-overs, its pace, the job its ground does.
+   - **Breaks:** Its subject, its words, its pictures, its characters, its music. A viewer of both films should say "the same kind of film," never "a copy."
+
+This dossier is your board's foundation. Where your product has no honest answer to one of the reference's parts, cut that part rather than faking it.
+
+For the five kinds of boundaries between moments (becomes / carried / matched / door / change of ground), see **transitions.md**.
+
+*Source: James Dimachkie/video-decompiler (MIT, github.com/JimGHTB12/video-decompiler @57a7525)*
+
 ## Anti-patterns
 - Skipping the board and jumping to Flashtalk / AI talk-heads
 - Shipping placeholder-heavy animatics when selects exist (`HAVE`)

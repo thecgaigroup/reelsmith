@@ -274,6 +274,21 @@ Write the one you need onto the storyboard. Build it in GSAP on the paused timel
 
 Per-film links and timestamps live in upstream [launch-film-notes.md](https://github.com/echris6/motion-video-kit/blob/main/business-motion-film/references/launch-film-notes.md). The films stay with their owners. Do not download them into this repo, and do not redistribute the footage. Strongest motion references named there: Contra, Wonder, Bolt, Work Louder, Replit, Extend, Poke, AsideHQ. Reach numbers on those posts are studio claims.
 
+## Measure a reference move
+
+When your brief points at one exceptional motion and says "like that," measure it before you rebuild it. Your version must match the reference's **speed curve**, not just its look.
+
+**Method:**
+1. Find the move's start and stop frames. Use a video player that shows frame numbers, or export stills at the film's frame rate.
+2. Measure how far the element travels in pixels at each frame. For a fade or scale, measure opacity (0–255) or the element's pixel width.
+3. Plot the measured values against frame number. The shape of that curve is the easing.
+4. Fit the curve as a `cubic-bezier(x1, y1, x2, y2)` by comparing it to known eases: `linear` is a straight climb, `ease-out` (roughly `cubic-bezier(0, 0, 0.58, 1)`) climbs fast then slows, `ease-in-out` is an S-curve. Adjust the control points until your test move's curve matches the reference plot within a few pixels per frame.
+5. In your code, use that fitted cubic-bezier. GSAP named eases like `power3.out` are also cubic-bezier curves; compare your fit to those presets.
+
+The rebuild passes when its own measured curve matches the reference curve, not when it "looks close" at normal speed. Fast motion hides bad easing; frame-by-frame comparison does not.
+
+*Source: James Dimachkie/video-decompiler (MIT, github.com/JimGHTB12/video-decompiler @57a7525)*
+
 ## Gallery themes (style only)
 
 Browse the free [MotionVideo gallery](https://motionvideo.xyz/) for density, not for files. Useful public themes: Bold kinetic type, Kinetic type music machine, Pencil line, Beat-synced generative, Photo print launch, Claude motion designer showreel. Do not buy or paste the paid pack. A photo-print or product launch still uses real screenshots and the real logo. Launch beats follow the house recipes in `templates.md`.

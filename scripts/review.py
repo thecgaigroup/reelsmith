@@ -79,6 +79,41 @@ def flashes(v, fps):
                 worst, worst_t = cnt, round(ev[k] / fps, 2)
     return {"max_flashes_per_s": worst, "worst_at": worst_t}
 
+def detect_pops(v, fps):
+    """Find one-frame pops: anomalous frames that differ strongly from both neighbors
+    while those neighbors are similar to each other. Catches swaps, resets, and flashes.
+    Returns list of (frame_number, time_seconds)."""
+    import numpy as np
+    W, H = 160, 90
+    proc = subprocess.run(["ffmpeg", "-v", "error", "-i", str(v), "-vf", 
+                          f"scale={W}:{H}:flags=area,format=gray", "-f", "rawvideo", "-"],
+                         capture_output=True)
+    raw = np.frombuffer(proc.stdout, dtype=np.uint8)
+    frame_count = len(raw) // (W * H)
+    if frame_count < 3:
+        return []
+    
+    video = raw[: frame_count * W * H].reshape(frame_count, H, W).astype(np.float32)
+    results = []
+    
+    # Method: frame i is a pop when it's very different from BOTH frame i-1 and i+1,
+    # while frames i-1 and i+1 are close to each other. This naturally excludes cuts
+    # (where the change persists) and held frames (where nothing changes).
+    for i in range(1, frame_count - 1):
+        before_diff = np.mean(np.abs(video[i] - video[i - 1]))
+        after_diff = np.mean(np.abs(video[i] - video[i + 1]))
+        neighbor_diff = np.mean(np.abs(video[i + 1] - video[i - 1]))
+        
+        # Pop criteria: frame i changes strongly in both directions (> 20.0)
+        # while its neighbors are similar (their diff < 1/4 of the pop's changes)
+        pop_threshold = 20.0
+        if before_diff > pop_threshold and after_diff > pop_threshold:
+            avg_pop_change = (before_diff + after_diff) / 2.0
+            if neighbor_diff < avg_pop_change / 4.0:
+                results.append((i, round(i / fps, 2)))
+    
+    return results
+
 def scene_frames(video, job, out, font, vertical):
     """One frame per scene (70% in, after entrances settle), labeled with the scene id, tiled."""
     tmp = out / "_scenes"; tmp.mkdir(exist_ok=True)
@@ -135,6 +170,8 @@ def check(video, out, preset=None, expect=None, credits=None, job=None):
     add("WARN" if late else "PASS", "frozen ending", f"static from {late[0]:.2f}s; add a slow drift/breath" if late else "motion continues to the end")
     fl = flashes(video, p["fps"] or 30)
     add("FAIL" if fl["max_flashes_per_s"] > 3 else "PASS", "flashes (WCAG 2.3.1)", f"max {fl['max_flashes_per_s']}/s" + (f" at {fl['worst_at']}s" if fl["worst_at"] is not None else ""))
+    pops = detect_pops(video, p["fps"] or 30)
+    add("WARN" if pops else "PASS", "one-frame pops", ", ".join(f"f{frm}@{t}s" for frm, t in pops[:5]) + (f" +{len(pops) - 5} more" if len(pops) > 5 else "") if pops else "none (check hits you meant)")
     if credits:
         cr = json.loads(Path(credits).read_text()) if Path(credits).exists() else []
         add("PASS" if cr else "WARN", "credits", f"{len(cr)} credited assets in {Path(credits).name}")
