@@ -57,13 +57,15 @@ Not this gate. The measurement ladder, `gate --no-sage` (local measurements, zer
 
 ## One-frame pop scan
 
-A **pop** is a frame whose change is far larger than its neighbors'. It reads as a swap, reset, or flash — a glitch the viewer sees but cannot name. Most pops are rendering errors or poorly timed cuts, not intentional hits.
+A **pop** is a single anomalous frame — a swap, reset, or flash that the viewer sees but cannot name. Most pops are rendering errors or poorly timed cuts, not intentional hits.
 
 **How to find them:**
-Compare each frame's difference from the previous frame. A pop is a frame where that difference is much larger (typically 3× or more) than the differences of the frames immediately before and after it. Check these manually: a hit you meant (a bolt, a key press, a beat-synced impact) has sound on that frame and is documented on the storyboard. Keep those. Fix the rest before anyone watches the cut.
+Frame `i` is a pop when it differs strongly from BOTH frame `i-1` and frame `i+1` (large mean absolute pixel difference), while frames `i-1` and `i+1` are similar to each other (small difference). This naturally ignores real cuts (where the change persists) and held frames (where nothing changes).
+
+Check flagged frames manually: a hit you meant (a bolt, a key press, a beat-synced impact) has sound on that frame and is documented on the storyboard. Keep those. Fix the rest before anyone watches the cut.
 
 **Method (implemented in `review.py`):**
-For each frame `i` in the video, compute the mean absolute pixel difference from frame `i-1`. Flag frame `i` as a pop if its difference is more than three times larger than both the `i-1` to `i-2` difference and the `i+1` to `i` difference. Ignore the first and last two frames.
+For each frame `i`, measure how much it differs from frame `i-1` and from frame `i+1`. Also measure how much frames `i-1` and `i+1` differ from each other. Flag frame `i` as a pop if both of its changes exceed a threshold while its neighbors' difference is small relative to those changes (less than 1/4 of the average pop change).
 
 *Source: James Dimachkie/video-decompiler (MIT, github.com/JimGHTB12/video-decompiler @57a7525)*
 

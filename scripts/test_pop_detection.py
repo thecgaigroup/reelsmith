@@ -1,9 +1,9 @@
 """Test for one-frame pop detection in review.py.
 
-Run: python3 -m pytest scripts/test_pop_detection.py
+Run: python3 -m unittest scripts.test_pop_detection -v
 
-Tests that detect_pops() flags a single-frame anomaly in a synthetic clip
-and passes a smooth clip.
+Tests that detect_pops() correctly identifies single-frame anomalies while
+ignoring smooth clips, hard cuts, and multi-frame changes.
 """
 
 import pathlib
@@ -11,100 +11,89 @@ import shutil
 import subprocess
 import sys
 import tempfile
-
-try:
-    import pytest
-except ImportError:
-    print("pytest not found. Install it with: pip install pytest")
-    sys.exit(1)
+import unittest
 
 import numpy as np
+from PIL import Image
 
-SCRIPT = pathlib.Path(__file__).resolve().parent / "review.py"
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import review
 
 
-def make_synthetic_video(path, with_pop=False):
-    """Create a synthetic 1-second test video at 30 fps.
-    If with_pop=True, inserts a single bright frame at frame 15, then continues the gradient.
-    Otherwise creates a smooth gradient animation."""
-    W, H, FPS, DURATION = 160, 90, 30, 1
-    frames = []
-    base_brightness = []
-    for i in range(FPS * DURATION):
-        b = int(80 + i * 2)
-        base_brightness.append(b)
+def make_clip(brightness_values):
+    """Create a test video from a list of brightness values, one per frame.
+    Returns path to the created video file in a temp directory that caller must clean up."""
+    W, H, FPS = 160, 90, 30
+    tmpdir = pathlib.Path(tempfile.mkdtemp())
+    frames_dir = tmpdir / "frames"
+    frames_dir.mkdir()
     
-    for i in range(FPS * DURATION):
+    for i, brightness in enumerate(brightness_values):
         frame = np.zeros((H, W, 3), dtype=np.uint8)
-        brightness = base_brightness[i]
-        if with_pop and i == 15:
-            brightness = 255
         frame[:, :] = [brightness, brightness, brightness]
-        frames.append(frame)
+        Image.fromarray(frame).save(frames_dir / f"{i:04d}.png")
     
-    tmp_frames = pathlib.Path(tempfile.mkdtemp()) / "frames"
-    tmp_frames.mkdir()
-    for i, frame in enumerate(frames):
-        from PIL import Image
-        Image.fromarray(frame).save(tmp_frames / f"{i:04d}.png")
-    
+    video = tmpdir / "test.mp4"
     subprocess.run([
-        "ffmpeg", "-y", "-framerate", str(FPS), "-i", str(tmp_frames / "%04d.png"),
-        "-c:v", "libx264", "-qp", "0", "-pix_fmt", "yuv420p", "-t", str(DURATION),
-        str(path)
+        "ffmpeg", "-y", "-framerate", str(FPS), "-i", str(frames_dir / "%04d.png"),
+        "-c:v", "libx264", "-qp", "0", "-pix_fmt", "yuv420p",
+        "-frames:v", str(len(brightness_values)), str(video)
     ], check=True, capture_output=True)
     
-    shutil.rmtree(tmp_frames.parent)
+    shutil.rmtree(frames_dir)
+    return video, tmpdir
 
 
-def test_detect_pops_with_pop():
-    """A synthetic clip with a jump-style pop (large change in, small change out) should be flagged.
-    Note: Single-frame flashes (large changes both in and out) require more sophisticated detection."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        video = pathlib.Path(tmpdir) / "with_pop.mp4"
-        W, H, FPS, DURATION = 160, 90, 30, 1
-        frames = []
-        for i in range(FPS * DURATION):
-            frame = np.zeros((H, W, 3), dtype=np.uint8)
-            brightness = 80
-            if 15 <= i <= 17:
-                brightness = 255
-            frame[:, :] = [brightness, brightness, brightness]
-            frames.append(frame)
-        
-        tmp_frames = pathlib.Path(tempfile.TemporaryDirectory().name) / "frames"
-        tmp_frames.mkdir(parents=True)
-        from PIL import Image
-        for i, frame in enumerate(frames):
-            Image.fromarray(frame).save(tmp_frames / f"{i:04d}.png")
-        
-        subprocess.run([
-            "ffmpeg", "-y", "-framerate", str(FPS), "-i", str(tmp_frames / "%04d.png"),
-            "-c:v", "libx264", "-qp", "0", "-pix_fmt", "yuv420p", "-t", str(DURATION),
-            str(video)
-        ], check=True, capture_output=True)
-        
-        shutil.rmtree(tmp_frames.parent, ignore_errors=True)
-        
-        sys.path.insert(0, str(SCRIPT.parent))
-        import review
-        
-        pops = review.detect_pops(str(video), 30)
-        assert len(pops) >= 1, f"Expected to detect pop(s) in synthetic clip with 3-frame brightness jump, got {pops}"
-
-
-def test_detect_pops_smooth():
-    """A smooth clip with no pops should pass."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        video = pathlib.Path(tmpdir) / "smooth.mp4"
-        make_synthetic_video(video, with_pop=False)
-        
-        sys.path.insert(0, str(SCRIPT.parent))
-        import review
-        
-        pops = review.detect_pops(str(video), 30)
-        assert len(pops) == 0, f"Expected no pops in smooth clip, but found {len(pops)}"
+class TestPopDetection(unittest.TestCase):
+    
+    def test_smooth_clip_no_pops(self):
+        """A smooth clip with gradual changes gives no pops."""
+        brightness = [80 + i * 2 for i in range(30)]
+        video, tmpdir = make_clip(brightness)
+        try:
+            pops = review.detect_pops(str(video), 30)
+            self.assertEqual(pops, [], f"Expected no pops in smooth clip, got {pops}")
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+    
+    def test_single_bright_frame_is_pop(self):
+        """A clip with exactly one bright frame at i=15 gives exactly [15]."""
+        brightness = [80] * 30
+        brightness[15] = 255
+        video, tmpdir = make_clip(brightness)
+        try:
+            pops = review.detect_pops(str(video), 30)
+            pop_frames = [f for f, _ in pops]
+            self.assertEqual(pop_frames, [15], 
+                           f"Expected pop at frame 15, got {pop_frames}")
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+    
+    def test_hard_cut_no_pops(self):
+        """A hard cut (80 until frame 14, then 200 from 15 onward) gives no pops."""
+        brightness = [80] * 15 + [200] * 15
+        video, tmpdir = make_clip(brightness)
+        try:
+            pops = review.detect_pops(str(video), 30)
+            self.assertEqual(pops, [], 
+                           f"Expected no pops at a held cut, got {pops}")
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+    
+    def test_three_frame_plateau_no_pops(self):
+        """A 3-frame plateau (frames 15-17 at 255) gives no pops."""
+        brightness = [80] * 30
+        brightness[15] = 255
+        brightness[16] = 255
+        brightness[17] = 255
+        video, tmpdir = make_clip(brightness)
+        try:
+            pops = review.detect_pops(str(video), 30)
+            self.assertEqual(pops, [], 
+                           f"Expected no pops in 3-frame plateau, got {pops}")
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+    unittest.main()

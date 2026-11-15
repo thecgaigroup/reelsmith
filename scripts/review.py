@@ -80,31 +80,39 @@ def flashes(v, fps):
     return {"max_flashes_per_s": worst, "worst_at": worst_t}
 
 def detect_pops(v, fps):
-    """Detect one-frame pops: frames whose change is far larger than their neighbors'.
-    A pop reads as a swap, reset, or flash. Most are rendering errors or poorly timed cuts.
-    Returns list of (frame_number, time_seconds) for flagged frames."""
+    """Find one-frame pops: anomalous frames that differ strongly from both neighbors
+    while those neighbors are similar to each other. Catches swaps, resets, and flashes.
+    Returns list of (frame_number, time_seconds)."""
     import numpy as np
     W, H = 160, 90
-    r = subprocess.run(["ffmpeg", "-v", "error", "-i", str(v), "-vf", f"scale={W}:{H}:flags=area,format=gray", "-f", "rawvideo", "-"],
-                       capture_output=True)
-    fr = np.frombuffer(r.stdout, dtype=np.uint8)
-    n = len(fr) // (W * H)
-    if n < 5:
+    proc = subprocess.run(["ffmpeg", "-v", "error", "-i", str(v), "-vf", 
+                          f"scale={W}:{H}:flags=area,format=gray", "-f", "rawvideo", "-"],
+                         capture_output=True)
+    raw = np.frombuffer(proc.stdout, dtype=np.uint8)
+    frame_count = len(raw) // (W * H)
+    if frame_count < 3:
         return []
-    frames = fr[: n * W * H].reshape(n, H, W).astype(np.float32)
-    diffs = np.zeros(n - 1)
-    for i in range(n - 1):
-        diffs[i] = np.mean(np.abs(frames[i + 1] - frames[i]))
     
-    floor, times = 1.0, 3.0
-    at = lambda i: diffs[i] if 0 <= i < len(diffs) else 0.0
-    pops = []
+    video = raw[: frame_count * W * H].reshape(frame_count, H, W).astype(np.float32)
+    results = []
     
-    for i in range(len(diffs)):
-        if diffs[i] > floor and diffs[i] > times * max(at(i - 1), at(i + 1)):
-            pops.append((i + 1, round((i + 1) / fps, 2)))
+    # Method: frame i is a pop when it's very different from BOTH frame i-1 and i+1,
+    # while frames i-1 and i+1 are close to each other. This naturally excludes cuts
+    # (where the change persists) and held frames (where nothing changes).
+    for i in range(1, frame_count - 1):
+        before_diff = np.mean(np.abs(video[i] - video[i - 1]))
+        after_diff = np.mean(np.abs(video[i] - video[i + 1]))
+        neighbor_diff = np.mean(np.abs(video[i + 1] - video[i - 1]))
+        
+        # Pop criteria: frame i changes strongly in both directions (> 20.0)
+        # while its neighbors are similar (their diff < 1/4 of the pop's changes)
+        pop_threshold = 20.0
+        if before_diff > pop_threshold and after_diff > pop_threshold:
+            avg_pop_change = (before_diff + after_diff) / 2.0
+            if neighbor_diff < avg_pop_change / 4.0:
+                results.append((i, round(i / fps, 2)))
     
-    return pops
+    return results
 
 def scene_frames(video, job, out, font, vertical):
     """One frame per scene (70% in, after entrances settle), labeled with the scene id, tiled."""
