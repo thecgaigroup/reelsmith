@@ -161,6 +161,24 @@ Liquid-chrome shaders below stay parked. These notes do not start that work.
 
 **Left upstream:** the earshot sound bank, `skills/earshot`, `skills/real-sound`, forge recipes, and the MCP server. An optional local CPU MCP is future work, out of scope for this fold, and not a Reelsmith dependency. No paid audio model. Francesco's Remotion-and-motion-design skill pack is not a second tree here. HyperFrames stays the sizzle engine. Skills stay on. The SageCut ladder and the motion-video-kit fold are unchanged.
 
+## Video Decompiler craft (2026-11-15)
+
+**Status:** in the skill. Docs only. No vendored code, tools, or text.
+
+**Source:** [JimGHTB12/video-decompiler](https://github.com/JimGHTB12/video-decompiler) (MIT, James Dimachkie), commit 57a7525.
+
+| Folded into | What landed |
+|---|---|
+| [references/storyboard.md](references/storyboard.md) | Take-apart dossier: structured reference breakdown (seen / measured / take) covering spine, world, formal idea, hand-overs, weak spots, keeps/breaks. Take shape and pace only, never the reference's subject, words, pictures, or music. |
+| [references/transitions.md](references/transitions.md) | Five kinds of boundaries: becomes / carried / matched / door / change of ground. "Next" is not a reason. |
+| [references/motion-design.md](references/motion-design.md) | Measure a reference move: fit its speed curve as cubic-bezier by plotting frame-by-frame travel. The rebuild must match the curve, not just the look. |
+| [references/review-and-qa.md](references/review-and-qa.md), [scripts/review.py](scripts/review.py) | One-frame pop scan: flag frames whose change is far larger than neighbors' (swap, reset, flash). Implemented with behavioral test. |
+
+**Skipped on purpose:**
+
+- **video-decompiler and raea as an engine:** FSL 1.1 license. It competes with Remotion and HyperFrames, which are already Reelsmith's render paths.
+- **woodxbt 19-repo listicle:** It's an index. Items already covered in other ROADMAP sections or parked. Hairline is a web widget, not a render path.
+
 ## Liquid chrome / reflective metal look (optional Three.js path)
 
 **Status:** parked  

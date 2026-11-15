@@ -55,6 +55,18 @@ When a prior report exists, the fresh reviewer marks each finding FIXED, PARTLY,
 
 Not this gate. The measurement ladder, `gate --no-sage` (local measurements, zero API), and the hold on Sage and Opus spend are in `brand-qa.md`. SageCut 0.3 does not support camera footage. Client sizzle and live footage stay on the BRIEF stills and `review.py`. Do not require `SAGE_API_KEY`. Do not install the plugin.
 
+## One-frame pop scan
+
+A **pop** is a frame whose change is far larger than its neighbors'. It reads as a swap, reset, or flash — a glitch the viewer sees but cannot name. Most pops are rendering errors or poorly timed cuts, not intentional hits.
+
+**How to find them:**
+Compare each frame's difference from the previous frame. A pop is a frame where that difference is much larger (typically 3× or more) than the differences of the frames immediately before and after it. Check these manually: a hit you meant (a bolt, a key press, a beat-synced impact) has sound on that frame and is documented on the storyboard. Keep those. Fix the rest before anyone watches the cut.
+
+**Method (implemented in `review.py`):**
+For each frame `i` in the video, compute the mean absolute pixel difference from frame `i-1`. Flag frame `i` as a pop if its difference is more than three times larger than both the `i-1` to `i-2` difference and the `i+1` to `i` difference. Ignore the first and last two frames.
+
+*Source: James Dimachkie/video-decompiler (MIT, github.com/JimGHTB12/video-decompiler @57a7525)*
+
 ## Approve
 Send the user `preview.mp4` or the sheets plus `review.md`. Only when they say yes:
     review.py approve out/_review --by "user in chat"

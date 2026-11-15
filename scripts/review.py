@@ -79,6 +79,33 @@ def flashes(v, fps):
                 worst, worst_t = cnt, round(ev[k] / fps, 2)
     return {"max_flashes_per_s": worst, "worst_at": worst_t}
 
+def detect_pops(v, fps):
+    """Detect one-frame pops: frames whose change is far larger than their neighbors'.
+    A pop reads as a swap, reset, or flash. Most are rendering errors or poorly timed cuts.
+    Returns list of (frame_number, time_seconds) for flagged frames."""
+    import numpy as np
+    W, H = 160, 90
+    r = subprocess.run(["ffmpeg", "-v", "error", "-i", str(v), "-vf", f"scale={W}:{H}:flags=area,format=gray", "-f", "rawvideo", "-"],
+                       capture_output=True)
+    fr = np.frombuffer(r.stdout, dtype=np.uint8)
+    n = len(fr) // (W * H)
+    if n < 5:
+        return []
+    frames = fr[: n * W * H].reshape(n, H, W).astype(np.float32)
+    diffs = np.zeros(n - 1)
+    for i in range(n - 1):
+        diffs[i] = np.mean(np.abs(frames[i + 1] - frames[i]))
+    
+    floor, times = 1.0, 3.0
+    at = lambda i: diffs[i] if 0 <= i < len(diffs) else 0.0
+    pops = []
+    
+    for i in range(len(diffs)):
+        if diffs[i] > floor and diffs[i] > times * max(at(i - 1), at(i + 1)):
+            pops.append((i + 1, round((i + 1) / fps, 2)))
+    
+    return pops
+
 def scene_frames(video, job, out, font, vertical):
     """One frame per scene (70% in, after entrances settle), labeled with the scene id, tiled."""
     tmp = out / "_scenes"; tmp.mkdir(exist_ok=True)
@@ -135,6 +162,8 @@ def check(video, out, preset=None, expect=None, credits=None, job=None):
     add("WARN" if late else "PASS", "frozen ending", f"static from {late[0]:.2f}s; add a slow drift/breath" if late else "motion continues to the end")
     fl = flashes(video, p["fps"] or 30)
     add("FAIL" if fl["max_flashes_per_s"] > 3 else "PASS", "flashes (WCAG 2.3.1)", f"max {fl['max_flashes_per_s']}/s" + (f" at {fl['worst_at']}s" if fl["worst_at"] is not None else ""))
+    pops = detect_pops(video, p["fps"] or 30)
+    add("WARN" if pops else "PASS", "one-frame pops", ", ".join(f"f{frm}@{t}s" for frm, t in pops[:5]) + (f" +{len(pops) - 5} more" if len(pops) > 5 else "") if pops else "none (check hits you meant)")
     if credits:
         cr = json.loads(Path(credits).read_text()) if Path(credits).exists() else []
         add("PASS" if cr else "WARN", "credits", f"{len(cr)} credited assets in {Path(credits).name}")
