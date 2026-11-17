@@ -23,6 +23,7 @@ Everything works free and offline; optional keys add features. Paths below (`scr
 kinetic type, correct logos — not grey placeholders or a talk-head TEMP diverted from the brief.
 
 ## Start every job
+0. In an existing film folder, read `EDIT_LOG.md` first and say the last session in one sentence (`review-and-qa.md`, Edit log). Append to it before you end the session.
 1. `python3 scripts/capabilities.py` — shows what is ON/OFF (never prints keys). Mention, once, which free key
    would help (e.g. Pexels for stock). Never require one.
 2. Gather: goal, audience, platform(s), length, brand (`brand.json`; build one: references/brand-kit.md), media,
@@ -84,7 +85,7 @@ Stay on this lane until the user explicitly pivots. No Flashtalk or interview TE
 ## Scripts (`scripts/`)
 `capabilities.py` features on/off | `brand.py` validate, bundle, from-logo, from-site | `reelsmith.py` list,
 sample, render, loop, seam | `script_lint.py` | `beats.py` grid, snap, fit, synth | `stock.py` search, fetch,
-credit (API keys only, `--dry-run`) | `captions.py` build/burn | `review.py` check, approve, status |
+credit (API keys only, `--dry-run`) | `captions.py` build/burn | `review.py` check (incl. cut list, clicks at cuts), approve, status |
 `export.py` run, overlay, list, loudnorm | `youtube_prep.py` | `presets.json`.
 HyperFrames setup and pin: references/hyperframes.md. Kokoro needs `HYPERFRAMES_PYTHON=<venv>/bin/python`.
 

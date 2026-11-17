@@ -69,6 +69,42 @@ For each frame `i`, measure how much it differs from frame `i-1` and from frame 
 
 *Source: James Dimachkie/video-decompiler (MIT, github.com/JimGHTB12/video-decompiler @57a7525)*
 
+## Cut list and clicks at cuts
+
+`review.py check` writes `cuts.json` and two rows. Neither is a FAIL.
+
+- **Cut list (INFO).** Every place the picture jumps, classified: `cut` (a new shot), `flash` (the picture comes back within four frames: a white flash or a one-frame hit), `fast` (a whip or a fast camera move inside one shot: the frame before, zoomed or shifted, nearly gives the frame after) or `transition` (a change spread over more than three frames: dissolve, wipe, flash-fade). It catches punch-ins that ffmpeg's scene score misses. Use the count as cuts per minute in a take-apart dossier (`storyboard.md`), and as a check that your film has the cuts the storyboard names and no others.
+- **Clicks at cuts (WARN).** At each `cut`, a hard audio edit leaves one sample-to-sample jump far larger than the jumps in the 2 ms around it. A drum hit on the beat rises over several milliseconds and is not flagged. Fix: a ~30 ms audio fade on each side of the edit (`afade=t=in:st=0:d=0.03`, `afade=t=out:st=<dur−0.03>:d=0.03` per segment), then check again.
+
+**Limitations:** These are heuristics, not certifications. The cut detector may misclassify dissolves as cuts, miss cuts during very dark or bright sequences, or flag intentional motion as false cuts. The click detector may miss pops in dense mixes or flag legitimate transients. Always review the output; passing these checks does not guarantee the film has no defects. Use `contact.jpg` and frame strips for final verification.
+
+`detect_pops` stays the one-frame check. The cut list answers a different question: where the shots change, and whether that change is a cut at all.
+
+## Self-eval at every cut
+
+Before anyone sees a cut made from footage, pull a strip of frames ±1.5 s around each `cut` in `cuts.json` (`ffmpeg -ss <t−1.5> -t 3 … tile`), plus the first 2 s, the last 2 s, and two or three mid-points. Look for: a jump or flash at the cut, a caption hidden under an overlay or cut mid-word, an overlay showing the wrong frames, and grade drift between neighbours. Read consecutive frames wherever something enters, leaves, or changes; a sheet sampled once a second misses 1–3-frame timing.
+
+Fix, re-render, re-check. Stop after three self-eval passes. Whatever still fails goes to the user as a named list, not into a fourth loop.
+
+*Sources: cut classification after heygen-com/hyperframes (Apache-2.0, github.com/heygen-com/hyperframes @d317abc), `packages/cli/src/measure/cuts.ts`, re-implemented in Python. Cut-boundary self-eval, the 30 ms fade, and the three-pass cap after browser-use/video-use (MIT, Copyright (c) 2026 Browser Use, github.com/browser-use/video-use @43cfc56), `SKILL.md`. See `THIRD_PARTY_NOTICES.md`.*
+
+## Edit log (memory across sessions)
+
+Every film folder keeps `EDIT_LOG.md`. At the start of a session, read it and say the last session in one sentence before you ask whether to carry on. At the end, append one section:
+
+```markdown
+## Session N · YYYY-MM-DD
+**Strategy:** one paragraph: the approach this session.
+**Decisions:** takes, cuts, grade, music, type, and why. Include what the user approved or turned down, in their words.
+**Reasoning:** one line for each decision that is not obvious.
+**Locked:** what must not change without asking (approved script, picture lock, LUFS target, disclosure text).
+**Outstanding:** what is deferred, and what is waiting on whom.
+```
+
+Never re-transcribe or re-voice a source the log says is cached and unchanged. A decision the user turned down stays turned down in later sessions unless they reopen it. The log holds no keys, prices, or private paths that would not belong in the film folder.
+
+*Source: the `project.md` memory pattern in browser-use/video-use (MIT, Copyright (c) 2026 Browser Use, github.com/browser-use/video-use @43cfc56), `SKILL.md`, adapted: we add **Locked** and the turned-down rule.*
+
 ## Approve
 Send the user `preview.mp4` or the sheets plus `review.md`. Only when they say yes:
     review.py approve out/_review --by "user in chat"

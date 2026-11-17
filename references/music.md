@@ -102,7 +102,7 @@ A launch kit is that list filled in: role, `b(n)`, `offset_ms`, `bed_db`. One cl
 
 ### Measured SFX check
 
-Read the mix the way you read stills. Three passes, all on the house clock.
+Read the mix the way you read stills. Three passes, all on the house clock. When scoring to picture (not music-first or beat-synced work): lock picture timing before building the cue sheet, since the cue sheet reads the picture's shot frames and word times, and any later timing change means rebuilding the cue sheet and the mix, not nudging one stem.
 
 1. **Timeline.** The cue sheet is the transcript: time, role, `offset_ms`, `bed_db`, picture event. A transient with no row is a hardcoded time or a stale file.
 2. **Sheet.** Seek the picture to `b(n)` and Read that frame (`brand-qa.md`). The sync point belongs to that frame. `review.py check` reports integrated LUFS and true peak on the encoded file.

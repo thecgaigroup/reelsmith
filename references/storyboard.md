@@ -96,6 +96,9 @@ Write a dossier in your film folder as `REFERENCE.md`, under these sections:
 1. **Seen.** Pin the reference: watch it, note what you observe frame by frame (stills at two frames per second), where motion lands, and where it rests. Evidence comes before interpretation.
 
 2. **Measured.** Numbers that describe the reference: duration, cuts per minute, how long type stays readable, when the loudest moments fall, where the music peaks. Measurements keep your rebuild honest — a "fast-paced" reference may cut every 1.5 seconds, or every 4, and your board must match the real number.
+   - Cuts: run `review.py check REF.mp4 --out ref/_review` and read `cuts.json`. Count `cut` rows per minute; `flash`, `fast` and `transition` rows are not new shots. Shot lengths are the gaps between cuts.
+   - Events: wherever something enters, leaves, or changes, read the consecutive frames a few either side, not a once-a-second sheet. Note how it arrives (pop, scale, fade, wipe, type-on) and the frame it lands. A thing fully there on one frame is a hard switch; tween only what you saw move across several frames.
+   - Look: for a "make it look like X" brief, measure one topic per pass (motion, depth of field, outlines, textures, characters, light, grade), each written as numbers, not adjectives: median luma, darkest non-black percentile, saturation p90, line width in px at 1080 wide, blur radius per shot size, push-in % per frame. Those numbers, not the frames, are what later passes compare against. The reference frames stay private study material.
 
 3. **Take.** What you adopt and what stays theirs:
    - **Spine:** The film's structure on a time ruler — its parts, topic changes, and where one moment hands to the next.
@@ -110,7 +113,7 @@ This dossier is your board's foundation. Where your product has no honest answer
 
 For the five kinds of boundaries between moments (becomes / carried / matched / door / change of ground), see **transitions.md**.
 
-*Source: James Dimachkie/video-decompiler (MIT, github.com/JimGHTB12/video-decompiler @57a7525)*
+*Source: James Dimachkie/video-decompiler (MIT, github.com/JimGHTB12/video-decompiler @57a7525). Cut and event measurement after heygen-com/hyperframes (Apache-2.0, github.com/heygen-com/hyperframes @d317abc) (`skills/reverse-any-video`, `measure cuts`); one-topic look reports after mromidev/claude-animated-shorts (MIT, Copyright (c) 2026 Mr omi, github.com/mromidev/claude-animated-shorts @e3b817b) (`SKILL.md`, look-match loop). Our words.*
 
 ## Anti-patterns
 - Skipping the board and jumping to Flashtalk / AI talk-heads

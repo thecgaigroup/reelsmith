@@ -64,4 +64,4 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y ffmpeg
           python3 -m pip install pytest numpy
-          python3 -m pytest scripts/test_validate_music_license.py scripts/test_compare_look.py -v
+          python3 -m pytest scripts/test_validate_music_license.py scripts/test_compare_look.py scripts/test_cut_detection.py -v

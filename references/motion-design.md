@@ -162,6 +162,22 @@ iart reveal curve, when you need a cubic-bezier instead of a named GSAP ease: `c
 
 Drone orbit, extruded type, and glitch are not the client default.
 
+### Story-short camera (measured numbers)
+
+For narrated story shorts and explainers built as a world (2D cards in a 3D or layered scene), these numbers come from a measured reference set. Client sizzle keeps its own seam rules (`transitions.md`).
+
+- **Cut on big jumps, glide the rest.** A change of place or time is a hard cut. Anything else is a smootherstep glide of 18–40 frames at 30 fps, peaking at about 25 px per frame at 720p.
+- **Every hold creeps.** A measured reference set used push-ins of 0.015–0.035% scale per frame (0.45–1.05% per second at 30 fps), up to 0.06% per frame on a punch word. These are starting points from one style, not universal defaults. A span of 12 frames or more with no motion reads as a freeze in QA.
+- **No hand-held float.** Impact shakes flip sign every frame and decay to zero over about 7 frames.
+- **Rolls stay small.** 4–5° at most, on an emotional beat.
+- **Reactions lead the word.** A visual reaction lands 0–3 frames before the word that causes it (word times from `captions.md`).
+- **Depth of field on about a third of screen time.** Close-ups and mid shots blur the background (about 10–16 px at 1080 wide, focus on the eyes); establishing and wide shots stay sharp.
+- **A foreground frame in about a third of shots.** It must be recognisable. A foreground prop cut by the frame edge reads as a blob: make it readable or remove it.
+- **Pixel sizes scale with output height.** Every blur radius, line width and shake amplitude is written at 1920 high and multiplied by `height / 1920`, so stills at half size and the 2K final match.
+- **Grain off by default.** At a few percent it multiplied a 2K file about 4× and turns to mush after platform re-encode.
+
+*Source: mromidev/claude-animated-shorts (MIT, Copyright (c) 2026 Mr omi, github.com/mromidev/claude-animated-shorts @e3b817b), `SKILL.md` (Look targets, Final look values, Gotchas). Numbers restated in our words; no code taken.*
+
 ## Taste layer
 
 Numbers an agent can apply. Sources are cited under Scout notes. Do not install those repos. House springs in `kinetic-type.md` still win on display type, logos, and numbers: **0% overshoot**. UI chrome may use the small spring already in Showreel kinetic type (`back.out(1.15)` at most). Squash, elastic, and bounce are not a client-sizzle entrance.
@@ -286,6 +302,17 @@ When your brief points at one exceptional motion and says "like that," measure i
 5. In your code, use that fitted cubic-bezier. GSAP named eases like `power3.out` are also cubic-bezier curves; compare your fit to those presets.
 
 The rebuild passes when its own measured curve matches the reference curve, not when it "looks close" at normal speed. Fast motion hides bad easing; frame-by-frame comparison does not.
+
+Before you fit a curve, check there is one. Something fully there on the frame it appears is a hard switch: set it, do not tween it. A camera that lands in one frame is a set. Size type from its ink: crop the line in a reference frame and in your still, and match the ink box height and width, then letter-spacing. Recipes a seeked timeline reproduces:
+
+| Seen | Build |
+|---|---|
+| Fast move, smeared | Directional blur on the moving wrapper only while it is fast: SVG `feGaussianBlur` with `stdDeviation="24 0"` tweened (horizontal). CSS `blur()` is symmetric and reads wrong. Never on readable type at rest. |
+| Ghost trail | 2–4 copies behind the element along the move at about 0.5, 0.3, 0.15 opacity. |
+| Fill sweeping across a word | Two copies; the lit one on top with `clip-path: inset(0 100% 0 0)` tweened to `inset(0 0 0 0)` over the measured frames. |
+| Flash | One full-frame layer for exactly the measured frames, not a fade. |
+
+*Source: switch-versus-tween rule, ink sizing and recipe table after heygen-com/hyperframes (Apache-2.0, github.com/heygen-com/hyperframes @d317abc), `skills/reverse-any-video/references/match.md`. Our words.*
 
 *Source: James Dimachkie/video-decompiler (MIT, github.com/JimGHTB12/video-decompiler @57a7525)*
 

@@ -46,6 +46,16 @@ For type authored inside a composition, name one block for the section. Source: 
 
 `caption-glitch-rgb`, `caption-particle-burst`, and `caption-neon-glow` are not client-sizzle defaults. Transcript words come from `$HF transcribe` or `captions.py`. Emphasis words: one or two, from `kinetic-type.md`.
 
+## Captions on a cut film
+
+- **Output-timeline times.** After cutting, each word moves: `output_time = word.start − segment_start + segment_offset`, where `segment_offset` is where that segment starts in the cut film. Build the cues from the cut list, not from the source transcript.
+- **No cue across a cut that removed words.** A cue whose words come from both sides of a removed span shows text that was never said together. Split it at the cut.
+- **Burn subtitles last.** After every overlay and grade, or an overlay hides them.
+- **Assert the font.** A web font that fails to load renders in a fallback with no error. In HyperFrames or Remotion, after `document.fonts.ready`, check `document.fonts.check('700 76px "Inter"')` (your weight, size and family) and stop if it is false. For ASS burn-in, pass `--fontsdir` and look at one frame.
+- **Spot-check at cuts.** In the cut self-eval (`review-and-qa.md`), read the caption on the frames either side of each cut against the words heard.
+
+*Source: browser-use/video-use (MIT, @43cfc56), `SKILL.md` Hard Rules 1 and 5 and the font note. Our words.*
+
 Upload SRT/VTT as sidecars wherever the platform allows (YouTube, LinkedIn, X, Facebook). Burn in for
 Reels, TikTok and Shorts, where many people watch muted.
 
