@@ -179,6 +179,31 @@ Liquid-chrome shaders below stay parked. These notes do not start that work.
 - **video-decompiler and raea as an engine:** FSL 1.1 license. It competes with Remotion and HyperFrames, which are already Reelsmith's render paths.
 - **woodxbt 19-repo listicle:** It's an index. Items already covered in other ROADMAP sections or parked. Hairline is a web widget, not a render path.
 
+## Three-source harvest: cuts, cut QA, edit memory, story-short camera (2026-11-17)
+
+**Status:** in the skill. One new review check with tests; the rest is docs. No vendored code.
+
+**Sources:** [heygen-com/hyperframes](https://github.com/heygen-com/hyperframes) `skills/reverse-any-video` and `measure cuts` (Apache-2.0) @d317abc · [browser-use/video-use](https://github.com/browser-use/video-use) (MIT) @43cfc56 · [mromidev/claude-animated-shorts](https://github.com/mromidev/claude-animated-shorts) (MIT) @e3b817b.
+
+| Folded into | What landed |
+|---|---|
+| `scripts/review.py`, `scripts/test_cut_detection.py` | `cuts.json` cut list (cut / flash / fast / transition) and a WARN for clicks at cuts. |
+| `references/review-and-qa.md` | Cut list and clicks; self-eval at every cut with a three-pass cap; `EDIT_LOG.md` session memory. |
+| `references/storyboard.md` | Dossier "Measured": cuts per minute from `cuts.json`, consecutive frames at events, one-topic look reports in numbers. |
+| `references/motion-design.md` | Story-short camera numbers; switch-versus-tween; ink-sized type; blur, trail, sweep and flash recipes. |
+| `references/helpers.md`, `references/captions.md` | Filler and pause cut numbers; captions on a cut film. |
+| `SKILL.md`, `references/music.md` | Read the edit log first; lock picture timing before the cue sheet. |
+
+**Skipped on purpose:**
+
+- **reverse-any-video as a tool:** HyperFrames Pro only (HeyGen sign-in, credits, usage beacon); it re-shoots people with HeyGen and regenerates painted shots with paid video generation. Its free measuring ideas are folded above.
+- **video-use as a tool:** its transcription needs `ELEVENLABS_API_KEY` (Scribe). The free path stays `$HF transcribe -e parakeet` or WhisperX. Already "pattern only" in `helpers.md`.
+- **Claude Animated Shorts reference frames and sheets:** another channel's frames, "for style study only". Not copied.
+
+### Parked: storybook 3D story-short look (optional three.js path)
+
+A Remotion + `@remotion/three` + `postprocessing` world (ink outline pass before lens blur, painted Canvas2D textures, billboard 2D characters, synthesized march score and SFX). MIT, free, offline. Not folded: it adds three.js packages that `remotion.md` keeps out, needs Kenney CC0 models (~1.3 GB `public/`), and a short is a multi-day hand-built project (2K renders about 4 fps). Revisit when a CGAI series wants a recurring character world; start from its `templates/bridge/` in a separate project, never in this repo.
+
 ## Liquid chrome / reflective metal look (optional Three.js path)
 
 **Status:** parked  

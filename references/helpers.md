@@ -28,4 +28,19 @@ Pattern only — do **not** install [browser-use/video-use](https://github.com/b
 1. **Transcript first.** Transcribe with the tools above (`$HF transcribe` or WhisperX). Read words and times. Do not dump every frame into the prompt.
 2. **EDL, then confirm.** Write a short list: source, in, out, why (keep / drop filler / drop a false start). Show it. Do not cut until the user says yes.
 3. **Cut.** `auto-editor` for silence, or ffmpeg trims from the approved list. Fade audio about 30 ms across each cut so it does not pop. Burn captions with `captions.py`.
-4. **Filmstrip self-eval.** `review.py check` and look at `contact.jpg` plus a frame on each cut before anyone sees the cut. Hunt jumps, pops, captions under UI, and dead air. Fix and re-check.
+4. **Filmstrip self-eval.** `review.py check` and look at `contact.jpg` plus a frame on each cut before anyone sees the cut. Hunt jumps, pops, captions under UI, and dead air. Fix and re-check. `review.py` lists the cuts (`cuts.json`) and warns on clicks at cuts; the self-eval steps and the three-pass cap are in `review-and-qa.md`.
+
+### Filler and pause cuts (numbers)
+
+- **Word-level, verbatim transcript.** Never phrase-level SRT for cutting: it loses the sub-second gaps. A transcriber that drops "um" and "uh" hides them; it does not remove them.
+- **Free filler check.** Local `parakeet` and WhisperX often drop fillers. A gap of 150 ms or more between two words whose audio is voiced (RMS well above the room tone measured in a true pause) may be a filler, a breath, or an intentional pause — review each one before you cut. Never infer cuts from gaps alone; preserve speaker intent and obtain approval before removing any speech.
+- **Cut targets.** Silences of 400 ms or more are the cleanest cuts. 150–400 ms phrase boundaries work after a look at the frames either side. Under 150 ms is mid-phrase: do not cut.
+- **Never cut inside a word.** Snap every edge to a word boundary, then pad it: 30–200 ms (a worked default is 50 ms before the first kept word and 80 ms after the last). Transcript times drift 50–100 ms; the pad absorbs that.
+- **Air at speaker changes:** about 400–600 ms; less for fast social, more for documentary.
+- **Keep the peaks.** Let a laugh or reaction after a punchline run. Every cut has to work on picture and sound together.
+- **Packed transcript.** For choosing takes, read one line per phrase with its `[start–end]` (break on a silence of 0.5 s or a speaker change), not the raw word JSON.
+- **Render order.** Cut each segment with its fades, join with `-c copy`, add overlays, burn subtitles last (`captions.md`).
+
+Paid hosted transcription (ElevenLabs Scribe) keeps fillers best. It needs a key and is not the default here; quote it first like any paid step.
+
+*Source: browser-use/video-use (MIT, Copyright (c) 2026 Browser Use, github.com/browser-use/video-use @43cfc56), `SKILL.md` (Hard Rules, Cut craft, packed transcript). Numbers restated; the voiced-gap filler check is ours.*

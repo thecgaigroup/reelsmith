@@ -5,6 +5,18 @@ All notable changes to Reelsmith will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.3] - 2026-11-17
+
+### Added
+- Cut list in `scripts/review.py`: `cuts.json` with each picture jump classified as cut, flash, fast move or transition; INFO row with cuts per minute. Approach after heygen-com/hyperframes `measure cuts` (Apache-2.0 @d317abc), re-implemented in Python.
+- Clicks at cuts in `scripts/review.py`: WARN when a cut carries a hard audio step (no ~30 ms fade). After browser-use/video-use (MIT @43cfc56). Tests: `scripts/test_cut_detection.py`.
+- `references/review-and-qa.md`: cut list and clicks, self-eval at every cut with a three-pass cap, and `EDIT_LOG.md` session memory (Strategy, Decisions, Reasoning, Locked, Outstanding).
+- `references/storyboard.md`: take-apart "Measured" now uses `cuts.json`, consecutive frames at events, and one-topic look reports in numbers.
+- `references/motion-design.md`: story-short camera numbers (after mromidev/claude-animated-shorts, MIT @e3b817b) and switch-versus-tween plus match recipes (after hyperframes reverse-any-video).
+- `references/helpers.md`: filler and pause cut numbers; `references/captions.md`: captions on a cut film (after browser-use/video-use).
+- `SKILL.md`: read `EDIT_LOG.md` first. `references/music.md`: lock picture timing before the cue sheet.
+- ROADMAP: three-source harvest; storybook three.js look parked.
+
 ## [5.1.2] - 2026-11-15
 
 ### Added

@@ -10,7 +10,8 @@
 
 Auto checks: resolution/fps/duration vs preset, loudness (EBU R128 integrated + true peak),
 black frames, long silence (dead air), frozen mid-video stretches, frozen ending, photosensitive flashes (WCAG 2.3.1 heuristic),
-scene timing vs job.json (every scene long enough to read).
+scene timing vs job.json (every scene long enough to read), cut list (cuts/flashes/fast moves -> cuts.json),
+audio clicks at cuts.
 """
 import argparse, json, re, shutil, subprocess, sys, time
 from pathlib import Path
@@ -114,6 +115,102 @@ def detect_pops(v, fps):
     
     return results
 
+# --- Cut list and cut clicks -------------------------------------------------
+# Approach adapted from HyperFrames `measure cuts` (heygen-com/hyperframes, Apache-2.0,
+# packages/cli/src/measure/cuts.ts @ d317abcd, read 2026-11-17) and the cut-boundary
+# self-eval in browser-use/video-use (MIT, SKILL.md @ 43cfc566). Re-implemented here in
+# Python/numpy; thresholds are ours unless noted. See THIRD_PARTY_NOTICES.md.
+SIG_W, SIG_H = 64, 36          # tiny grey signature per frame (HyperFrames uses the same size)
+CUT_LEVEL, CUT_RATIO = 12.0, 4.0   # a cut changes >= 12 grey levels and >= 4x the local typical change
+NEIGHBOURS = 12                # frames either side that define "typical"
+RETURNED = 0.4                 # picture comes back within 4 frames -> a flash, not a cut
+IN_MOTION = 0.3                # both sides already moving at 30% of the peak -> maybe a fast move
+
+def _signatures(v):
+    import numpy as np
+    r = subprocess.run(["ffmpeg", "-v", "error", "-i", str(v), "-vf", f"scale={SIG_W}:{SIG_H}:flags=area,format=gray",
+                        "-f", "rawvideo", "-"], capture_output=True)
+    raw = np.frombuffer(r.stdout, dtype=np.uint8)
+    n = len(raw) // (SIG_W * SIG_H)
+    return raw[: n * SIG_W * SIG_H].reshape(n, SIG_H, SIG_W).astype(np.float32)
+
+def _moved_change(a, b):
+    """Smallest difference between b and a zoomed 0.8-1.25x and shifted a few pixels: a camera move, not a new shot."""
+    import numpy as np
+    best = float(np.mean(np.abs(a - b)))
+    ys, xs = np.mgrid[0:SIG_H, 0:SIG_W]
+    cy, cx = (SIG_H - 1) / 2, (SIG_W - 1) / 2
+    for s in np.arange(0.8, 1.2501, 0.05):
+        for dx in range(-6, 7, 2):
+            for dy in range(-4, 5, 2):
+                sy = np.clip(np.rint((ys - cy - dy) / s + cy), 0, SIG_H - 1).astype(int)
+                sx = np.clip(np.rint((xs - cx - dx) / s + cx), 0, SIG_W - 1).astype(int)
+                best = min(best, float(np.mean(np.abs(a[sy, sx] - b))))
+    return best
+
+def detect_cuts(v, fps):
+    """Hard cuts from the frame-to-frame difference, each classified.
+    Returns [{"frame", "t", "change", "kind"}] where kind is "cut", "flash" (the picture comes back:
+    a white flash or a one-frame hit), "fast" (a whip or fast camera move inside one shot) or
+    "transition" (a change spread over more than 3 frames: dissolve, wipe, flash-fade).
+    The shot list is the gaps between "cut" rows. ffmpeg's scene score misses punch-ins; this does not."""
+    import numpy as np
+    f = _signatures(v)
+    n = len(f)
+    if n < 3:
+        return []
+    d = np.zeros(n, np.float32)
+    d[1:] = np.abs(f[1:] - f[:-1]).mean(axis=(1, 2))
+    hits = []
+    for i in range(1, n):
+        around = np.concatenate([d[max(1, i - NEIGHBOURS):i], d[i + 1:i + 1 + NEIGHBOURS]])
+        typical = max(1.0, float(np.median(around))) if len(around) else 1.0
+        if d[i] >= CUT_LEVEL and d[i] >= CUT_RATIO * typical:
+            if hits and hits[-1]["end"] == i:          # consecutive frames: one whip/dissolve, not several cuts
+                hits[-1]["end"] = i + 1; hits[-1]["change"] = max(hits[-1]["change"], float(d[i]))
+            else:
+                hits.append({"frame": i, "end": i + 1, "change": float(d[i])})
+    out = []
+    for h in hits:
+        i, e, c = h["frame"], h["end"], h["change"]
+        diff = lambda a, b: float(np.mean(np.abs(f[a] - f[b]))) if 0 <= a < n and 0 <= b < n else 1e9
+        if any(diff(i - 1, e - 1 + k) < RETURNED * c for k in range(1, 5)):
+            kind = "flash"
+        elif min(d[i - 1], d[e] if e < n else 0) >= IN_MOTION * c and _moved_change(f[i - 1], f[e - 1]) < RETURNED * c:
+            kind = "fast"
+        elif e - i > 3:
+            kind = "transition"              # a dissolve, wipe or flash-fade spread over several frames
+        else:
+            kind = "cut"
+        out.append({"frame": i, "t": round(i / fps, 3), "change": round(c, 1), "kind": kind})
+    return out
+
+def cut_clicks(v, cuts, win_ms=8, local_ms=2, ratio=12.0, floor=0.02):
+    """Audio clicks at picture cuts. A hard audio edit with no ~30 ms fade leaves a step: one sample-to-sample
+    jump far larger than the jumps in the 2 ms around it. A drum hit on the beat rises over several ms, so it
+    is not flagged. Returns [(t, ratio)] for cuts with a step >= `ratio` x its local level and >= `floor`."""
+    import numpy as np
+    sr = 48000
+    r = subprocess.run(["ffmpeg", "-v", "error", "-i", str(v), "-map", "0:a:0", "-ac", "1", "-ar", str(sr), "-f", "f32le", "-"],
+                       capture_output=True)
+    a = np.frombuffer(r.stdout, dtype=np.float32)
+    if a.size < sr // 10:
+        return []
+    jump = np.abs(np.diff(a))
+    w, lw = int(sr * win_ms / 1000), int(sr * local_ms / 1000)
+    found = []
+    for c in cuts:
+        k = int(c["t"] * sr)
+        best = 0.0
+        for j in range(max(lw, k - w), min(jump.size - lw, k + w)):
+            if jump[j] < floor:
+                continue
+            local = np.concatenate([jump[j - lw:j - 2], jump[j + 3:j + lw]])
+            best = max(best, float(jump[j] / max(np.median(local), 1e-5)))
+        if best >= ratio:
+            found.append((c["t"], round(best, 1)))
+    return found
+
 def scene_frames(video, job, out, font, vertical):
     """One frame per scene (70% in, after entrances settle), labeled with the scene id, tiled."""
     tmp = out / "_scenes"; tmp.mkdir(exist_ok=True)
@@ -172,6 +269,15 @@ def check(video, out, preset=None, expect=None, credits=None, job=None):
     add("FAIL" if fl["max_flashes_per_s"] > 3 else "PASS", "flashes (WCAG 2.3.1)", f"max {fl['max_flashes_per_s']}/s" + (f" at {fl['worst_at']}s" if fl["worst_at"] is not None else ""))
     pops = detect_pops(video, p["fps"] or 30)
     add("WARN" if pops else "PASS", "one-frame pops", ", ".join(f"f{frm}@{t}s" for frm, t in pops[:5]) + (f" +{len(pops) - 5} more" if len(pops) > 5 else "") if pops else "none (check hits you meant)")
+    cuts = detect_cuts(video, p["fps"] or 30)
+    hard = [c for c in cuts if c["kind"] == "cut"]
+    (out / "cuts.json").write_text(json.dumps(cuts, indent=2))
+    add("INFO", "cut list", f"{len(hard)} cuts ({len(hard) / max(p['duration'], 0.1) * 60:.0f}/min), "
+        f"{sum(c['kind'] == 'flash' for c in cuts)} flashes, {sum(c['kind'] == 'fast' for c in cuts)} fast moves, "
+        f"{sum(c['kind'] == 'transition' for c in cuts)} transitions; cuts.json")
+    if p["acodec"] and hard:
+        ck = cut_clicks(video, hard)
+        add("WARN" if ck else "PASS", "clicks at cuts", ", ".join(f"{t}s (x{r})" for t, r in ck[:5]) + " - add ~30 ms audio fades at the edit" if ck else f"none at {len(hard)} cuts")
     if credits:
         cr = json.loads(Path(credits).read_text()) if Path(credits).exists() else []
         add("PASS" if cr else "WARN", "credits", f"{len(cr)} credited assets in {Path(credits).name}")
