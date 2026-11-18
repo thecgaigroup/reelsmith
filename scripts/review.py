@@ -214,25 +214,63 @@ def cut_clicks(v, cuts, win_ms=8, local_ms=2, ratio=12.0, floor=0.02):
     return found
 
 def check_sync_drift(v, warn_ms=50):
-    """Audio/video sync drift detection using ffmpeg sync analysis at four probe points: start, 25%, 75%, end.
-    Returns {"probes": [(t, drift_ms)], "worst_drift_ms", "flagged"}. Flags WARNING when any probe exceeds
-    ±warn_ms. Approach after coleam00/skills edit-video sync validation (MIT). See THIRD_PARTY_NOTICES.md."""
-    p = probe(v)
-    dur = p["duration"]
-    if dur < 2:
-        return {"probes": [], "worst_drift_ms": 0.0, "flagged": False}
-    times = [0.5, dur * 0.25, dur * 0.75, dur - 0.5]
-    probes = []
-    for t in times:
-        # Measure sync by comparing audio and video packet presentation timestamps
-        r = sh(["ffmpeg", "-hide_banner", "-ss", str(t), "-i", str(v), "-vframes", "10", "-t", "1", 
-                "-af", "aselect='eq(n\\,0)',asetpts=PTS-STARTPTS", "-f", "null", "-"])
-        # Parse for pts_time differences (video vs audio timing)
-        match = re.search(r"pts_time:([-+]?\d+(?:\.\d+)?)", r.stderr)
-        drift = float(match.group(1)) * 1000 if match else 0.0  # convert to ms
-        probes.append((round(t, 1), round(drift, 1)))
-    worst = max(abs(d) for _, d in probes) if probes else 0.0
-    return {"probes": probes, "worst_drift_ms": round(worst, 1), "flagged": worst > warn_ms}
+    """Audio/video sync drift detection using ffprobe to read stream start times and durations.
+    Returns {"probes": [(t, drift_ms)], "worst_drift_ms", "flagged", "error": str|None}. Flags WARNING 
+    when drift exceeds ±warn_ms. If measurement fails, returns error instead of silently passing.
+    Approach after coleam00/skills edit-video sync validation (MIT). See THIRD_PARTY_NOTICES.md."""
+    # Get stream start times and durations from ffprobe
+    r = sh(["ffprobe", "-v", "error", "-show_entries", "stream=index,codec_type,start_time,duration",
+            "-of", "json", str(v)])
+    if r.returncode != 0:
+        return {"probes": [], "worst_drift_ms": 0.0, "flagged": False, 
+                "error": f"ffprobe failed: {r.stderr[:100]}"}
+    
+    try:
+        js = json.loads(r.stdout)
+    except json.JSONDecodeError as e:
+        return {"probes": [], "worst_drift_ms": 0.0, "flagged": False,
+                "error": f"ffprobe output parse failed: {str(e)[:100]}"}
+    
+    streams = js.get("streams", [])
+    v_stream = next((s for s in streams if s.get("codec_type") == "video"), None)
+    a_stream = next((s for s in streams if s.get("codec_type") == "audio"), None)
+    
+    if not v_stream or not a_stream:
+        return {"probes": [], "worst_drift_ms": 0.0, "flagged": False, "error": None}
+    
+    # Parse start times (may be missing or "N/A")
+    try:
+        v_start = float(v_stream.get("start_time", 0))
+    except (ValueError, TypeError):
+        v_start = 0.0
+    try:
+        a_start = float(a_stream.get("start_time", 0))
+    except (ValueError, TypeError):
+        a_start = 0.0
+    
+    # Start drift: difference in start times (ms)
+    start_drift = (a_start - v_start) * 1000.0
+    
+    # End drift: check if durations differ (stream length mismatch)
+    try:
+        v_dur = float(v_stream.get("duration", 0))
+    except (ValueError, TypeError):
+        v_dur = 0.0
+    try:
+        a_dur = float(a_stream.get("duration", 0))
+    except (ValueError, TypeError):
+        a_dur = 0.0
+    
+    end_drift = (a_dur - v_dur) * 1000.0 if v_dur > 0 and a_dur > 0 else 0.0
+    
+    # Report start and end drift as probes
+    probes = [
+        (0.0, round(start_drift, 1)),
+        (round(max(v_dur, a_dur), 1), round(end_drift, 1))
+    ]
+    
+    worst = max(abs(start_drift), abs(end_drift))
+    return {"probes": probes, "worst_drift_ms": round(worst, 1), "flagged": worst > warn_ms, "error": None}
 
 def scene_frames(video, job, out, font, vertical):
     """One frame per scene (70% in, after entrances settle), labeled with the scene id, tiled."""
@@ -301,15 +339,17 @@ def check(video, out, preset=None, expect=None, credits=None, job=None):
     if p["acodec"] and hard:
         ck = cut_clicks(video, hard)
         add("WARN" if ck else "PASS", "clicks at cuts", ", ".join(f"{t}s (x{r})" for t, r in ck[:5]) + " - add ~30 ms audio fades at the edit" if ck else f"none at {len(hard)} cuts")
-    # sync drift
+    # sync drift (store in local, add to res after res is created)
+    sync_result = None
     if p["acodec"]:
-        sync = check_sync_drift(video)
-        res["sync_drift"] = sync
-        if sync["flagged"]:
-            details = ", ".join(f"{t}s: {d:+.1f}ms" for t, d in sync["probes"])
-            add("WARN", "sync drift", f"worst {sync['worst_drift_ms']:+.1f}ms ({details}) - check A/V alignment")
+        sync_result = check_sync_drift(video)
+        if sync_result.get("error"):
+            add("WARN", "sync drift", f"could not measure: {sync_result['error']}")
+        elif sync_result["flagged"]:
+            details = ", ".join(f"{t}s: {d:+.1f}ms" for t, d in sync_result["probes"])
+            add("WARN", "sync drift", f"worst {sync_result['worst_drift_ms']:+.1f}ms ({details}) - check A/V alignment")
         else:
-            add("PASS", "sync drift", f"{sync['worst_drift_ms']:+.1f}ms (within ±50ms at 4 probes)")
+            add("PASS", "sync drift", f"{sync_result['worst_drift_ms']:+.1f}ms (within ±50ms)")
     if credits:
         cr = json.loads(Path(credits).read_text()) if Path(credits).exists() else []
         add("PASS" if cr else "WARN", "credits", f"{len(cr)} credited assets in {Path(credits).name}")
@@ -342,6 +382,8 @@ def check(video, out, preset=None, expect=None, credits=None, job=None):
     auto_pass = not any(r["level"] == "FAIL" for r in rows)
     res = {"video": str(video), "probe": p, "preset": preset, "rows": rows, "auto_pass": auto_pass, "approved": False,
            "approved_by": None, "checked_at": time.strftime("%Y-%m-%d %H:%M %Z")}
+    if sync_result:
+        res["sync_drift"] = sync_result
     (out / "review.json").write_text(json.dumps(res, indent=2))
     md = [f"# Review: {Path(video).name}", "", f"Preview: `preview.mp4` | Contact sheet: `contact.jpg` | Phone size: `phone.jpg`" + (" | Scenes: `scenes.jpg`" if jb else "") + (" | Safe zones: `safe.jpg`" if preset else ""), "",
           "## Automatic checks", "", "| Result | Check | Detail |", "|---|---|---|"]
