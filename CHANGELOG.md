@@ -5,6 +5,24 @@ All notable changes to Reelsmith will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.2.2] - 2026-11-18
+
+### Added
+- Automatic motion audit during all render paths (HyperFrames, Remotion, OpenMotion). The audit runs after composition build, before or right after render, in WARNING-ONLY mode by default: findings are printed and logged visibly, but never fail or block the render. `review.py auto_audit()` helper function added.
+- Shared shell helper `scripts/audit_warn.sh` for consistent WARNING-ONLY behavior across all render paths. Properly captures exit codes and distinguishes clean/FAIL/error states. Used by `render.sh` and documented in `openmotion.md` render loop.
+- Opt-in strict mode via `REELSMITH_AUDIT_STRICT=1` environment variable. When enabled, FAIL findings stop the render. Default is off (WARNING-ONLY).
+- Tests: `scripts/test_auto_audit.py` (12 tests) verifies that audit runs during render path, findings do not change exit code in default mode, strict mode does fail on FAIL findings, and crash/skip is surfaced. `scripts/test_audit_warn_sh.py` (6 tests) verifies shell helper behavior. All stdlib, no network.
+
+### Changed
+- `scripts/reelsmith.py render`: calls `review.auto_audit()` on each composition after build, before HyperFrames lint.
+- `templates/feature-explainer/render.sh`: uses `audit_warn.sh` helper for consistent WARNING-ONLY behavior with proper exit code handling.
+- `references/openmotion.md`: render loop uses `audit_warn.sh` helper instead of direct audit call to avoid aborting `set -e` loops.
+- `SKILL.md`: workflow step 4 now mentions automatic audit; Scripts section updated to reflect auto-run behavior.
+- `references/brand-qa.md`: checklist item 13 and commands section updated to note automatic audit during render.
+- `.github/workflows/ci.yml`: Added new test files to CI test discovery.
+
+Every workflow logs audit status. Any failure or skip prints a clear visible line (e.g. 'motion audit SKIPPED/ERROR: <reason>') rather than silently passing. One-line summary always printed: 'motion audit: N warnings' or 'motion audit: clean'. Shell helper exits 0 in default WARNING-ONLY mode (even with findings), non-zero only in strict mode with FAIL.
+
 ## [5.2.1] - 2026-11-18
 
 ### Changed

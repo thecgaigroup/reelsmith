@@ -87,6 +87,7 @@ Stay on this lane until the user explicitly pivots. No Flashtalk or interview TE
    Show the shot list (scene, text, VO, seconds), music + license, voice (free or quoted), aspects.
 3. **Approval (always)** before long renders and before any paid generation.
 4. **Draft:** `reelsmith.py render … --aspect 16x9,9x16,1x1 --music track.mp3|synth --vo auto --draft`.
+   Motion audit runs automatically during render (WARNING-ONLY by default; findings logged but do not block).
 5. **Review gate:** `review.py check VIDEO --out OUT/_review --preset P --job OUT/job.json`; look at
    scenes.jpg, safe.jpg, phone.jpg; run brand-qa.md for client work; fix; send the preview; on the user's yes,
    `review.py approve`.
@@ -97,7 +98,7 @@ Stay on this lane until the user explicitly pivots. No Flashtalk or interview TE
 ## Scripts (`scripts/`)
 `capabilities.py` features on/off | `brand.py` validate, bundle, from-logo, from-site | `reelsmith.py` list,
 sample, render, loop, seam | `script_lint.py` | `beats.py` grid, snap, fit, synth, lock | `stock.py` search, fetch,
-credit (API keys only, `--dry-run`) | `captions.py` build/burn | `review.py` check (incl. cut list, clicks at cuts), audit (static motion audit of a comp), approve, status |
+credit (API keys only, `--dry-run`) | `captions.py` build/burn | `review.py` check (incl. cut list, clicks at cuts), audit (static motion audit; runs automatically during render in WARNING-ONLY mode), approve, status |
 `export.py` run, overlay, list, loudnorm | `youtube_prep.py` | `presets.json`.
 `openmotion_preflight.py` (OpenMotion project structure, no Node).
 HyperFrames setup and pin: references/hyperframes.md. OpenMotion pin and render loop: references/openmotion.md. Kokoro needs `HYPERFRAMES_PYTHON=<venv>/bin/python`.

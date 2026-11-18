@@ -27,7 +27,7 @@ The author of the comp does not grade it (builder ≠ judge). A second pass scor
 10. **Scores before full render** — fresh reviewer, stills first, then `contact.jpg` and `phone.jpg`. Six scores, worst three, each at 8 or higher before a delivery render. A later pass marks each prior finding FIXED, PARTLY, or STILL PRESENT.
 11. **Comparison bar** — the cut is dense real footage plus kinetic type (`client-sizzle.md`). Fail a skills-skipped animatic, a fade-card title, a sparse select when footage exists, or an interview TEMP / Flashtalk drift the user did not ask for.
 12. **Evidence vs illustration** — Never invent anything that looks real. Code-drawn documents (typeset letters, recreated forms) must be labelled on screen as recreations. AI stills are illustration only: never as evidence of real events, never as a stand-in for a real person's face. *Source: Moh4696/cinematic-skill (MIT, exploraX)*
-13. **Motion audit** — `review.py audit` on the comp folder shows no FAIL; each WARN is fixed or carries `audit-ok` and a reason (`review-and-qa.md`). Then grade the motion findings by severity (below).
+13. **Motion audit** — runs automatically during render (WARNING-ONLY by default); review any findings before delivery. Manual audit: `review.py audit` on the comp folder. No FAIL; each WARN is fixed or carries `audit-ok` and a reason (`review-and-qa.md`). Then grade the motion findings by severity (below).
 
 ## Commands
 ```bash
@@ -37,7 +37,7 @@ npx hyperframes@0.9.7 snapshot --at 1,12,28,42
 npx remotion still <id> out/f.png --frame=N
 # OpenMotion (pinned engine CLI, openmotion.md)
 $OM/node_modules/.bin/hyperframes snapshot --at 1,12,28,42
-# Reelsmith motion audit (source only, before the first draft render)
+# Reelsmith motion audit (runs automatically during render; manual check:)
 python3 scripts/review.py audit OUT/comp
 # Reelsmith review
 python3 scripts/review.py check VIDEO --out OUT/_review --preset youtube --job OUT/job.json

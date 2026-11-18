@@ -442,6 +442,12 @@ def render(args):
                                               "brand/brand.css", content.get("title") or args.template))
         (proj / "hyperframes.json").write_text(json.dumps({"name": f"{args.template}-{aspect}"}))
         (proj / "meta.json").write_text(json.dumps({"id": f"{args.template}-{aspect}", "name": f"{args.template} {aspect}"}))
+        
+        # Motion audit (WARNING-ONLY mode by default; strict mode via REELSMITH_AUDIT_STRICT=1)
+        sys.path.insert(0, str(HERE))
+        import review
+        review.auto_audit(proj)
+        
         lint = subprocess.run(HF + ["lint", str(proj), "--json"], capture_output=True, text=True)
         lint_errors = None
         try:
