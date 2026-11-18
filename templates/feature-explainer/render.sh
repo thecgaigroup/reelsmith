@@ -25,6 +25,10 @@ cd "$KIT"
 [ -d node_modules ] || npm i --no-audit --no-fund
 python3 "$PKG/scripts/brand.py" bundle "$BRAND" --out public
 npx --yes tsx scripts/generate-voiceover.ts src/plans/featureExplainer.ts
+
+# Motion audit (WARNING-ONLY mode by default; strict mode via REELSMITH_AUDIT_STRICT=1)
+python3 "$PKG/scripts/review.py" audit src || echo "motion audit: $? findings (warn-only mode)"
+
 mkdir -p "$OUT"
 Q=(); [ "$DRAFT" = 1 ] && Q=(--scale=0.5 --crf=28)
 for A in 16x9 9x16 1x1; do

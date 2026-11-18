@@ -15,7 +15,7 @@ black frames, long silence (dead air), frozen mid-video stretches, frozen ending
 scene timing vs job.json (every scene long enough to read), cut list (cuts/flashes/fast moves -> cuts.json),
 audio clicks at cuts.
 """
-import argparse, json, re, shutil, subprocess, sys, time
+import argparse, json, os, re, shutil, subprocess, sys, time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -490,6 +490,60 @@ def print_audit(rep):
     if clean:
         print(f"PASS {len(clean)} file(s) clean")
     print(f"audit -> {rep['level']}")
+
+
+def auto_audit(comp_path, strict=False):
+    """Run motion audit during render (WARNING-ONLY mode by default).
+    
+    Returns a single-line summary string suitable for printing.
+    In default mode (strict=False), findings are logged but never affect exit status.
+    In strict mode (strict=True or REELSMITH_AUDIT_STRICT=1), FAIL findings stop the render.
+    
+    Args:
+        comp_path: Path to composition directory or file
+        strict: If True, treat FAIL findings as errors (default: False)
+    
+    Returns:
+        str: One-line summary for logging
+    """
+    strict = strict or os.environ.get("REELSMITH_AUDIT_STRICT") == "1"
+    
+    if not comp_path or not Path(comp_path).exists():
+        msg = f"motion audit SKIPPED: path not found: {comp_path}"
+        print(msg)
+        return msg
+    
+    try:
+        rep = audit(comp_path)
+        
+        # Count findings by severity
+        fail_count = sum(len([x for x in f["findings"] if x["level"] == "FAIL"]) for f in rep["files"])
+        warn_count = sum(len([x for x in f["findings"] if x["level"] == "WARN"]) for f in rep["files"])
+        
+        # Build summary
+        if fail_count == 0 and warn_count == 0:
+            summary = "motion audit: clean"
+        elif fail_count > 0:
+            summary = f"motion audit: {fail_count} FAIL, {warn_count} WARN"
+        else:
+            summary = f"motion audit: {warn_count} warnings"
+        
+        # Print findings if any
+        if fail_count > 0 or warn_count > 0:
+            print_audit(rep)
+        
+        print(summary)
+        
+        # In strict mode, FAIL findings stop the render
+        if strict and fail_count > 0:
+            raise SystemExit(f"motion audit failed in strict mode: {fail_count} FAIL findings")
+        
+        return summary
+        
+    except Exception as e:
+        msg = f"motion audit ERROR: {type(e).__name__}: {e}"
+        print(msg)
+        return msg
 
 
 def main():
