@@ -207,6 +207,17 @@ At 24 fps, quick is 4–6 frames, standard 8–12, deliberate 16–24. At 30 fps
 
 Stagger, same ease family, vary only the start: characters 20–40 ms, lines 60–100 ms, a dramatic cascade 100–200 ms. The whole cascade stays under 500 ms, except `kinetic-center-build`, which is sequential on purpose. Exits stagger in reverse. A shared trigger starts its elements within 50 ms of each other.
 
+### Acted effects (characters and impacts)
+
+An effect with nobody behind it reads as a sticker. When a character hits, throws, or casts:
+
+- **Wind-up** the opposite way to the blow, then a clear pose change on the release frame.
+- **Freeze on contact.** Everything stops, effect and characters both. 1–2 frames for a UI hit (above); up to about 0.2 s for a heavy character blow. A small shake may ride on it. Then the target reacts and the character recovers.
+- **Held drawings.** Character poses step on 12 fps keys while the body's travel across the floor stays smooth. Do not posterize the camera (`paid-to-free-tools.md`).
+- **One-shots end, they do not pop off.** Before its last frame an effect shrinks, dithers out, or falls away.
+
+*Source: after patch-gg/pixelfx (MIT, Copyright (c) 2026 Patch and Hugo Duprez, github.com/patch-gg/pixelfx @5294518) (`skills/pixelfx/SKILL.md`, `src/core/act.js`), whose acting follows rehan-remade/hollow-crown (MIT). Our words. The 244-effect catalog and the Patch Pixel font are not used.*
+
 ### Disney micro principles (selected)
 
 Apply these. Skip the rest of any upstream skill tree.

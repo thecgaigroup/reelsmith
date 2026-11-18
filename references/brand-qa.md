@@ -51,6 +51,22 @@ When the face and the setting are both suspects, render a face-only change and a
 
 *Source: type triage after nexu-io/openmotion (Apache-2.0, github.com/nexu-io/openmotion @664be50) (`skills/openmotion-production/references/typography.md`). Our words.*
 
+## Generic-AI tells
+
+These are what a film falls back to when nobody decided. They are defaults, not bans: the brief or the film's `LOOK.md` can earn any of them back. Reaching for one when the choice was free fails this check. Item 9 already bans gradient title cards, glow on UI chrome, generic particle bursts, and invented UI; these sit beside it.
+
+- **Color.** Purple-to-blue or violet-to-pink as the house palette, gradient text on headlines or numbers, blurred color blobs behind type, five near-identical tints of one hue, every element accented. Fix: the brand ramp (`brand.json`), the accent once or twice per frame.
+- **Icons and marks.** Emoji or Unicode glyphs as icons, labels, or bullets; a sparkle for anything AI; a glossy orb or gradient ball as a logo stand-in. Fix: one drawn icon set, or none; the real mark.
+- **Copy.** Hype words (supercharge, seamless, unlock, magic, revolutionize), exclamation marks, a headline that would fit any product, a change with no reference (`+12%` against what?), `Trusted by 10,000+` with no source. Fix: what the product does, in its own nouns; every figure sourced (`storyboard.md`).
+- **Numbers.** Mixed formats on one card (`$48,210` beside `$124,860.40`), proportional digits on a counter. Fix: one format, tabular figures.
+- **Pictures.** Glowing brains, robots, circuit lines, holograms, chrome blobs, a purple nebula; text or a fake logo baked into a generated image; a circle or polygon cut-out standing in for a subject's real edge. Fix: the real product or one concrete metaphor; type set live on top; a real matte from the image.
+- **Layout and labels.** Wide-tracked uppercase on every label, `01 / 02 / 03` markers when the order means nothing, monospace as a costume for "technical", equal cards with the same entrance on each. Fix: hierarchy by size and weight; mono only for code and figures; one authored entrance per film.
+- **Template look.** Grey ground, a stock sans, the brand color on one button, the same layout as the last film. Fix: a look chosen for this subject, and the series variety rule in `motion-design.md` (Look file).
+
+The end card's kicker (`templates.md`) and any recipe the storyboard names stay allowed.
+
+*Source: signs and fixes after heydamir/unslop (CC BY 4.0, Copyright (c) 2026 Damir Sokolovsky, github.com/heydamir/unslop @620163e) (`skills/unslop/references/signs.md`), changed for video; "defaults, not bans" and the cut-out, numbered-marker, mono and identical-entrance items after pbakaus/impeccable (Apache-2.0, github.com/pbakaus/impeccable @d41d986) (`skill/reference/craft-floor.md`). Our words.*
+
 ## Scout notes
 
 Harness rules applied here, not fetched as posts and not installed as skills: a frame-numbered BRIEF, stills before playback, a fresh reviewer, worst-three until 8+, the ban list above, and `seek(t)` on the HyperFrames or Remotion clock. One brand per session is the effort tier in `client-sizzle.md`.

@@ -7,6 +7,8 @@
   beats.py synth -o bed.mp3 --bpm 120 --seconds 30 [--mood bright|dark|calm]
   beats.py fit   track.mp3 --seconds 22 -o fitted.mp3 [--grid beatgrid.json]
                                                      # trim to a bar line, fade out, loudness-safe
+  beats.py lock  beatgrid.json cuts.json [--tol 0.07] [--offset 0]
+                                                     # share of cuts on a beat vs chance (beat-synced edit?)
 Engines, in order: librosa (pip install librosa soundfile) -> `hyperframes beats` -> fixed BPM (--bpm).
 """
 import argparse, json, math, os, shutil, subprocess, sys, tempfile
@@ -96,6 +98,61 @@ def snap(grid, durations, unit="bar", start=0.0):
         t = nxt
     return out
 
+def beat_lock(beats, cuts, tol=0.07, offset=0.0, min_cuts=4):
+    """How many picture cuts land on a beat, against what chance would give.
+
+    beats: beat times in seconds (music clock). cuts: cut times in seconds (picture clock), or review.py
+    cuts.json rows (only kind == "cut" counts; flashes and fast moves are not shots). offset: where the music
+    starts in the picture (cut time - offset = music time). Chance is the share of the cut span that lies within
+    tol of some beat, so a dense grid is not mistaken for a locked edit. Approach after JuneYaooo/rea-video
+    (Apache-2.0), re-implemented here.
+    """
+    beats = sorted(float(b) for b in beats)
+    times = []
+    for c in cuts:
+        if isinstance(c, dict):
+            if c.get("kind", "cut") != "cut":
+                continue
+            c = c["t"]
+        times.append(float(c) - offset)
+    times.sort()
+    res = {"cuts": len(times), "tol": tol, "on_beat": 0, "ratio": 0.0, "chance": 0.0,
+           "median_offset_ms": None, "locked": False, "verdict": "not enough cuts"}
+    if not beats or not times:
+        res["verdict"] = "no beats" if not beats else "no cuts"
+        return res
+    def nearest(t):
+        return min(beats, key=lambda b: abs(b - t))
+    signed = [t - nearest(t) for t in times]
+    on = [d for d in signed if abs(d) <= tol]
+    lo, hi = times[0], times[-1]
+    if hi - lo < 1e-6:
+        lo, hi = beats[0], beats[-1]
+    span = max(hi - lo, 1e-6)
+    covered, cur_a, cur_b = 0.0, None, None
+    for b in beats:
+        a, z = max(b - tol, lo), min(b + tol, hi)
+        if z <= a:
+            continue
+        if cur_b is not None and a <= cur_b:
+            cur_b = max(cur_b, z)
+        else:
+            if cur_b is not None:
+                covered += cur_b - cur_a
+            cur_a, cur_b = a, z
+    if cur_b is not None:
+        covered += cur_b - cur_a
+    chance = min(1.0, covered / span)
+    ratio = len(on) / len(times)
+    srt = sorted(on)
+    res.update(on_beat=len(on), ratio=round(ratio, 3), chance=round(chance, 3),
+               median_offset_ms=round(1000 * srt[len(srt) // 2], 1) if srt else None)
+    if len(times) < min_cuts:
+        return res
+    res["locked"] = ratio >= 0.5 and ratio >= 1.8 * chance
+    res["verdict"] = "beat-synced edit" if res["locked"] else "cuts not locked to the beat"
+    return res
+
 SYN = {
     "bright": {"root": 220.0, "chord": [1, 1.25, 1.5], "hat": 0.10},
     "dark": {"root": 110.0, "chord": [1, 1.2, 1.5], "hat": 0.07},
@@ -140,6 +197,7 @@ def main():
     p = sp.add_parser("snap"); p.add_argument("grid"); p.add_argument("--durations", required=True); p.add_argument("--unit", default="bar", choices=["bar", "beat", "half"])
     p = sp.add_parser("synth"); p.add_argument("-o", "--out", required=True); p.add_argument("--bpm", type=float, default=120); p.add_argument("--seconds", type=float, default=30); p.add_argument("--mood", default="bright")
     p = sp.add_parser("fit"); p.add_argument("track"); p.add_argument("--seconds", type=float, required=True); p.add_argument("-o", "--out", required=True); p.add_argument("--grid")
+    p = sp.add_parser("lock"); p.add_argument("grid"); p.add_argument("cuts"); p.add_argument("--tol", type=float, default=0.07); p.add_argument("--offset", type=float, default=0.0)
     a = ap.parse_args()
     if a.cmd == "grid":
         g = make_grid(a.track, a.bpm, a.engine)
@@ -153,6 +211,10 @@ def main():
         synth(a.out, a.bpm, a.seconds, a.mood)
     elif a.cmd == "fit":
         fit(a.track, a.seconds, a.out, a.grid)
+    elif a.cmd == "lock":
+        r = beat_lock(json.loads(Path(a.grid).read_text())["beats"], json.loads(Path(a.cuts).read_text()), a.tol, a.offset)
+        print(json.dumps(r, indent=1))
+        print(f"{r['on_beat']}/{r['cuts']} cuts within {int(a.tol * 1000)} ms of a beat ({r['ratio']:.0%}; chance {r['chance']:.0%}): {r['verdict']}")
 
 if __name__ == "__main__":
     main()

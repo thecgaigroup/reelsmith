@@ -58,7 +58,7 @@ a license (ask once if commercial). Music, stock, fonts: licensed, credited (`st
 Read **references/client-sizzle.md** first and fill its six-part skeleton before any build.
 Load in this order, and do not skip ahead to a render:
 1. `client-sizzle.md` — bar, anti-patterns, skeleton.
-2. `storyboard.md` — copy `examples/storyboard/` and swap in the real beats.
+2. `storyboard.md` — copy `examples/storyboard/` and swap in the real beats. A "how was this made?" reference gets a shot ledger (`BREAKDOWN.md`).
 3. `kinetic-type.md` — implement a house recipe (default `mask-reveal-up`). Do not pass house ids to HyperFrames as registry blocks.
 4. `transitions.md` — one primary seam, at most two accents. Name only real blocks.
 5. `motion-design.md` — taste numbers, motion grammar, ambient idle, bans, one named spectacle. A series keeps one `LOOK.md` per look and varies the look across episodes.
@@ -84,7 +84,7 @@ Stay on this lane until the user explicitly pivots. No Flashtalk or interview TE
 
 ## Scripts (`scripts/`)
 `capabilities.py` features on/off | `brand.py` validate, bundle, from-logo, from-site | `reelsmith.py` list,
-sample, render, loop, seam | `script_lint.py` | `beats.py` grid, snap, fit, synth | `stock.py` search, fetch,
+sample, render, loop, seam | `script_lint.py` | `beats.py` grid, snap, fit, synth, lock | `stock.py` search, fetch,
 credit (API keys only, `--dry-run`) | `captions.py` build/burn | `review.py` check (incl. cut list, clicks at cuts), approve, status |
 `export.py` run, overlay, list, loudnorm | `youtube_prep.py` | `presets.json`.
 HyperFrames setup and pin: references/hyperframes.md. Kokoro needs `HYPERFRAMES_PYTHON=<venv>/bin/python`.
