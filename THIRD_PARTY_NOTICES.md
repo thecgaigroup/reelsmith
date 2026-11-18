@@ -828,3 +828,207 @@ SOFTWARE.
 
 Hollow Crown is MIT, `Copyright (c) 2026 rehan-remade`; the same terms apply.
 
+## motion-design-skill
+
+Ideas adapted from [motion-design-skill](https://github.com/LottieFiles/motion-design-skill) by LottieFiles.
+
+**Source commit:** 2e1f3c052dd70c60b598413e2fc5d7704d9e9896 (read 2026-11-18)
+
+**What was adapted (no files copied):** `references/motion-design.md` (Inside one move, Ambient layers, When a score is low, Signature curve) from `director/narrative-structure.md`, `director/motion-personality.md`, `patterns/ambient-continuous.md` and `reference/troubleshooting.md`; `references/brand-qa.md` (Motion findings by severity) from `reference/quality-checklist.md`. Selected for video, rewritten in our words, and capped by the house rules. Emotion and color tables, web accessibility rows and export notes were not used.
+
+**License (MIT):**
+
+```
+MIT License
+
+Copyright (c) 2025 LottieFiles
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## ai-kit
+
+Ideas adapted from [ai-kit](https://github.com/motiondivision/ai-kit) by Motion (Matt Perry).
+
+**Source commit:** 1e424943582cbbdb6e3f410687e39f96451447bb (read 2026-11-18)
+
+**What was adapted (no files copied):** `references/motion-design.md` (Springs by feel) — describing a spring by perceived duration and bounce, and timing siblings off the asked duration, from `plugins/motion/skills/motion/css-spring/index.md` and `best-practices/index.md`; `scripts/review.py audit` and `references/review-and-qa.md` (Motion audit) — worst level wins, one fix per finding, no padding for clean files, from `plugins/motion/agents/motion-reviewer.md`. The constants, rules and code are Reelsmith's own. The audit scoring method (a paid, server-held resource), the MCP servers, CLI, logos and images were not used.
+
+**License:** MIT, as declared in `packages/motion-ai/package.json` and the package README. The repository ships no LICENSE file and no NOTICE file, so there is no copyright line to reproduce. The standard MIT terms are reproduced under Lemo-Opuscar, above.
+
+## anatomy-reveal-skill and Anatomy
+
+Ideas adapted from [anatomy-reveal-skill](https://github.com/annnguyentt/anatomy-reveal-skill) by Ann Nguyen, which builds on [Anatomy](https://github.com/wheresryan22/anatomy) by Ryan ([@wheresryan22](https://x.com/wheresryan22)).
+
+**Source commits:** anatomy-reveal-skill dd01e1c04559d79002da07862e26f8a5c2a07644; Anatomy 1482e8469b0a9e0d8cc18ea2740a01423d29ae80 (read 2026-11-18)
+
+**What was adapted (no files copied):** `references/templates.md` (Exploded reveal) — the drift, whip and hold rhythm, the fixed whip length and retime rule, one key set for every aspect, and choosing angles from pose stills, from `references/shots.md`; `references/transitions.md` (Polish recipes, whip motion blur) — sub-frames from on-screen speed. The kit, materials, scripts, template object and demo media were not used. anatomy-reveal-skill's own THIRD_PARTY_NOTICES covers the Anatomy kit files it vendors; none of those files is in this repository.
+
+**License (MIT), anatomy-reveal-skill:**
+
+```
+MIT License
+
+Copyright (c) 2026 Ann Nguyen
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+**License (MIT), Anatomy:**
+
+```
+MIT License
+
+Copyright (c) 2026 Ryan
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## react-postprocessing
+
+Technique survey of [react-postprocessing](https://github.com/pmndrs/react-postprocessing).
+
+**Source commit:** e07ef9a890c8a202a3b20eac0249032cff4e7805 (read 2026-11-18)
+
+**What was adapted (no files copied):** `references/transitions.md` (Polish recipes) — effect parameter ranges in `docs/effects/` (bloom threshold, chromatic offset, glitch timing, vignette, noise blend), rebuilt as CSS, GSAP or `ffmpeg` recipes in our words. The package is not a dependency.
+
+**License (MIT):**
+
+```
+MIT License
+
+Copyright (c) 2020 react-spring
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## VFX-JS
+
+Technique survey of [VFX-JS](https://github.com/fand/vfx-js).
+
+**Source commit:** 1d9bb68f02375367f7132fdc86d6d0814a59b3c1 (read 2026-11-18)
+
+**What was adapted (no files copied):** `references/transitions.md` (Polish recipes) — the effect list (RGB shift, slice shift, glitch, bloom) as a survey of what to rebuild, rebuilt as CSS, GSAP or `ffmpeg` recipes in our words. The package is not a dependency.
+
+**License (MIT):**
+
+```
+MIT License
+
+Copyright (c) 2020-present The VFX-JS developers
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
+## three.quarks
+
+Technique survey of [three.quarks](https://github.com/Alchemist0823/three.quarks).
+
+**Source commit:** 9d0445c5949c7da570f412ad7007efecd0357886 (read 2026-11-18)
+
+**What was adapted (no files copied):** `references/transitions.md` (Polish recipes) — ribbon trails that taper over their length, rebuilt as CSS, GSAP or `ffmpeg` recipes in our words. The package is not a dependency.
+
+**License (MIT):**
+
+```
+MIT License
+
+Copyright (c) 2019 Forrest Sun
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```

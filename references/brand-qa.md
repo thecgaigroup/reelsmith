@@ -27,11 +27,14 @@ The author of the comp does not grade it (builder ≠ judge). A second pass scor
 10. **Scores before full render** — fresh reviewer, stills first, then `contact.jpg` and `phone.jpg`. Six scores, worst three, each at 8 or higher before a delivery render. A later pass marks each prior finding FIXED, PARTLY, or STILL PRESENT.
 11. **Comparison bar** — the cut is dense real footage plus kinetic type (`client-sizzle.md`). Fail a skills-skipped animatic, a fade-card title, a sparse select when footage exists, or an interview TEMP / Flashtalk drift the user did not ask for.
 12. **Evidence vs illustration** — Never invent anything that looks real. Code-drawn documents (typeset letters, recreated forms) must be labelled on screen as recreations. AI stills are illustration only: never as evidence of real events, never as a stand-in for a real person's face. *Source: Moh4696/cinematic-skill (MIT, exploraX)*
+13. **Motion audit** — `review.py audit` on the comp folder shows no FAIL; each WARN is fixed or carries `audit-ok` and a reason (`review-and-qa.md`). Then grade the motion findings by severity (below).
 
 ## Commands
 ```bash
 # HyperFrames
 npx hyperframes@0.8.197 snapshot --at 1,12,28,42
+# Reelsmith motion audit (source only, before the first draft render)
+python3 scripts/review.py audit OUT/comp
 # Reelsmith review
 python3 scripts/review.py check VIDEO --out OUT/_review --preset youtube --job OUT/job.json
 ```
@@ -66,6 +69,20 @@ These are what a film falls back to when nobody decided. They are defaults, not 
 The end card's kicker (`templates.md`) and any recipe the storyboard names stay allowed.
 
 *Source: signs and fixes after heydamir/unslop (CC BY 4.0, Copyright (c) 2026 Damir Sokolovsky, github.com/heydamir/unslop @620163e) (`skills/unslop/references/signs.md`), changed for video; "defaults, not bans" and the cut-out, numbered-marker, mono and identical-entrance items after pbakaus/impeccable (Apache-2.0, github.com/pbakaus/impeccable @d41d986) (`skill/reference/craft-floor.md`). Our words.*
+
+## Motion findings by severity
+
+When the motion score is under 8, list what the stills and a draft show, worst first. Fix every critical finding before a delivery render.
+
+| Severity | Findings |
+|---|---|
+| **Critical** | An entrance or exit on a linear ease; a state that matters shown by opacity alone; more than a third of the moving elements in transit at once; no clear primary; a cascade longer than 500 ms (except `kinetic-center-build`); any `review.py audit` FAIL |
+| **High** | No secondary layer anywhere; a duration far off its element budget; the wrong ease direction (an entrance easing in); two voices of motion in one film; nothing trails anything |
+| **Medium** | A hold with no ambient life; no wind-up on a large move; arcs missing on long travel; no counter-motion behind a hero |
+
+Numbers and fixes live in `motion-design.md` (Taste layer, Choreography, When a score is low). A finding that would add overshoot to display type, glow on chrome, or a particle burst is the wrong fix.
+
+*Source: the three severity tiers after LottieFiles/motion-design-skill (MIT, @2e1f3c0), `reference/quality-checklist.md`, selected for video and rewritten. Accessibility rows for web UI (reduced motion, pause controls) were left out; flashes stay in item 6.*
 
 ## Scout notes
 

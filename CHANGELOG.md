@@ -5,6 +5,18 @@ All notable changes to Reelsmith will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.6] - 2026-11-18
+
+### Added
+- `scripts/review.py audit`: static motion audit of a HyperFrames or Remotion comp, with no render. FAIL on random values, wall-clock time, timers and frame callbacks, and CSS animations or transitions. WARN on `will-change`, layout-property tweens, and linear-eased entrances or exits. Worst level wins; exit 1 on any FAIL; `audit-ok` marks an intended exception; `--json`. Audit shape after motiondivision/ai-kit (MIT @1e42494); rules are the house engine rules. Tests: `scripts/test_motion_audit.py` (in CI).
+- `references/motion-design.md`: springs by feel (arrival time and bounce converted to stiffness and damping for `spring01` and Remotion; cue off arrival, not settle), after ai-kit. Phase shares inside one move, ambient layers with numbers and the loop-period rule, a symptom-to-fix table, and signature curves, after LottieFiles/motion-design-skill (MIT @2e1f3c0), merged with the existing Disney, choreography and acted-effects rules without repeating them.
+- `references/review-and-qa.md`: motion audit section. `references/brand-qa.md`: checklist item 13 and motion findings by severity (critical, high, medium).
+- `references/templates.md`: exploded reveal, an optional product shot for the Detail shape (client-supplied product data only), after annnguyentt/anatomy-reveal-skill (MIT @dd01e1c) on wheresryan22/anatomy (MIT @1482e84).
+- `references/transitions.md`: polish recipes with numbers (chromatic fringe, glitch bursts, rack focus, subject trails, speed-based whip blur, seeded grain, vignette, practical-light bloom on footage only) in CSS, GSAP or `ffmpeg`; no new package. Technique survey of pmndrs/react-postprocessing, fand/vfx-js and Alchemist0823/three.quarks (all MIT).
+- `SKILL.md`: `review.py audit` and springs-by-feel pointers. ROADMAP: motion-repo list harvest with the skip list.
+
+No look is a default; `poster-grid` is still never a default; the series variety rule is unchanged. All restated in our words; no files, prompts, kits, catalogs or media copied.
+
 ## [5.1.5] - 2026-11-17
 
 ### Added

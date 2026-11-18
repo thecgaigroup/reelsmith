@@ -73,6 +73,33 @@ Pick one by the material you actually have. None of them is the default, and the
 - **Detail needs different views.** One photo repeated under new adjectives is not a detail beat. Do not fake 3D or a light sweep from a flat photo. With stills only, say it is a stills edit.
 - **Rhythm keeps pace, not content.** A detected cut is not a scene. The reference's footage, words, and music stay out of the film (`storyboard.md`, Breaks).
 
+### Exploded reveal (optional product shot)
+
+A physical product, drawn in code as separate parts, turns, shows its details, comes apart and goes back together in one continuous take. It is one optional shot for the **Detail** shape, or the one named spectacle on a client cut. It is never a default, and its paper-and-ink look is one look among many, not a house style.
+
+**Rights first.** Only the client's own product, built from what they supply: dimensions, CAD or a parts list, and photos of every face the camera visits. An inside nobody has shown us is a `NEED`, or the shot stays on the outside. This is a model built from real measurements, not fake 3D from a flat photo (Detail shape, above). Never a competitor's or another brand's product, never a guessed interior, never generated parts. A drawn object that could pass for a photo is labelled as illustration (`brand-qa.md`, item 12).
+
+**Rhythm** (10 s base, 30 fps): drift, whip, hold, repeated, then apart and back. Nothing stops until the hero, and the hero ends in ambient idle, not a frozen last second (`motion-design.md`, rule 1).
+
+| Beat | Numbers |
+|---|---|
+| Tumble in | About 1.5 s. The object turns about half a revolution into a three-quarter view while its tilt rights itself; slow start, fastest midway, settle. It fills about 60% of the frame width |
+| Whip | About 0.24 s (7 frames), the same length every time. Speed-based motion blur (`transitions.md`, Polish recipes) |
+| Detail hold | 0.6–1.0 s at 4–8× zoom on a real detail, with a slow slide or push. Something on it moves if it really does (a dial, a latch) |
+| Feature | About 1.2 s. One real mechanism works and comes back |
+| Explode | About 0.4 s, ease out. Assemblies separate along their own axes; outer parts lead |
+| Apart hold | About 0.9 s, a 10–15° turn and a slight zoom out |
+| Implode | About 0.65 s, ease in-out, turning to face the viewer |
+| Hero | About 1.1 s. Front three-quarter at about 75% of the width; a slow push that eases into a 1–2% breathing drift |
+
+- **Retime, do not slow down.** Whips keep their length. Every other segment scales by one factor. Under about 3 s the holds cannot be read. Past about 12 s, add beats (a second detail pass, a cross-section hold, a second feature, a longer apart hold with a slow orbit) instead of stretching.
+- **One set of keys for every aspect.** Write the keys for 9:16. On shorter frames, wide shots zoom out until the whole object and its explode fit; detail shots keep their zoom. Snapshot each delivered aspect before rendering.
+- **Choose angles from stills.** Render four or five candidate poses as stills and pick by eye; do not guess numbers. Then snapshot every beat.
+- **Build in the existing stack.** Each part is its own layer with a fixed isometric projection (screen x = (x − y) · cos 30°, screen y = (x + y) · sin 30° − z), painted far to near. Every pose is a function of `t` (HyperFrames timeline or Remotion frame). The device notes in `remotion.md` apply. No 3D package and no new renderer.
+- **Sound** from the launch role bank: a whoosh per whip, a tick on the feature, a swell into the explode, an impact when the parts lock (`music.md`).
+
+*Source: the shot rhythm, the fixed whip length, the retime rule, one-key-set framing, and pose stills after annnguyentt/anatomy-reveal-skill (MIT, Copyright (c) 2026 Ann Nguyen, github.com/annnguyentt/anatomy-reveal-skill @dd01e1c), `references/shots.md`, which builds on wheresryan22/anatomy (MIT, Copyright (c) 2026 Ryan, @1482e84). Rewritten as an optional shot. Their kit, materials, template object, scripts and demo media are not used.*
+
 ### Direction cards at plan approval
 
 When the user should choose, show two or three cards built on different shapes or looks, not three tints of one idea. Each card has six lines:
@@ -100,6 +127,7 @@ After the master scores 8 or higher, a second hook and the other aspects are pro
 - [kaventro/motion-designer](https://github.com/kaventro/motion-designer) — real UI in a device frame, cuts written as beats, `seek(t)` checked out of order. Not installed.
 - [charlie947/motion-graphics-skills](https://github.com/charlie947/motion-graphics-skills) — launch shape (one sentence, real screens, CTA that holds) and brand intake. Intake is two lines on `brand.json` (`brand-kit.md`), not a new `MOTION.md`. A `LOOK.md` (`motion-design.md`) holds motion language only, never brand.
 - [Leonxlnx/earshot](https://github.com/Leonxlnx/earshot) launch preset — the role bank in recipe 5 (whoosh, tap, swell, impact, chime), with sync taps and bed-relative levels in `music.md`. The sound bank is not installed.
+- [annnguyentt/anatomy-reveal-skill](https://github.com/annnguyentt/anatomy-reveal-skill) (MIT) on [wheresryan22/anatomy](https://github.com/wheresryan22/anatomy) (MIT) — the exploded reveal above. The kit, its Puppeteer renderer, the interactive figure page and the worked example object are not installed or copied.
 - [nexu-io/openmotion](https://github.com/nexu-io/openmotion) (Apache-2.0) — the story shapes and direction cards above. Its bundled Product Promo template is a HyperFrames registry example and is not copied.
 
 ## Adding a template
