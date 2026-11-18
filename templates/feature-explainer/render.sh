@@ -27,7 +27,7 @@ python3 "$PKG/scripts/brand.py" bundle "$BRAND" --out public
 npx --yes tsx scripts/generate-voiceover.ts src/plans/featureExplainer.ts
 
 # Motion audit (WARNING-ONLY mode by default; strict mode via REELSMITH_AUDIT_STRICT=1)
-python3 "$PKG/scripts/review.py" audit src || echo "motion audit: $? findings (warn-only mode)"
+bash "$PKG/scripts/audit_warn.sh" src
 
 mkdir -p "$OUT"
 Q=(); [ "$DRAFT" = 1 ] && Q=(--scale=0.5 --crf=28)

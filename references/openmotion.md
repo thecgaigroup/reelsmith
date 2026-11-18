@@ -50,7 +50,7 @@ Copy `openmotion-example/` (6.5 s, 16:9, kinetic title card) and edit. Studio li
 ```bash
 P=path/to/project
 python3 scripts/openmotion_preflight.py $P               # stdlib structure check, no Node (CI runs its tests)
-python3 scripts/review.py audit $P                       # motion audit (WARNING-ONLY; strict: REELSMITH_AUDIT_STRICT=1)
+bash scripts/audit_warn.sh $P                            # motion audit (WARNING-ONLY; strict: REELSMITH_AUDIT_STRICT=1)
 node $OM/scripts/lint-project.mjs $OM $P                 # OpenMotion Studio lint: errorCount must be 0
 (cd $P && $HF check . && $HF snapshot --at 0.4,1.6,4.5)  # BRIEF stills first (brand-qa.md)
 (cd $P && $HF render . -o out/x-16x9.mp4 --format mp4 --quality delivery --json)   # draft: --quality draft
