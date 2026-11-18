@@ -1,0 +1,41 @@
+<template><style>
+#title-card { position:absolute; inset:0; overflow:hidden; background:var(--bg, #0B1220); color:var(--fg, #F8FAFC); font-family:var(--font-body, system-ui, sans-serif); }
+#title-card #grid { position:absolute; inset:-120px; background-size:96px 96px;
+  background-image:linear-gradient(rgba(148,163,184,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,.08) 1px, transparent 1px); }
+#title-card #glow { position:absolute; width:1100px; height:1100px; right:-260px; top:-200px; border-radius:50%;
+  background:radial-gradient(circle, rgba(91,108,255,.35), rgba(91,108,255,0) 65%); }
+#title-card #card { position:absolute; left:192px; top:236px; width:1100px; }
+#title-card #rule { width:220px; height:10px; background:var(--primary, #5B6CFF); border-radius:5px; transform-origin:left center; }
+#title-card #eyebrow { margin-top:40px; font-weight:700; font-size:34px; letter-spacing:.32em; color:var(--muted, #94A3B8); }
+#title-card .line { overflow:hidden; padding-bottom:12px; margin-top:8px; }
+#title-card .w { display:inline-block; font-family:var(--font-heading, system-ui, sans-serif); font-weight:var(--weight-heading, 800);
+  font-size:150px; line-height:1.02; letter-spacing:var(--tracking-heading, -0.03em); margin-right:34px; }
+#title-card .w.acc { color:var(--primary, #5B6CFF); }
+#title-card #sub { margin-top:44px; font-size:40px; font-weight:500; color:var(--muted, #94A3B8); }
+</style>
+<div id="title-card" data-composition-id="title-card" data-width="1920" data-height="1080" data-duration="6.5" data-hf-id="title-root">
+  <div id="grid" data-hf-id="grid"></div><div id="glow" data-hf-id="glow"></div>
+  <div id="card" data-hf-id="card">
+    <div id="rule" data-hf-id="rule"></div>
+    <div id="eyebrow" data-hf-id="eyebrow">REELSMITH</div>
+    <div class="line" data-hf-id="l1"><span class="w" data-hf-id="w1">Ideas,</span></div>
+    <div class="line" data-hf-id="l2"><span class="w" data-hf-id="w2">in</span><span class="w acc" data-hf-id="w3">motion.</span></div>
+    <div id="sub" data-hf-id="sub">OpenMotion render path</div>
+  </div>
+</div>
+<script>
+(function () {
+  var tl = gsap.timeline({ paused: true });
+  // Ambient idle for the whole card, so the ending never freezes (review.py frozen-ending check).
+  tl.fromTo('#title-card #grid', { x: 0, y: 0 }, { x: -96, y: -48, duration: 6.5, ease: 'none' }, 0);
+  tl.fromTo('#title-card #glow', { scale: 0.92, opacity: 0.6 }, { scale: 1.08, opacity: 1, duration: 6.5, ease: 'sine.inOut' }, 0);
+  tl.fromTo('#title-card #rule', { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: 'expo.out' }, 0.15);
+  // Transforms and opacity only: OpenMotion's Studio lint fails letterSpacing and other layout tweens.
+  tl.fromTo('#title-card #eyebrow', { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.7, ease: 'power3.out' }, 0.3);
+  // mask-reveal-up, word stagger (kinetic-type.md house default)
+  tl.fromTo('#title-card .w', { yPercent: 110 }, { yPercent: 0, duration: 0.7, ease: 'expo.out', stagger: 0.16 }, 0.6);
+  tl.fromTo('#title-card #sub', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, 1.7);
+  window.__timelines = window.__timelines || {};
+  window.__timelines['title-card'] = tl;
+})();
+</script></template>

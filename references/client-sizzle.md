@@ -91,8 +91,9 @@ Copy `examples/storyboard/storyboard.json` and `storyboard.html`. Swap beats, wo
 |---|---|
 | **HyperFrames + GSAP** | Default for client sizzle: custom kinetic, overlays, logo grids, page-like comps |
 | **Remotion** | Speech-locked kinetic type, word timings, data-driven or series comps — see `remotion.md` |
+| **OpenMotion** | Only when Marc asks for a Studio timeline handoff on this job; same HyperFrames HTML, stricter lint — see `openmotion.md` |
 
-Default engine is HyperFrames. Load `/hyperframes` before writing the comp (`hyperframes.md`). Never set `HYPERFRAMES_SKIP_SKILLS`. Remotion (`remotion.md`) only when words lock to speech, or for a campaign matrix after the master locks. Product-hero notes in that file are optional reading when the storyboard names a physical device. They leave this lane on HyperFrames and they add no Three.js package. Do not add a third renderer.
+Default engine is HyperFrames. Load `/hyperframes` before writing the comp (`hyperframes.md`). Never set `HYPERFRAMES_SKIP_SKILLS`. Remotion (`remotion.md`) only when words lock to speech, or for a campaign matrix after the master locks. Product-hero notes in that file are optional reading when the storyboard names a physical device. They leave this lane on HyperFrames and they add no Three.js package. OpenMotion (`openmotion.md`) only when Marc asks for a Studio timeline handoff. Do not add a fourth renderer.
 
 Type moves: `kinetic-type.md`. Seams: `transitions.md`. Taste numbers and bans: `motion-design.md`. Cues: `music.md`. Speech on screen: `captions.md`. Gate: `brand-qa.md`.
 

@@ -8,7 +8,8 @@ description: >-
   motion-design.md (taste numbers, motion grammar), music.md (cue sheet, launch sync taps, bed-relative levels),
   hyperframes.md (harness: reference, then data, then motion), and brand-qa.md (stills, fresh reviewer, item-by-item, scores to 8+).
   Use remotion.md only when type locks to speech or a locked master needs a
-  campaign matrix. Optional product-hero notes in that file add no Three.js
+  campaign matrix. openmotion.md (third engine) only for a HyperFrames-format piece that needs a Studio
+  timeline handoff or OpenMotion's Studio lint and export verifier. Optional product-hero notes in that file add no Three.js
   package and do not change the engine. captions.md when speech is on screen. Also promo, launch,
   recap, testimonial, how-to, slides, explainer, social clips. Paid AI only
   after a quote.
@@ -45,13 +46,24 @@ kinetic type, correct logos — not grey placeholders or a talk-head TEMP divert
 | Tutorial, walkthrough, onboarding (+ YouTube chapters) | `howto-tutorial` | templates.md, youtube-publishing.md |
 | Narrated product explainer with captions | `feature-explainer` (Remotion; `render.sh`) | remotion.md. Optional product-hero notes in that file only when the storyboard names a physical device. No Three.js package |
 | Custom kinetic piece, overlay, alpha, GIF | HyperFrames by hand (Remotion if speech-locked) | hyperframes.md, motion-design.md, kinetic-type.md, transitions.md, music.md, brand-qa.md |
+| Title card, endslate or bumper someone will retime in a GUI; must pass Studio lint + export verify | OpenMotion (HyperFrames format, `openmotion-example/`) | openmotion.md, then the same motion, music and QA files as HyperFrames |
 | Diagrams / math, Lottie, cut user footage, transcribe | Manim, Lottie, auto-editor, parakeet | helpers.md |
 | Script or VO lines | 2–3 options + `script_lint.py` | scriptwriting.md, voiceover.md |
 | Captions (SRT/VTT/ASS, burn-in) | `captions.py` | captions.md |
 | Platform specs, safe zones, delivery files | `export.py`, `presets.json` | platform-specs.md, loudness-accessibility.md |
 | AI b-roll, images, avatars, AI music (paid) | Fal / Higgsfield, quote first | ai-generation.md |
 
-Licenses: HyperFrames is Apache-2.0. Remotion is free for individuals and teams of up to 3; companies of 4+ need
+## Pick the engine
+| Engine | When |
+|---|---|
+| **HyperFrames** (default) | Client and awards sizzles (`client-sizzle.md`), custom kinetic, overlays, logo grids, alpha, GIF |
+| **Remotion** | Type locked to speech, narrated `feature-explainer`, campaign matrix after the master locks |
+| **OpenMotion** | Same HTML format as HyperFrames, rendered by OpenMotion's pinned engine. Pick it for a Studio timeline handoff, or when a piece must pass OpenMotion's Studio lint and frame-exact export verification. $0, no keys, model gateway off |
+
+Choose one at plan approval and write it on the storyboard. Do not switch mid-job. No engine carries a default look.
+The gates are the same on all three: `review.py`, `brand-qa.md`, `beats.py lock`, `export.py`.
+
+Licenses: HyperFrames and OpenMotion are Apache-2.0. Remotion is free for individuals and teams of up to 3; companies of 4+ need
 a license (ask once if commercial). Music, stock, fonts: licensed, credited (`stock.py credit`, `credits.json`).
 
 ## Client sizzle (mandatory when it fits)
@@ -87,7 +99,8 @@ Stay on this lane until the user explicitly pivots. No Flashtalk or interview TE
 sample, render, loop, seam | `script_lint.py` | `beats.py` grid, snap, fit, synth, lock | `stock.py` search, fetch,
 credit (API keys only, `--dry-run`) | `captions.py` build/burn | `review.py` check (incl. cut list, clicks at cuts), audit (static motion audit of a comp), approve, status |
 `export.py` run, overlay, list, loudnorm | `youtube_prep.py` | `presets.json`.
-HyperFrames setup and pin: references/hyperframes.md. Kokoro needs `HYPERFRAMES_PYTHON=<venv>/bin/python`.
+`openmotion_preflight.py` (OpenMotion project structure, no Node).
+HyperFrames setup and pin: references/hyperframes.md. OpenMotion pin and render loop: references/openmotion.md. Kokoro needs `HYPERFRAMES_PYTHON=<venv>/bin/python`.
 
 ## Rules
 - Keys only via the platform's secret prompt as env vars; never echo, log or write them. `REELSMITH_IGNORE_KEYS=1`
@@ -103,7 +116,8 @@ HyperFrames setup and pin: references/hyperframes.md. Kokoro needs `HYPERFRAMES_
 - Prefer footage-first craft over generative shortcuts when selects exist.
 
 ## Failures
-OOM: `--workers 2` (HyperFrames) / `--concurrency=2` (Remotion). Chrome: `$HF doctor` / `npx remotion browser
+OOM: `--workers 2` (HyperFrames, OpenMotion) / `--concurrency=2` (Remotion). OpenMotion Studio lint
+`nested_structure_needs_subcomposition`: mount the scene as a sub-composition (`openmotion.md`). Chrome: `$HF doctor` / `npx remotion browser
 ensure`. Blank HyperFrames frame: timeline not paused/registered or a bad asset path. No librosa: beats falls back to
 a fixed BPM (pass `--bpm`). No Kokoro: espeak-ng. 401: re-ask for the key via the secret prompt.
 

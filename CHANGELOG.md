@@ -5,6 +5,21 @@ All notable changes to Reelsmith will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.2.0] - 2026-11-18
+
+### Added
+- OpenMotion as the third render engine, beside HyperFrames and Remotion (Marc, 2026-11-18). `references/openmotion.md` covers the pin (`nexu-io/openmotion@9e2f877`, Apache-2.0, HyperFrames 0.9.7 core), the source install with telemetry off, and what stays off (model gateway, Studio server, MCP, catalogs). It also covers the project shape that passes Studio lint, the render loop (preflight, Studio lint, snapshot, render, `verify-export.ts`, `review.py`), the 16:9, 9:16 and 1:1 settings, and how `brand.json`, captions, music and beat lock plug in. Includes portability and version-skew notes and the maturity caveats.
+- `SKILL.md`: a "Pick the engine" table and a route row. HyperFrames stays the default for client and awards sizzles. Remotion is for speech-locked type and campaign matrices. OpenMotion is for a Studio timeline handoff, or for Studio lint plus frame-exact export verification.
+- `openmotion-example/`: a 6.5 s kinetic title card (mask-reveal-up, ambient drift, no audio, no default look). It is Studio-lint clean and also renders on `hyperframes@0.8.197`.
+- `scripts/openmotion_preflight.py`: a stdlib check of the Studio-lint structure rules (mounted sub-compositions, registered paused timelines, matching durations, transform-only tweens, no wall clock). Tests: `scripts/test_openmotion_preflight.py` (in CI). CI also runs the preflight on the example.
+- `scripts/capabilities.py`: an `openmotion_runtime` tool. `openmotion` appears under engines when `REELSMITH_OPENMOTION_DIR` (default `/workspace/tools/openmotion`) has the installed engine.
+
+### Changed
+- The QA gates now name all three engines: `brand-qa.md` (BRIEF stills, commands, critic prompts; "do not suggest a third renderer" became "do not switch engines"), `review-and-qa.md` (stills), `music.md` (`b(n)`, audio clips), `client-sizzle.md` (engine table), `hyperframes.md` (pointer), and the `brand.py` docstring. `review.py`, `beats.py lock` and `export.py` were already engine-agnostic and are unchanged.
+- ROADMAP: the 5.1.4 skip "OpenMotion as a tool" is superseded for the render path only.
+
+No OpenMotion files are vendored. No paid generation and no new keys.
+
 ## [5.1.6] - 2026-11-18
 
 ### Added
