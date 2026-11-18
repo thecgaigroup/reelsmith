@@ -33,7 +33,7 @@ Click a preview to open the full MP4 (with sound). All of these were rendered by
 - `assets/music/`: a CC BY 3.0 track (Kevin MacLeod, "Militaire Electronic") with its beat grid and credits.
 - `guides/`: safe-zone overlay PNGs per platform.
 - Remotion starter kit: complete Remotion 4 project (brand-driven theme, captions, free/paid VO script). `remotion-starter-kit.tgz` is not in the current tree (`*.tgz` is gitignored). History was not rewritten, so the archive is still in past commits.
-- `hyperframes-example/`, `manim-example/`, `lottie-example/`: small starting points.
+- `hyperframes-example/`, `openmotion-example/`, `manim-example/`, `lottie-example/`: small starting points.
 - Awards and partner cuts: start with `references/client-sizzle.md` and a storyboard (`references/storyboard.md`, pattern in `examples/storyboard/`).
 
 ## Install

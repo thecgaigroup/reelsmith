@@ -273,7 +273,7 @@ A Remotion + `@remotion/three` + `postprocessing` world (ink outline pass before
 
 **Skipped on purpose:**
 
-- **OpenMotion as a tool** (Studio, MCP server, CLI, npm app, editor fork): it would be a third render pipeline beside HyperFrames and Remotion.
+- **OpenMotion as a tool** (Studio, MCP server, CLI, npm app, editor fork): it would be a third render pipeline beside HyperFrames and Remotion. *Superseded for the render path on 2026-11-18. See "OpenMotion as the third engine" below. Studio, MCP, the npm app and the editor fork stay out.*
 - **Model gateway and multimodal generation** (GPT Image, Seedance, Suno, Eleven via BYOK or the OpenDesign Go subscription): needs new API keys or a paid plan. Paid generation stays on hold.
 - **The 287-entry motion catalog ("300+ Motion.md")**: breakdowns of other companies' brand films. Their footage, brands, screenshots and fonts keep their original rights, and many guides are Chinese prose tied to OpenMotion's demo player. Ideas only, nothing copied.
 - **The 152 brand design systems and Brand Kit catalog**: adapted from nexu-io/open-design; many are named after real companies (Airbnb, Apple, BMW and others). Trademarks and brand look-alikes; not copied. Our brand intake stays `brand.json`.
@@ -281,6 +281,25 @@ A Remotion + `@remotion/three` + `postprocessing` world (ink outline pass before
 - **Motion Package v0.2 manifest** (`motion-package.json`, hashed inventory, materializer): packaging for sharing, which we do not need. Revisit only if CGAI starts publishing looks for others.
 - **Design-remix profiles and vendored three.js / GSAP builds**: three.js stays out (`remotion.md`); GSAP comes from HyperFrames.
 - **Presenter-story edit map** (source time versus output time): already covered by captions on a cut film (`captions.md`) and the cut list (`review-and-qa.md`).
+
+## OpenMotion as the third engine (2026-11-18)
+
+**Status:** in the skill (5.2.0). **Ask:** Marc via Grog, 2026-11-18 2:59 AM ET: "We should add open motion in addition to hyper frames and remotion".
+
+**Source:** [nexu-io/openmotion](https://github.com/nexu-io/openmotion) (Apache-2.0, no NOTICE file) @9e2f87798cacbe1dad5785e03c5dd57193da4c70.
+
+**Maturity verdict:** usable with caveats. On the plus side, it is very active (514 commits, about 500 since the 2026-11-08 cutover from HTML Anything), with around 10 human contributors plus a bot. It closed 476 PRs (median about 0.6 h to close in the last 100) and has 37 open issues (median first reply about 0.1 h, which looks like bot triage). It has 144 node test files, a CI matrix and a headless render path. It renders locally at $0 with no keys. Against that, it has only one tag (`v0.1.0`, 2026-11-17), the package is `0.0.1` and private, nothing is on npm, churn is about 50–100 commits a day, usage analytics are on by default, and the install is heavy (about 680 MB clone, about 610 MB `node_modules`, Node 22.18+). The render core is HyperFrames 0.9.7, so the new things are the Studio lint, the export verifier and the Studio timeline, not a new rasterizer.
+
+| Landed | Where |
+|---|---|
+| Pin, install, render loop, formats, brand, captions, music | `references/openmotion.md` |
+| Engine pick table and route row | `SKILL.md`, `client-sizzle.md` |
+| Example and stdlib preflight with CI tests | `openmotion-example/`, `scripts/openmotion_preflight.py` |
+| Engine-agnostic gate wording | `brand-qa.md`, `review-and-qa.md`, `music.md`, `hyperframes.md` |
+
+**Still out:** the model gateway and OpenDesign Go plan (paid generation, new keys), the Studio server as a default (a handoff needs Marc's yes, localhost only), the MCP server, the template and motion catalogs, brand design systems, `npx skills add`, and OpenMotion's caption export (`captions.py` stays).
+
+**Next:** re-verify `openmotion-example/` before any SHA bump. Once upstream publishes a stable release, consider moving the pin from a SHA to that release.
 
 ## Liquid chrome / reflective metal look (optional Three.js path)
 

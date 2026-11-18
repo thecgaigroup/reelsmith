@@ -63,7 +63,7 @@ It reads `.html`, `.js`, `.ts(x)`, `.jsx` and `.css` under the folder, skipping 
 
 ## Kinetic type, before the full render
 For client sizzle and hand-authored kinetic pieces, pull stills at the BRIEF frame numbers (`storyboard.md`)
-**before** you trust playback. HyperFrames: `$HF snapshot --at`. Remotion: `npx remotion still --frame=N`.
+**before** you trust playback. HyperFrames and OpenMotion: `$HF snapshot --at` (each with its own pinned CLI). Remotion: `npx remotion still --frame=N`.
 Then look at `contact.jpg` and `phone.jpg`. `review.md` includes a 1–10 table: hook, phone, motion,
 variety, brand, sound. Score it as a fresh reviewer, from the stills, not from memory of the comp.
 Fix the three worst scores and re-check until each is 8 or higher. Rules and

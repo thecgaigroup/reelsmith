@@ -310,7 +310,9 @@ Techniques adapted from [OpenMotion](https://github.com/nexu-io/openmotion) by O
 
 **Changes:** rewritten in English for Reelsmith's lanes; brand stays in `brand.json`; added the series variety rule and house overrides (no default look, `poster-grid` never a series default). Not used: the Studio, MCP server, model gateway, motion catalog, brand design systems, bundled templates, fonts, media, and vendored libraries.
 
-**License:** Apache License 2.0. OpenMotion ships no top-level NOTICE file. The full license text is reproduced once in this file under HyperFrames, above, and applies here unchanged. Catalog reference footage, brands, screenshots and fonts keep their original rights and were not used.
+**Third engine (5.2.0):** OpenMotion @9e2f87798cacbe1dad5785e03c5dd57193da4c70 (read 2026-11-18) is used as *installed tooling* by `references/openmotion.md`: its pinned HyperFrames CLI, `scripts/lint-project.mjs` and `scripts/verify-export.ts`, installed from source by the user. None of its files are vendored here. The Studio-lint structure rules in `scripts/openmotion_preflight.py` and `openmotion-example/` are restated from `skills/openmotion-production/references/native.md` and the lint findings, in our own code and words.
+
+**License:** Apache License 2.0. OpenMotion ships no top-level NOTICE file (re-checked @9e2f877). The full license text is reproduced once in this file under HyperFrames, above, and applies here unchanged. Catalog reference footage, brands, screenshots and fonts keep their original rights and were not used.
 
 ## rea-video
 

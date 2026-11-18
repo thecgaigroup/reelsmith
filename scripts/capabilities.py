@@ -111,6 +111,7 @@ def local_tools():
     kokoro_cache = any(Path(p).expanduser().exists() for p in [
         "~/.cache/hyperframes/tts", "~/.cache/hyperframes/kokoro", "~/.cache/kokoro"])
     rv = os.environ.get("REELSMITH_REMOTION_DIR", "/workspace/remotion-video")
+    om = os.environ.get("REELSMITH_OPENMOTION_DIR", "/workspace/tools/openmotion")
     kpy = kokoro_python()
     return {
         "ffmpeg": bool(ff),
@@ -124,6 +125,7 @@ def local_tools():
         "librosa": bool(_py_has("librosa")),
         "pillow": bool(_py_has("PIL")),
         "remotion_project": (Path(rv) / "node_modules" / "remotion").exists(),
+        "openmotion_runtime": (Path(om) / "node_modules" / "hyperframes").exists(),  # references/openmotion.md
     }
 
 def detect(mcp=()):
@@ -152,7 +154,7 @@ def detect(mcp=()):
         "beat_detection": beats,
         "music": "user track or licensed track; synthetic bed fallback",
         "captions_burn_in": tools["ffmpeg_subtitles"],
-        "engines": [e for e, ok in (("hyperframes", tools["node22"]), ("remotion", tools["remotion_project"]), ("ffmpeg", tools["ffmpeg"])) if ok],
+        "engines": [e for e, ok in (("hyperframes", tools["node22"]), ("openmotion", tools["node22"] and tools["openmotion_runtime"]), ("remotion", tools["remotion_project"]), ("ffmpeg", tools["ffmpeg"])) if ok],
     }
     return {"services": services, "tools": tools, "plan": plan, "simulated": sorted(_SIM)}
 

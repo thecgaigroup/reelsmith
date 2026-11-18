@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Brand kit helper. One brand.json drives HyperFrames, Remotion and ffmpeg.
+"""Brand kit helper. One brand.json drives HyperFrames, OpenMotion, Remotion and ffmpeg.
 
   brand.py validate brand.json                 # schema-lite + files + WCAG contrast
   brand.py bundle   brand.json --out DIR       # copy logos + fonts into DIR/brand/, write

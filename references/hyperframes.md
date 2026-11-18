@@ -54,7 +54,7 @@ Prefer HyperFrames when the piece is a designed page: client sizzle, custom kine
 
 Premium motion, ambient idle, the density contract, and motion grammar: `motion-design.md`. Caption block names: `captions.md`. Seams, including `beat-freeze-cut` and match cuts: `transitions.md`. An optional device canvas still uses this paused timeline. Skills stay on. Product-hero notes, with no Three.js package: `remotion.md`.
 
-See `hyperframes-example/` (a sizzle) and `lottie-example/` (Lottie seeked by the runtime).
+See `hyperframes-example/` (a sizzle) and `lottie-example/` (Lottie seeked by the runtime). The same HTML renders through OpenMotion, which adds Studio lint and export verification (`openmotion.md`, `openmotion-example/`).
 
 ## Troubleshooting
 Blank/frozen: timeline not paused or registered, or a bad asset path. `nested_structure` or

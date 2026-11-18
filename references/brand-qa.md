@@ -8,7 +8,7 @@ Run before any client draft leaves the box. Fail = do not send.
 
 ## BRIEF frames
 
-The storyboard is the BRIEF (`storyboard.md`). Before trusting playback, snapshot every shot at its frame numbers and Read the PNGs. HyperFrames: `$HF snapshot --at` with those times. Remotion: `npx remotion still <id> out/f.png --frame=N`. Then run `review.py check` so `contact.jpg` and `phone.jpg` exist. A moving preview does not replace the stills. Seek the same `t` twice before you call a frame done (`motion-design.md`). Pixels match, including a seek that jumps backwards.
+The storyboard is the BRIEF (`storyboard.md`). Before trusting playback, snapshot every shot at its frame numbers and Read the PNGs. HyperFrames: `$HF snapshot --at` with those times. Remotion: `npx remotion still <id> out/f.png --frame=N`. OpenMotion: the same `snapshot --at` through its pinned `$HF` (`openmotion.md`). Then run `review.py check` so `contact.jpg` and `phone.jpg` exist. A moving preview does not replace the stills. Seek the same `t` twice before you call a frame done (`motion-design.md`). Pixels match, including a seek that jumps backwards.
 
 ## Fresh reviewer
 
@@ -33,6 +33,10 @@ The author of the comp does not grade it (builder ≠ judge). A second pass scor
 ```bash
 # HyperFrames
 npx hyperframes@0.8.197 snapshot --at 1,12,28,42
+# Remotion
+npx remotion still <id> out/f.png --frame=N
+# OpenMotion (pinned engine CLI, openmotion.md)
+$OM/node_modules/.bin/hyperframes snapshot --at 1,12,28,42
 # Reelsmith motion audit (source only, before the first draft render)
 python3 scripts/review.py audit OUT/comp
 # Reelsmith review
@@ -142,7 +146,7 @@ Read the PNGs. Look at joins, type, collisions, and a one-frame pop.
 Under 450 words:
 - KEEP / REVISE / REJECT
 - Defects by severity, with timestamps
-- The 3 highest-value fixes, on HyperFrames (skills on; never HYPERFRAMES_SKIP_SKILLS) or Remotion (useCurrentFrame)
+- The 3 highest-value fixes, on the job's engine: HyperFrames (skills on; never HYPERFRAMES_SKIP_SKILLS), Remotion (useCurrentFrame), or OpenMotion (Studio lint clean)
 ```
 
 **Full film**
@@ -154,7 +158,7 @@ Artifact: <video or contact.jpg + phone.jpg> (<duration>, <size>). <What the fil
 Previous report, if any: <path>. Check which items are fixed.
 Client words, verbatim: <paste>.
 
-Read the BRIEF stills, contact.jpg, and phone.jpg. Use the review.py loudness, frozen-stretch, and flash lines. Do not install SageCut. Do not call a paid critic API. HyperFrames skills stay on. Do not set HYPERFRAMES_SKIP_SKILLS. Do not suggest a third renderer.
+Read the BRIEF stills, contact.jpg, and phone.jpg. Use the review.py loudness, frozen-stretch, and flash lines. Do not install SageCut. Do not call a paid critic API. HyperFrames skills stay on. Do not set HYPERFRAMES_SKIP_SKILLS. Do not suggest switching engines. The job's engine (HyperFrames, Remotion or OpenMotion) is fixed at plan approval.
 
 Under 900 words:
 1. Per scene: range, what is on screen, empty space, seconds it could lose, ranked problems.
