@@ -15,7 +15,7 @@ OpenMotion ([nexu-io/openmotion](https://github.com/nexu-io/openmotion), Apache-
 | **OpenMotion** | A HyperFrames-format piece that the client or Marc will retime in a GUI (Studio timeline handoff), or that must pass OpenMotion's Studio lint and frame-exact export verification before it leaves. Title cards, endslates, and short brand bumpers are typical | this file |
 
 - Pick one engine per job, at plan approval. Write it on the storyboard. Do not switch engines mid-job to fix stiff motion; timing and easing live in `motion-design.md`.
-- OpenMotion never replaces HyperFrames on a sizzle unless Marc asks for the Studio handoff on that job.
+- OpenMotion can be picked at plan approval for technical reasons (Studio lint, export verification). HyperFrames stays the sizzle default unless that technical need applies, or Marc asks for the Studio GUI handoff on that job.
 - No engine brings a default look. `LOOK.md` and `brand.json` drive the look on all three (`motion-design.md`). `poster-grid` is never a default.
 
 ## Pin and install (once, $0, no keys)
