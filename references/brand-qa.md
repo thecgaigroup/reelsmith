@@ -32,7 +32,7 @@ The author of the comp does not grade it (builder ≠ judge). A second pass scor
 ## Commands
 ```bash
 # HyperFrames
-npx hyperframes@0.8.197 snapshot --at 1,12,28,42
+npx hyperframes@0.9.7 snapshot --at 1,12,28,42
 # Remotion
 npx remotion still <id> out/f.png --frame=N
 # OpenMotion (pinned engine CLI, openmotion.md)

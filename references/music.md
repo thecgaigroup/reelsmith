@@ -121,7 +121,7 @@ Shape, not a dependency: a kick is a sine that drops in pitch with a short decay
 
 Master to about −14 LUFS integrated. Leave headroom so the encoded AAC file stays at or under −1 dBTP (`loudness-accessibility.md`). A bed of tiny hits and silence will not reach −14 without crushing. Lengthen the bed. Do not slam a limiter to fake the number.
 
-HyperFrames and OpenMotion (root of `index.html`): one `<audio id="…">` per stem, with `data-start`, `data-duration`, and `data-track-index`. Do not call `play()`. From 0.8.197 the renderer sums multiple audio clips. Remotion: a `<Sequence from={frame}>` per cue, then `export.py loudnorm` on the final, because Remotion does not normalize.
+HyperFrames and OpenMotion (root of `index.html`): one `<audio id="…">` per stem, with `data-start`, `data-duration`, and `data-track-index`. Do not call `play()`. From 0.8.197 onwards (including 0.9.7) the renderer sums multiple audio clips. Remotion: a `<Sequence from={frame}>` per cue, then `export.py loudnorm` on the final, because Remotion does not normalize.
 
 Check: every transient's sync point sits on `b(n) + offset_ms` (Sync taps). A hit with no cue row is a hardcoded time or a stale file. Seek the picture to that `b(n)` and read the frame (`brand-qa.md`). This repo does not ship an `sfx` package. The pattern is this section.
 

@@ -79,7 +79,7 @@ Make one project per aspect, and relayout the comp; do not scale it. Text stays 
 
 ## Portability and version skew
 
-Reelsmith's HyperFrames lane pins `hyperframes@0.8.197`. OpenMotion pins `0.9.7`. A project that passes OpenMotion's Studio lint also rendered on 0.8.197 (test card, SSIM 0.98 at t = 4.5 s). The reverse is not true: flat HyperFrames sizzles fail Studio lint until their scenes become sub-compositions. When bumping the OpenMotion SHA, re-run the render loop on `openmotion-example/` and re-check the engine version in its `package.json`.
+Reelsmith's HyperFrames lane and OpenMotion both pin HyperFrames `0.9.7`. A project that passes OpenMotion's Studio lint also renders on the main HyperFrames path. The reverse is not true: flat HyperFrames sizzles fail Studio lint until their scenes become sub-compositions. When bumping the OpenMotion SHA, re-run the render loop on `openmotion-example/` and re-check the engine version in its `package.json`.
 
 ## Caveats (2026-11-18 maturity check)
 

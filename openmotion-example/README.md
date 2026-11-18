@@ -11,4 +11,4 @@ A HyperFrames-format project laid out for OpenMotion's Studio lint: the root `in
     node --experimental-strip-types $OM/scripts/verify-export.ts out/title-16x9.mp4 '{"width":1920,"height":1080,"fps":30,"duration":6.5,"audio":"silent"}'
     python3 ../scripts/review.py check out/title-16x9.mp4 --out out/_review --preset youtube --expect-seconds 6.5
 
-Tested 2026-11-18 on OpenMotion @9e2f877 (HyperFrames 0.9.7): Studio lint 0 errors, render about 12 s at delivery quality, verify-export passed, and review.py auto PASS (it warns that there is no audio). The same project also renders on `hyperframes@0.8.197`. `brand/`, `out/` and `.hyperframes/` are generated and gitignored. `assets/gsap.min.js` is the same file as in `hyperframes-example/`.
+Tested 2026-11-18 on OpenMotion @9e2f877 (HyperFrames 0.9.7): Studio lint 0 errors, render about 12 s at delivery quality, verify-export passed, and review.py auto PASS (it warns that there is no audio). The same project also renders on `hyperframes@0.9.7`. `brand/`, `out/` and `.hyperframes/` are generated and gitignored. `assets/gsap.min.js` is the same file as in `hyperframes-example/`.
