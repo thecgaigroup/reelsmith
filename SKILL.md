@@ -25,11 +25,13 @@ kinetic type, correct logos — not grey placeholders or a talk-head TEMP divert
 
 ## Start every job
 0. In an existing film folder, read `EDIT_LOG.md` first and say the last session in one sentence (`review-and-qa.md`, Edit log). Append to it before you end the session.
-1. `python3 scripts/capabilities.py` — shows what is ON/OFF (never prints keys). Mention, once, which free key
+1. **New machine:** `python3 scripts/doctor.py` once before the first render — checks ffmpeg, Python packages, Node,
+   fonts. Exits 1 if core dependencies are missing. See what works before starting.
+2. `python3 scripts/capabilities.py` — shows what is ON/OFF (never prints keys). Mention, once, which free key
    would help (e.g. Pexels for stock). Never require one.
-2. Gather: goal, audience, platform(s), length, brand (`brand.json`; build one: references/brand-kit.md), media,
+3. Gather: goal, audience, platform(s), length, brand (`brand.json`; build one: references/brand-kit.md), media,
    music preference, voice yes/no. Ask only what is unclear.
-3. **Route honestly** (table below). If the brief is a multi-beat sizzle with real footage, use **client-sizzle** —
+4. **Route honestly** (table below). If the brief is a multi-beat sizzle with real footage, use **client-sizzle** —
    do not force a social template or invent AI talk-heads.
 
 ## Route the job
