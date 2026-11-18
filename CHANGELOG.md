@@ -5,6 +5,19 @@ All notable changes to Reelsmith will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.5] - 2026-11-17
+
+### Added
+- `scripts/beats.py lock`: share of picture cuts within 70 ms of a beat against chance on that grid, from `cuts.json` (`cut` rows only), with `--offset` and the median offset. Verdict "beat-synced edit" at four or more cuts, at least half on the beat and at least 1.8× chance. Approach after JuneYaooo/rea-video (Apache-2.0 @bb11b13), re-implemented. Tests: `scripts/test_beat_lock.py` (in CI).
+- `references/storyboard.md`: shot ledger (`BREAKDOWN.md`) — card, one line per shot, shot notes; seen versus inferred (`~`) keys; made-by classes with tells; remake by production unit; picture, packaging and sound layers; narrative line; beat lock in the card. After rea-video and the VIDEO.md format (videomd/videomd, Apache-2.0 @0837221).
+- `references/brand-qa.md`: generic-AI tells (color, icons, copy, numbers, pictures, layout, template look) as defaults the brief or `LOOK.md` can earn back. After heydamir/unslop (CC BY 4.0 @620163e) and pbakaus/impeccable (Apache-2.0 @d41d986).
+- `references/review-and-qa.md`: reading time per text block. After lemomo-ai/lemo-opuscar `readcheck.mjs` (MIT @00a7f9e); its CC BY-NC docs not used.
+- `references/motion-design.md`: acted effects (wind-up, freeze on contact, held drawings, effects that end). After patch-gg/pixelfx (MIT @5294518).
+- `references/music.md`, `SKILL.md`: `beats.py lock` and shot-ledger pointers.
+- ROADMAP: 20-repo animation list harvest, with the skip list.
+
+All restated in our words; no files, prompts, catalogs, case reports, or reference media copied.
+
 ## [5.1.4] - 2026-11-17
 
 ### Added

@@ -116,6 +116,47 @@ For the five kinds of boundaries between moments (becomes / carried / matched / 
 
 *Source: James Dimachkie/video-decompiler (MIT, github.com/JimGHTB12/video-decompiler @57a7525). Cut and event measurement after heygen-com/hyperframes (Apache-2.0, github.com/heygen-com/hyperframes @d317abc) (`skills/reverse-any-video`, `measure cuts`); one-topic look reports after mromidev/claude-animated-shorts (MIT, Copyright (c) 2026 Mr omi, github.com/mromidev/claude-animated-shorts @e3b817b) (`SKILL.md`, look-match loop). Check line and four-moment spectacle after nexu-io/openmotion (Apache-2.0, github.com/nexu-io/openmotion @664be50) (`skills/openmotion-director/references/action-script.md`). Our words.*
 
+## Shot ledger (`BREAKDOWN.md`): how each shot was made
+
+Use it when the question is "how was this made, and how would we make it?" — a reference with mixed sources, a music video, an AI-heavy clip. `REFERENCE.md` (above) says what to keep. The ledger says, shot by shot, whether the picture was filmed, generated, or built in code, and our free route to each one. It sits beside `REFERENCE.md` in the film folder and is private study material.
+
+Write it in three levels, so a reader opens only what the question needs:
+
+1. **Card** (top of the file, a few lines): what the video shows, then how it was made, with the mix by duration ("code 60%, filmed 30%, still + move 10%"), shot count, how sure you are, and the number of open questions. "A 40 s music visualizer: lyric type over a code-drawn waveform, two filmed inserts" beats "code 100%".
+2. **Timeline**: one line per shot. Shot times are the `cut` rows of `review.py check` on the reference (`cuts.json`); `flash` and `fast` rows are not shots. A long code shot that holds, animates, and holds again is one shot with beats inside it, not two shots.
+3. **Shot notes**: only for shots you need to settle. What is seen, what is inferred and why, how to remake it.
+
+```
+#07 16.2–18.5 | job proof | seen phone UI scrolls, price circles in | camera static | seam hard cut | made~ code 70% · screen capture 20% | material~ real screenshot | remake HyperFrames comp, real screenshot (NEED) | flag low confidence
+```
+
+A key ending in `~` is an inference; a key without it is seen or measured. When they disagree, the frames win. Leave out a key with nothing to say.
+
+**Made by** (one per shot, with a runner-up when unsure): filmed, AI video, avatar, 3D render, code render, screen capture, still + move, still hold, 2D animation, stop motion, film or TV footage. Tells for the ones we meet most:
+
+| Made by | Tells |
+|---|---|
+| Code render | Flat fills, few colors, straight edges; the background is pixel-identical frame to frame while only parts move; smooth gradients, glow, or color fields with no fine texture; on near-black, the bright parts are all fine dots or lines (particles, point clouds, wireframes) |
+| Still + move | The whole frame follows one rigid zoom or pan and nothing inside it moves |
+| AI video | A 24-to-30 fps cadence (a repeated frame every 4–6 frames); edges that boil; garbled text, hands, or background people; floaty camera; a freeze at the end of the shot |
+| 3D render | Stable geometry and real material texture (cloth, wood, metal) with shadows between objects; it does not warp |
+| Stop motion | The same object moved frame by frame under constant light, with a stepped rhythm and slight flicker; the material stays stable |
+| Film or TV footage | Recognizable actors or shows, crew-scale lighting and sets, letterboxing, a broadcaster mark. Mark it as footage even if it looks filmed. We never reuse it |
+
+Only say "AI" or "filmed" from tools plus your own look at the frames. One reviewer's call on 2D animation, stop motion, or footage stays "to confirm".
+
+**Remake by how it is made, not by edit order.** Group shots into units: one shoot setup (same set, same camera position; wide before close), one code comp, one still-and-move pass. Our routes: code → HyperFrames or Remotion; still + move → `kenburns` with the measured zoom and pan; filmed → `NEED` real footage or a shot list; screen capture → a real capture in a device (`templates.md`); AI video → parked while paid generation is on hold, and only after a quote (`ai-generation.md`); film footage → never.
+
+**Three layers.** Picture, packaging (captions, styled text, stickers), and sound. Packaging is never baked into the picture, generated or coded: lay it last on its own layer, so a copy change touches only that layer. Styled text follows the spoken or sung line it belongs to, not the old second.
+
+**Narrative line.** A short table: time, shots, job (hook, set the mood, add information, show proof, turn, conclude), and what it says. Keep the order and the job of each step; refill the point with our own material.
+
+**On the beat.** For a music piece, run `beats.py lock beatgrid.json cuts.json` (`music.md`) and write the share of cuts on a beat against chance in the card. That number, not "it feels on the beat", says whether the edit is beat-synced.
+
+The reference's frames, words, lyrics, and music stay in the study folder. Nothing from them enters our film (Breaks, above).
+
+*Source: shot-by-shot made-by verdicts, seen-versus-inferred keys, the levelled package, the tells, remake units, the three layers and the narrative line after JuneYaooo/rea-video (Apache-2.0, Copyright 2026 JuneYaooo, github.com/JuneYaooo/rea-video @bb11b13) (`skills/rea-video/references/taxonomy.md`, `remake.md`, `output-template.md`) and the VIDEO.md format, videomd/videomd (Apache-2.0, github.com/videomd/videomd @0837221) (`docs/spec.md`). Our words. We do not produce a conforming VIDEO.md package; no rea-video code, case reports, or prompts are used.*
+
 ## Anti-patterns
 - Skipping the board and jumping to Flashtalk / AI talk-heads
 - Shipping placeholder-heavy animatics when selects exist (`HAVE`)

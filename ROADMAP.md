@@ -204,6 +204,34 @@ Liquid-chrome shaders below stay parked. These notes do not start that work.
 
 A Remotion + `@remotion/three` + `postprocessing` world (ink outline pass before lens blur, painted Canvas2D textures, billboard 2D characters, synthesized march score and SFX). MIT, free, offline. Not folded: it adds three.js packages that `remotion.md` keeps out, needs Kenney CC0 models (~1.3 GB `public/`), and a short is a multi-day hand-built project (2K renders about 4 fps). Revisit when a CGAI series wants a recurring character world; start from its `templates/bridge/` in a separate project, never in this repo.
 
+## Animation list harvest: shot ledger, beat lock, generic tells (2026-11-17)
+
+**Status:** in the skill. One new script command with tests; the rest is docs. No vendored code.
+
+**Source list:** [@0xnicc0's 20 free animation repos](https://x.com/0xnicc0/status/2122668685324128570).
+
+| Repo | Commit | License | Folded into |
+|---|---|---|---|
+| [JuneYaooo/rea-video](https://github.com/JuneYaooo/rea-video) + [videomd/videomd](https://github.com/videomd/videomd) | bb11b13 · 0837221 | Apache-2.0 | Shot ledger (`storyboard.md`); `beats.py lock` (`music.md`) |
+| [heydamir/unslop](https://github.com/heydamir/unslop) | 620163e | CC BY 4.0 | Generic-AI tells (`brand-qa.md`) |
+| [pbakaus/impeccable](https://github.com/pbakaus/impeccable) | d41d986 | Apache-2.0 | Generic-AI tells (`brand-qa.md`) |
+| [lemomo-ai/lemo-opuscar](https://github.com/lemomo-ai/lemo-opuscar) | 00a7f9e | MIT code; CC BY-NC 4.0 docs | Reading time per text block (`review-and-qa.md`), from MIT code only |
+| [patch-gg/pixelfx](https://github.com/patch-gg/pixelfx) | 5294518 | MIT | Acted effects (`motion-design.md`) |
+
+**For KREW music visualizers (notes, not in the KREW skill):** a Suno-Visuals-style piece breaks down well in a shot ledger: lyric type is packaging, the waveform or color field is a code shot, any filmed or AI insert is its own unit, and `beats.py lock` says whether the cuts ride the beat. Rebuild code shots in HyperFrames; filmed or AI inserts stay `NEED` until paid generation is approved.
+
+**Skipped on purpose:**
+
+- **rea-video as a tool:** its VLM checks and remake runs need model API keys (`REA_VLM_*`, Gemini or Doubao) and paid generation (capsule-cinema). Its case reports break down other people's videos (TikTok ads, a rap MV) and quote their lyrics; not copied. No conforming VIDEO.md package is produced.
+- **awesome-opus5-5-videos:** MIT on the repo, but its 703 prompts are reverse-engineered from other creators' viral AI videos; rights unclear. Not used.
+- **lemo-opuscar docs and the 99 styles:** every Markdown file and the image prompts are CC BY-NC 4.0. The extra permission covers making our own films, not folding the docs into a shared skill. Some films redraw third-party interfaces and Anthropic's Clawd. Only the MIT reading-time idea is taken.
+- **PixelFX catalog and font:** 244 effects stay out; the Patch Pixel font is not MIT. Effects publishing needs Patch Desktop.
+- **EffectCraft:** a full desktop compositor (MIT or Apache-2.0; ArtCraft marks excluded). A third render path; nothing to fold.
+- **unslop and impeccable as skills, their detectors, and UI-only rules** (RTL, browser states, hover, focus): installs and web-only checks.
+- **Blender MCP:** MIT, but it drives a local Blender install, has telemetry, and its AI 3D generators are a paid premium tier or need keys. Parked with the three.js path.
+- **ComfyUI:** GPL-3.0 and a generative stack; paid generation is on hold.
+- **anime.js, Lottie, Manim, HyperFrames, Remotion, Remotion Skills, Anthropic Skills, three.js, GSAP, FFmpeg, WhisperX:** already covered (`helpers.md`, `hyperframes.md`, `remotion.md`) or an engine we do not need. Nothing new found.
+
 ## OpenMotion harvest: look file, launch story shapes (2026-11-17)
 
 **Status:** in the skill. Docs only. No vendored code, files, or catalog entries.

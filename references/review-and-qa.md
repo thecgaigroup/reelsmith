@@ -80,6 +80,12 @@ For each frame `i`, measure how much it differs from frame `i-1` and from frame 
 
 `detect_pops` stays the one-frame check. The cut list answers a different question: where the shots change, and whether that change is a cut at all.
 
+## Reading time per text block
+
+Plan with rule 8 in `motion-design.md`. Check the built comp per block of on-screen text: time it from the first frame the whole block is inside the frame, and count only that first unbroken stretch. It passes at (characters ÷ 15) + 1.5 s, and never under 1.5 s; for Chinese, Japanese or Korean, count 4.5 characters per second. A block that never fully enters the frame never passes. New words under the same block restart the clock. A typewriter line is timed as the full line. Text nobody is meant to read in full (signage in a fly-through, fine print on the end card) is marked as a pass-by and not timed; anything the film needs read is never marked. Burned-in captions follow their own timing (`captions.md`).
+
+*Source: the reading-time rule after lemomo-ai/lemo-opuscar (MIT, Copyright (c) 2026 Lemomo (LemoLab), github.com/lemomo-ai/lemo-opuscar @00a7f9e), `core/render/readcheck.mjs`. Our words; no code copied. Its docs (CC BY-NC 4.0) were not used.*
+
 ## Self-eval at every cut
 
 Before anyone sees a cut made from footage, pull a strip of frames ±1.5 s around each `cut` in `cuts.json` (`ffmpeg -ss <t−1.5> -t 3 … tile`), plus the first 2 s, the last 2 s, and two or three mid-points. Look for: a jump or flash at the cut, a caption hidden under an overlay or cut mid-word, an overlay showing the wrong frames, and grade drift between neighbours. Read consecutive frames wherever something enters, leaves, or changes; a sheet sampled once a second misses 1–3-frame timing.

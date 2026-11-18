@@ -29,9 +29,12 @@ Background: creativecommons.org/legalmusicforvideos.
     beats.py snap track.beatgrid.json --durations 3,2.5,4 --unit bar
     beats.py fit track.mp3 --seconds 22 -o fitted.mp3 --grid track.beatgrid.json   # ends on a bar line, fades out
     beats.py synth -o bed.mp3 --bpm 120 --seconds 30 --mood bright|dark|calm
+    beats.py lock track.beatgrid.json _review/cuts.json [--tol 0.07] [--offset 0]   # cuts on a beat vs chance
 `beatgrid.json` holds `{engine, bpm, beats[], downbeats[], bars[], sections[], duration}` in seconds.
 `reelsmith.py render --music track.mp3` builds or reuses the grid, starts at the first downbeat and snaps
 scene cuts to it (templates choose `beat`, `half` or `bar` units).
+
+`beats.py lock` reads the `cut` rows of `cuts.json` (flashes and fast moves do not count) and reports how many land within 70 ms of a beat, against the share you would get by chance on that grid. Four or more cuts, at least half on the beat and at least 1.8× chance: a beat-synced edit. `--offset` is where the music starts in the picture. A negative `median_offset_ms` means the cuts land early. Use it on our own cut before delivery and on a reference music video in a shot ledger (`storyboard.md`). *Approach after JuneYaooo/rea-video (Apache-2.0, Copyright 2026 JuneYaooo, github.com/JuneYaooo/rea-video @bb11b13), `rea_video/audio.py`; re-implemented in Python, with chance measured from the grid. Tests: `scripts/test_beat_lock.py`.*
 
 ## Mixing
 - Music sits about -18 to -20 LU under the narration. Duck to about 35% under VO with
