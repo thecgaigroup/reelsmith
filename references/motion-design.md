@@ -316,6 +316,27 @@ Before you fit a curve, check there is one. Something fully there on the frame i
 
 *Source: James Dimachkie/video-decompiler (MIT, github.com/JimGHTB12/video-decompiler @57a7525)*
 
+## Look file (`LOOK.md`)
+
+A look file records one motion language so the next film can keep the motion and change the subject. Write it in the film folder once a cut has passed `brand-qa.md` (every score 8 or higher). It is plain Markdown for people and agents. Nothing parses it, and it is not a template, an engine format, or a second brand kit: colors, faces, and logos stay in `brand.json` (`brand-kit.md`). Link that file. Do not copy its values.
+
+`REFERENCE.md` (`storyboard.md`) is the study of someone else's film. `LOOK.md` is what we keep from our own cut.
+
+| Section | Write down |
+|---|---|
+| **Source and status** | The cut it came from (folder, render, date) and any reference it followed. Status is one word: `described` (written, never rendered), `rendered` (a draft exists), or `reviewed` (scored 8+ in `brand-qa.md`). Tag each line `seen` (observed in the reference), `chosen` (our call), or `changed` (a deliberate break from the reference). |
+| **Keep** | Two to four decisions that must survive a content swap: the reveal order, the camera path, the ease family, the seam, the hold where the payoff reads. |
+| **Swap** | Every replaceable slot, with the capacity measured on the built comp: for example, headline at most 18 characters at this size, three feature cards, one logo, one 16:9 screen. Say what happens on overflow: split the beat or redesign it. Never shrink type below the readability floor (rule 8) to make copy fit. |
+| **Timing** | Segments in seconds with their job (`0–0.5 s card enters`, `0.5–2.5 s reveal`). Retiming one segment moves its seam, its hit, and its `b(n)` cue together (`music.md`). |
+| **Materials and sound** | What must be supplied (real UI, real logo, licensed track) and what may be drawn in code. A missing asset is a `NEED` on the board, never a generated stand-in. |
+| **Check** | Stills at matching timestamps (entrance, main hold, exit) of the source cut and the new one. One swap test: change one headline and one image, render a draft, and confirm nothing collides, wraps badly, or clips. |
+
+**A series is several looks.** Do not stamp one look file on every episode. Each new episode changes at least two of: layout system, type recipe (`kinetic-type.md`), primary seam (`transitions.md`), camera, and ground. No look file is the default. The storyboard names the one it uses. `poster-grid` is never a series default.
+
+Keep the shape of a borrowed look, never its subject, words, pictures, characters, or music (Breaks in `storyboard.md`).
+
+*Source: keep / swap / capacity split, seen-chosen-changed labels, evidence status and the swap test after nexu-io/openmotion (Apache-2.0, github.com/nexu-io/openmotion @664be50) (`docs/motion-md.md`, `library/skills/openmotion-design-remix`). Our words. Brand stays in `brand.json`; no OpenMotion file format is adopted.*
+
 ## Gallery themes (style only)
 
 Browse the free [MotionVideo gallery](https://motionvideo.xyz/) for density, not for files. Useful public themes: Bold kinetic type, Kinetic type music machine, Pencil line, Beat-synced generative, Photo print launch, Claude motion designer showreel. Do not buy or paste the paid pack. A photo-print or product launch still uses real screenshots and the real logo. Launch beats follow the house recipes in `templates.md`.
@@ -329,3 +350,4 @@ Principles rewritten here. Nothing from these repos is installed.
 - House overrides that those sources do not share: 0% overshoot on display type, no blur on glyphs, no third `seek(t)` renderer.
 - [echris6/motion-video-kit](https://github.com/echris6/motion-video-kit) (MIT, Copyright (c) 2026 echris6) — six motion-grammar rules and the mechanism catalog above. Timing numbers in that file that repeat this page were left out. `business-offers.md`, sample commercials, and their scripts were not folded.
 - [Asteri — six-knob kinetic type](https://x.com/Asteri_eth/status/2115126932291436649) — one title-card config (split, stagger, mask, tracking, weight, overshoot). House defaults and the font-load, `autoSplit: false`, and `seek(frame / fps)` rules are in `kinetic-type.md`. [awesome-ai-motion](https://github.com/gongnyang/awesome-ai-motion) is not installed.
+- [nexu-io/openmotion](https://github.com/nexu-io/openmotion) (Apache-2.0) — the look file above. Its Studio, MCP server, model gateway, catalog of brand-film breakdowns, and 152 brand design systems are not installed or copied.

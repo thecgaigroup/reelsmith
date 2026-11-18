@@ -30,6 +30,7 @@ The storyboard is what the edit builder and humans both read. It is the referenc
 7. **Story intent** — one line
 8. **Status** — `HAVE` \| `ID` (identity confirm) \| `NEED` \| `TEMP` (placeholder by design)
 9. **Cue** — `b(n)` from `music.md`, or `none`. Same clock as `t0`. A designed hit also names the role, `offset_ms`, and `bed_db` (`music.md`). A launch reel uses the role bank (whoosh, tap, click, knock, reverse swell, impact, chime).
+10. **Check** (optional) — one line: what to watch at normal speed to know the shot works ("the price reads before the cut, never under the cursor"). The fresh reviewer checks these lines (`brand-qa.md`).
 
 ## BRIEF (frame-numbered)
 
@@ -80,7 +81,7 @@ Source: [HyperFrames storyboards](https://hyperframes.heygen.com/prompting/story
 - **One breather** — name the calmer shot. It is a held read, not a second animation pass. It still does not freeze (ambient idle in `motion-design.md`).
 - **Callback** — plant a motif (a door, a word, a mark) and say how it returns, denser.
 - **Actor** — one object that keeps its identity across shots (motion grammar in `motion-design.md`). Frame 0 of the open is a finished composition.
-- **Spectacle** — one beat, named, or it gets dropped (`motion-design.md`).
+- **Spectacle** — one beat, named, or it gets dropped (`motion-design.md`). Write it as four moments: what is visible first, which relationship changes, the frame where it reads clearest, and how it settles or exits. "It flips open" is not enough; name the hinge and the exit side.
 - **Standing negatives** — the ban list in `motion-design.md`, plus no invented UI, no Flashtalk drift, no `HYPERFRAMES_SKIP_SKILLS`.
 
 Each shot still names picture, words, and kinetic recipe. Also name, in one line each when they are not obvious: **type** (hook, proof, cta), **persuasion** (before/after, enumeration, callback), **beat** (recognition, punch, resolve), **focal** (the one thing the eye hits).
@@ -113,7 +114,7 @@ This dossier is your board's foundation. Where your product has no honest answer
 
 For the five kinds of boundaries between moments (becomes / carried / matched / door / change of ground), see **transitions.md**.
 
-*Source: James Dimachkie/video-decompiler (MIT, github.com/JimGHTB12/video-decompiler @57a7525). Cut and event measurement after heygen-com/hyperframes (Apache-2.0, github.com/heygen-com/hyperframes @d317abc) (`skills/reverse-any-video`, `measure cuts`); one-topic look reports after mromidev/claude-animated-shorts (MIT, Copyright (c) 2026 Mr omi, github.com/mromidev/claude-animated-shorts @e3b817b) (`SKILL.md`, look-match loop). Our words.*
+*Source: James Dimachkie/video-decompiler (MIT, github.com/JimGHTB12/video-decompiler @57a7525). Cut and event measurement after heygen-com/hyperframes (Apache-2.0, github.com/heygen-com/hyperframes @d317abc) (`skills/reverse-any-video`, `measure cuts`); one-topic look reports after mromidev/claude-animated-shorts (MIT, Copyright (c) 2026 Mr omi, github.com/mromidev/claude-animated-shorts @e3b817b) (`SKILL.md`, look-match loop). Check line and four-moment spectacle after nexu-io/openmotion (Apache-2.0, github.com/nexu-io/openmotion @664be50) (`skills/openmotion-director/references/action-script.md`). Our words.*
 
 ## Anti-patterns
 - Skipping the board and jumping to Flashtalk / AI talk-heads

@@ -5,6 +5,18 @@ All notable changes to Reelsmith will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.4] - 2026-11-17
+
+### Added
+- `references/motion-design.md`: look file (`LOOK.md`). Keep, swap with measured capacity, timing, materials, check; status `described` / `rendered` / `reviewed`; `seen` / `chosen` / `changed` tags; a swap test. A series uses several looks, at least two changes per episode; no look is the default and `poster-grid` is never a series default. Brand stays in `brand.json`.
+- `references/templates.md`: launch story shapes (proof, detail, rhythm; none is the default), the verify hold, and direction cards at plan approval.
+- `references/storyboard.md`: optional per-shot Check line; the spectacle written as four moments.
+- `references/brand-qa.md`: type complaint triage (resource, reading, fit; face-only versus setting-only test).
+- `SKILL.md`: pointers to `LOOK.md` and the story shapes.
+- ROADMAP: OpenMotion harvest, with what was skipped.
+
+All after nexu-io/openmotion (Apache-2.0 @664be50), restated in our words. No files, code, templates, catalog entries, or design systems copied. Docs only; no script changes.
+
 ## [5.1.3] - 2026-11-17
 
 ### Added
