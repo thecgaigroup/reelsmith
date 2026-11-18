@@ -115,7 +115,7 @@ Written as original recipes in [references/motion-design.md](references/motion-d
 | [references/remotion.md](references/remotion.md) | beamnxw-style campaign matrix, light | Two hooks × three formats as props after the master locks. |
 | [references/brand-kit.md](references/brand-kit.md) | [charlie947/motion-graphics-skills](https://github.com/charlie947/motion-graphics-skills) brand-intake | Feeling and one never, stored on `brand.json`. No `MOTION.md`. |
 
-**Pinned:** HyperFrames `0.8.188` → `0.8.197` (lint and check pass on `hyperframes-example/` and `lottie-example/`). Remotion `4.0.538` and GSAP `3.15.0` were already the latest stable and were left there. Vendored lottie-web `5.12.2` → `5.13.0` (check and snapshot still pass). No Remotion lockfile change.
+**Pinned:** HyperFrames `0.8.188` → `0.8.197` → `0.9.7` (lint and check pass on `hyperframes-example/`, `lottie-example/`, and `openmotion-example/`). The 0.9.0 breaking change (removing Plan v1 distributed rendering) does not affect local CLI usage. Remotion `4.0.538` and GSAP `3.15.0` were already the latest stable and were left there. Vendored lottie-web `5.12.2` → `5.13.0` (check and snapshot still pass). No Remotion lockfile change.
 
 **Skipped on purpose:** CapCut, FilmCraft, paid MotionVideo packs, Manim/3b1b as a new path, influencer-growth packs, [iart-ai/motion-skills](https://github.com/iart-ai/motion-skills) (an index; the verify loop and vertical safe zone are already house rules), Playwright subframe rendering, `HYPERFRAMES_SKIP_SKILLS` on client work.
 

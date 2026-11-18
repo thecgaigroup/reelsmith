@@ -5,12 +5,22 @@ All notable changes to Reelsmith will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.2.1] - 2026-11-18
+
+### Changed
+- **HyperFrames:** Bumped from `0.8.197` to `0.9.7` to align with OpenMotion's HyperFrames version. Both the main HyperFrames path and the OpenMotion path now use the same HyperFrames 0.9.7 core.
+- Updated all package manifests (`hyperframes-example/package.json`, `lottie-example/package.json`), reference documentation (`references/hyperframes.md`, `references/openmotion.md`, `references/music.md`, `references/brand-qa.md`), scripts (`scripts/reelsmith.py`), getting-started guide, example READMEs, and ROADMAP to reflect the new version.
+- The 0.9.0 breaking change (removing Plan v1 distributed rendering on AWS Lambda/Cloud Run) does not affect Reelsmith's local CLI usage. All CLI commands (`doctor`, `lint`, `check`, `snapshot`, `render`) remain unchanged.
+- `HYPERFRAMES_NO_TELEMETRY=1` remains set to keep telemetry disabled.
+
+No new dependencies, no new keys, no paid services.
+
 ## [5.2.0] - 2026-11-18
 
 ### Added
 - OpenMotion as the third render engine, beside HyperFrames and Remotion (Marc, 2026-11-18). `references/openmotion.md` covers the pin (`nexu-io/openmotion@9e2f877`, Apache-2.0, HyperFrames 0.9.7 core), the source install with telemetry off, and what stays off (model gateway, Studio server, MCP, catalogs). It also covers the project shape that passes Studio lint, the render loop (preflight, Studio lint, snapshot, render, `verify-export.ts`, `review.py`), the 16:9, 9:16 and 1:1 settings, and how `brand.json`, captions, music and beat lock plug in. Includes portability and version-skew notes and the maturity caveats.
 - `SKILL.md`: a "Pick the engine" table and a route row. HyperFrames stays the default for client and awards sizzles. Remotion is for speech-locked type and campaign matrices. OpenMotion is for a Studio timeline handoff, or for Studio lint plus frame-exact export verification.
-- `openmotion-example/`: a 6.5 s kinetic title card (mask-reveal-up, ambient drift, no audio, no default look). It is Studio-lint clean and also renders on `hyperframes@0.8.197`.
+- `openmotion-example/`: a 6.5 s kinetic title card (mask-reveal-up, ambient drift, no audio, no default look). It is Studio-lint clean and also renders on `hyperframes@0.9.7`.
 - `scripts/openmotion_preflight.py`: a stdlib check of the Studio-lint structure rules (mounted sub-compositions, registered paused timelines, matching durations, transform-only tweens, no wall clock). Tests: `scripts/test_openmotion_preflight.py` (in CI). CI also runs the preflight on the example.
 - `scripts/capabilities.py`: an `openmotion_runtime` tool. `openmotion` appears under engines when `REELSMITH_OPENMOTION_DIR` (default `/workspace/tools/openmotion`) has the installed engine.
 
