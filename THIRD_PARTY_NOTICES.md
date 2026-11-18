@@ -1034,3 +1034,73 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## ai-content-factory
+
+Approach adapted from [ai-content-factory](https://github.com/coleam00/ai-content-factory) by Cole Medin.
+
+**Source commit:** main branch (read 2026-11-18)
+
+**What was adapted (no files copied):** `references/ai-generation.md` (Stills-first approval gate) — the explore-approve-render flow: generate cheap stills first (~10-15x cheaper than video), collect explicit human approval records with per-item cost estimates, and only render approved items to video. The fail-closed pattern: no paid API call without an approval record; missing or empty approval stops with a visible error, never a silent skip. Adapted from the content factory's workflow; restated in our words for Reelsmith's AI b-roll, keyframes, and image-to-video paths. No Archon workflow files, Higgsfield CLI wiring, or catalog site code was used.
+
+**License (MIT):**
+
+```
+MIT License
+
+Copyright (c) 2026 Cole Medin
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## edit-video skill
+
+Techniques adapted from [skills](https://github.com/coleam00/skills) by Cole Medin, specifically the edit-video skill.
+
+**Source commit:** main branch (read 2026-11-18)
+
+**What was adapted (no files copied):**
+- `scripts/review.py` `check_sync_drift()` — audio/video sync drift detection using ffmpeg sync analysis at four probe points (start, 25%, 75%, end), after the edit-video skill's sync validation approach. Reports worst drift and flags WARNING when any probe exceeds ±50 ms.
+- `scripts/doctor.py` — environment diagnostic script that checks Python, ffmpeg/ffprobe (and the encoders/filters the pipeline uses), Python packages, Node/npx, and fonts before the first render. Exits 1 if core dependencies are missing. Approach after edit-video `doctor.py`, adapted for Reelsmith's stack. CUDA/NVENC/torch checks (optional, not required) and forced alignment (requires torch, out of scope for this harvest) were omitted.
+
+**License (MIT):**
+
+```
+MIT License
+
+Copyright (c) 2026 Cole Medin
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```

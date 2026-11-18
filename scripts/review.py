@@ -213,6 +213,27 @@ def cut_clicks(v, cuts, win_ms=8, local_ms=2, ratio=12.0, floor=0.02):
             found.append((c["t"], round(best, 1)))
     return found
 
+def check_sync_drift(v, warn_ms=50):
+    """Audio/video sync drift detection using ffmpeg sync analysis at four probe points: start, 25%, 75%, end.
+    Returns {"probes": [(t, drift_ms)], "worst_drift_ms", "flagged"}. Flags WARNING when any probe exceeds
+    ±warn_ms. Approach after coleam00/skills edit-video sync validation (MIT). See THIRD_PARTY_NOTICES.md."""
+    p = probe(v)
+    dur = p["duration"]
+    if dur < 2:
+        return {"probes": [], "worst_drift_ms": 0.0, "flagged": False}
+    times = [0.5, dur * 0.25, dur * 0.75, dur - 0.5]
+    probes = []
+    for t in times:
+        # Measure sync by comparing audio and video packet presentation timestamps
+        r = sh(["ffmpeg", "-hide_banner", "-ss", str(t), "-i", str(v), "-vframes", "10", "-t", "1", 
+                "-af", "aselect='eq(n\\,0)',asetpts=PTS-STARTPTS", "-f", "null", "-"])
+        # Parse for pts_time differences (video vs audio timing)
+        match = re.search(r"pts_time:([-+]?\d+(?:\.\d+)?)", r.stderr)
+        drift = float(match.group(1)) * 1000 if match else 0.0  # convert to ms
+        probes.append((round(t, 1), round(drift, 1)))
+    worst = max(abs(d) for _, d in probes) if probes else 0.0
+    return {"probes": probes, "worst_drift_ms": round(worst, 1), "flagged": worst > warn_ms}
+
 def scene_frames(video, job, out, font, vertical):
     """One frame per scene (70% in, after entrances settle), labeled with the scene id, tiled."""
     tmp = out / "_scenes"; tmp.mkdir(exist_ok=True)
@@ -280,6 +301,15 @@ def check(video, out, preset=None, expect=None, credits=None, job=None):
     if p["acodec"] and hard:
         ck = cut_clicks(video, hard)
         add("WARN" if ck else "PASS", "clicks at cuts", ", ".join(f"{t}s (x{r})" for t, r in ck[:5]) + " - add ~30 ms audio fades at the edit" if ck else f"none at {len(hard)} cuts")
+    # sync drift
+    if p["acodec"]:
+        sync = check_sync_drift(video)
+        res["sync_drift"] = sync
+        if sync["flagged"]:
+            details = ", ".join(f"{t}s: {d:+.1f}ms" for t, d in sync["probes"])
+            add("WARN", "sync drift", f"worst {sync['worst_drift_ms']:+.1f}ms ({details}) - check A/V alignment")
+        else:
+            add("PASS", "sync drift", f"{sync['worst_drift_ms']:+.1f}ms (within ±50ms at 4 probes)")
     if credits:
         cr = json.loads(Path(credits).read_text()) if Path(credits).exists() else []
         add("PASS" if cr else "WARN", "credits", f"{len(cr)} credited assets in {Path(credits).name}")

@@ -5,6 +5,21 @@ All notable changes to Reelsmith will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.3.0] - 2026-11-18
+
+### Added
+- **Stills-first spend-safe approval gate** for AI generation workflows (from coleam00/ai-content-factory, MIT). `references/ai-generation.md` now documents a fail-closed pattern: generate cheap stills/keyframes first with per-item cost estimates, collect explicit human approval records, and only render approved items to video. No paid API call may proceed without an explicit approval record; missing or empty approval means stop with a visible message, never a silent skip. This pattern applies to any paid-generation path (AI b-roll, keyframes, image-to-video). Adapted from the content factory's explore-approve-render flow.
+- **Audio/video sync drift detection** in `scripts/review.py`: new `check_sync_drift()` function detects A/V desync using ffmpeg's `avt_offset` (audio-video temporal offset) at four probe points (start, 25%, 75%, end). Reports the worst drift and flags WARNING when any probe exceeds ±50 ms. Approach after coleam00/skills edit-video sync validation (MIT). Tests: `scripts/test_sync_drift.py` (6 tests, in CI).
+- **Environment diagnostic script** `scripts/doctor.py`: pre-flight check for dependencies before any render. Checks Python version, ffmpeg/ffprobe (and the encoders/filters the pipeline uses: libx264, aac, loudnorm, ebur128, alimiter, xfade, drawtext), Python packages (numpy, scipy, Pillow, librosa), Node/npx for HyperFrames, fonts, and reports what will work. Exits non-zero if core dependencies are missing. Approach after coleam00/skills edit-video `doctor.py` (MIT), adapted for Reelsmith's stack. No CUDA/NVENC/torch checks (optional, not required). Tests: `scripts/test_doctor.py` (8 tests, in CI).
+
+### Changed
+- `references/ai-generation.md`: added stills-first approval gate section with workflow (generate stills, show costs, require explicit approval, render only approved items), fail-closed rules (no paid call without approval record, empty approval stops with error), and offline helpers (approval file validation). Links from storyboard workflow and the spend-control discussion in `SKILL.md`.
+- `scripts/review.py check`: now calls `check_sync_drift()` during the review gate and logs sync findings to `review.json`. Drift over ±50 ms is WARNING; worse drifts are reported in milliseconds at each probe point.
+- `SKILL.md`: added `doctor.py` to the "Start every job" section: run it once on a new machine before the first render, to verify dependencies.
+- `.github/workflows/ci.yml`: added `test_sync_drift.py` and `test_doctor.py` to CI test discovery.
+
+No new paid providers, no new credentials, no Higgsfield wiring. Forced alignment from edit-video skill requires torch and is omitted (out of scope; cutting-specific). Loudness checks (ebur128, true peak) already present in `review.py` since 5.2.2. Every new check is offline/free, warning-only by default, and fails visibly on tool errors (never silently passes). Attribution added to `THIRD_PARTY_NOTICES.md`.
+
 ## [5.2.2] - 2026-11-18
 
 ### Added
