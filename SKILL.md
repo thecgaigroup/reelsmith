@@ -36,7 +36,7 @@ kinetic type, correct logos — not grey placeholders or a talk-head TEMP divert
 |---|---|---|
 | **Awards / partner / client sizzle from real selects** | **client-sizzle**, HyperFrames skills ON | **client-sizzle.md** first, then storyboard.md, kinetic-type.md, transitions.md, motion-design.md, music.md, hyperframes.md, brand-qa.md. remotion.md only if speech-locked or for a campaign matrix. Product-hero notes in that file stay on this HyperFrames lane. captions.md if speech is on screen |
 | Educational explainer with charts/maps/timelines (Signal Shorts format) | explainer format, ~55 s, 9:16 | explainer-format-signal-shorts.md (sits alongside product-launch as an option, not a replacement) |
-| Launch reel, feature drop, promo | template `product-launch` (music-led) | templates.md (house launch recipes), music.md, motion-design.md |
+| Launch reel, feature drop, promo | template `product-launch` (music-led) | templates.md (house launch recipes, story shapes), music.md, motion-design.md |
 | Event highlights from photos | `event-recap` | templates.md, stock-media.md |
 | Customer quotes / reviews | `testimonial` | templates.md |
 | Teaser, "coming soon", date reveal (loopable) | `countdown-teaser` | templates.md |
@@ -61,7 +61,7 @@ Load in this order, and do not skip ahead to a render:
 2. `storyboard.md` — copy `examples/storyboard/` and swap in the real beats.
 3. `kinetic-type.md` — implement a house recipe (default `mask-reveal-up`). Do not pass house ids to HyperFrames as registry blocks.
 4. `transitions.md` — one primary seam, at most two accents. Name only real blocks.
-5. `motion-design.md` — taste numbers, motion grammar, ambient idle, bans, one named spectacle.
+5. `motion-design.md` — taste numbers, motion grammar, ambient idle, bans, one named spectacle. A series keeps one `LOOK.md` per look and varies the look across episodes.
 6. `music.md` — cue sheet on the same beat grid as the picture. Launch hits use `offset_ms` and `bed_db`. −14 LUFS (`loudness-accessibility.md`).
 7. `hyperframes.md` — default engine. Skills on. Harness first: reference, then data, then motion. Never `HYPERFRAMES_SKIP_SKILLS=1`.
 8. `remotion.md` only when type locks to speech, or for a campaign matrix after the master locks. Read the optional product-hero notes there when the storyboard names a physical device. They add no Three.js package and they leave this lane on HyperFrames. `captions.md` when speech is on screen.

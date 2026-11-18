@@ -295,3 +295,19 @@ OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO 
 LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
+
+## OpenMotion
+
+Techniques adapted from [OpenMotion](https://github.com/nexu-io/openmotion) by OpenDesign (nexu-io) and contributors.
+
+**Source commit:** 664be5086141b09fe08b2638e43a8728c3a615b7 (read 2026-11-17)
+
+**What was adapted (no files copied):**
+- `references/motion-design.md` (Look file) — the keep / swap / capacity split, observed-inferred-deviation labels, evidence status levels, and the swap test, from `docs/motion-md.md` and `library/skills/openmotion-design-remix/references/*/MOTION_DESIGN.md`, restated in our words.
+- `references/templates.md` (Launch story shapes, Direction cards) — the product-proof, detail-led and reference-rhythm outlines and the selection card, from `skills/openmotion-template-to-video/references/recipes.md`, restated in our words.
+- `references/storyboard.md` (Check line, spectacle as four moments) — from `skills/openmotion-director/references/action-script.md`, restated in our words.
+- `references/brand-qa.md` (Type complaint triage) — from `skills/openmotion-production/references/typography.md`, restated in our words.
+
+**Changes:** rewritten in English for Reelsmith's lanes; brand stays in `brand.json`; added the series variety rule and house overrides (no default look, `poster-grid` never a series default). Not used: the Studio, MCP server, model gateway, motion catalog, brand design systems, bundled templates, fonts, media, and vendored libraries.
+
+**License:** Apache License 2.0. OpenMotion ships no top-level NOTICE file. The full license text is reproduced once in this file under HyperFrames, above, and applies here unchanged. Catalog reference footage, brands, screenshots and fonts keep their original rights and were not used.

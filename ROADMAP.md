@@ -204,6 +204,30 @@ Liquid-chrome shaders below stay parked. These notes do not start that work.
 
 A Remotion + `@remotion/three` + `postprocessing` world (ink outline pass before lens blur, painted Canvas2D textures, billboard 2D characters, synthesized march score and SFX). MIT, free, offline. Not folded: it adds three.js packages that `remotion.md` keeps out, needs Kenney CC0 models (~1.3 GB `public/`), and a short is a multi-day hand-built project (2K renders about 4 fps). Revisit when a CGAI series wants a recurring character world; start from its `templates/bridge/` in a separate project, never in this repo.
 
+## OpenMotion harvest: look file, launch story shapes (2026-11-17)
+
+**Status:** in the skill. Docs only. No vendored code, files, or catalog entries.
+
+**Source:** [nexu-io/openmotion](https://github.com/nexu-io/openmotion) (Apache-2.0) @664be5086141b09fe08b2638e43a8728c3a615b7. Shared by Tom Huang ([@tuturetom](https://x.com/tuturetom/status/2122633782654370068)).
+
+| Folded into | What landed |
+|---|---|
+| `references/motion-design.md` | `LOOK.md`: keep, swap with measured capacity, timing, materials, check; evidence status; series variety rule. |
+| `references/templates.md` | Launch story shapes (proof, detail, rhythm), the verify hold, direction cards. |
+| `references/storyboard.md` | Optional Check line per shot; spectacle as four moments. |
+| `references/brand-qa.md` | Type complaint triage. |
+
+**Skipped on purpose:**
+
+- **OpenMotion as a tool** (Studio, MCP server, CLI, npm app, editor fork): it would be a third render pipeline beside HyperFrames and Remotion.
+- **Model gateway and multimodal generation** (GPT Image, Seedance, Suno, Eleven via BYOK or the OpenDesign Go subscription): needs new API keys or a paid plan. Paid generation stays on hold.
+- **The 287-entry motion catalog ("300+ Motion.md")**: breakdowns of other companies' brand films. Their footage, brands, screenshots and fonts keep their original rights, and many guides are Chinese prose tied to OpenMotion's demo player. Ideas only, nothing copied.
+- **The 152 brand design systems and Brand Kit catalog**: adapted from nexu-io/open-design; many are named after real companies (Airbnb, Apple, BMW and others). Trademarks and brand look-alikes; not copied. Our brand intake stays `brand.json`.
+- **Bundled Product Promo, NYT Graph, Decision Tree templates**: HeyGen HyperFrames registry examples we can already reach through HyperFrames. Not copied.
+- **Motion Package v0.2 manifest** (`motion-package.json`, hashed inventory, materializer): packaging for sharing, which we do not need. Revisit only if CGAI starts publishing looks for others.
+- **Design-remix profiles and vendored three.js / GSAP builds**: three.js stays out (`remotion.md`); GSAP comes from HyperFrames.
+- **Presenter-story edit map** (source time versus output time): already covered by captions on a cut film (`captions.md`) and the cut list (`review-and-qa.md`).
+
 ## Liquid chrome / reflective metal look (optional Three.js path)
 
 **Status:** parked  

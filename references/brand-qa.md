@@ -39,6 +39,18 @@ python3 scripts/review.py check VIDEO --out OUT/_review --preset youtube --job O
 ## Typo denylist (extend per job)
 STUIO→STUDIO, POSSIBLITY→POSSIBILITY, performace→performance, untill→until, teh→the
 
+## Type complaint triage
+
+When a note says the type "looks off", look at the frame and a second either side, then sort the cause in this order and fix the first one that applies:
+
+1. **Resource** — a fallback face, a missing glyph, a faux bold or italic, the wrong regional form.
+2. **Reading** — unclear hierarchy, weak contrast, cramped tracking, an unplanned wrap, too short a hold.
+3. **Fit** — the face or treatment is wrong for the subject or the voice.
+
+When the face and the setting are both suspects, render a face-only change and a setting-only change before combining them. New font metrics change wraps and widths; re-check the line count. A correct render proves layout, not taste; the scores still decide.
+
+*Source: type triage after nexu-io/openmotion (Apache-2.0, github.com/nexu-io/openmotion @664be50) (`skills/openmotion-production/references/typography.md`). Our words.*
+
 ## Scout notes
 
 Harness rules applied here, not fetched as posts and not installed as skills: a frame-numbered BRIEF, stills before playback, a fresh reviewer, worst-three until 8+, the ban list above, and `seek(t)` on the HyperFrames or Remotion clock. One brand per session is the effort tier in `client-sizzle.md`.
