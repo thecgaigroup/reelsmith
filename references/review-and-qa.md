@@ -34,6 +34,33 @@ python3 scripts/compare_look.py --style styleframes/picked.png out/frames/*.png 
 Exit code 0 = all frames pass, 1 = one or more fail, 2 = cannot read. Default bands: luma ±20 (0-255),
 saturation ±0.08 (0-1), hue shift ≤20°. Adjust thresholds when the style is intentionally varied (e.g., day/night).
 
+## Motion audit (static, before the first draft render)
+
+Read the composition source before you spend a render on it. No render, no network, no browser.
+
+```bash
+python3 scripts/review.py audit path/to/comp [--json audit.json]   # a folder or one file
+```
+
+It reads `.html`, `.js`, `.ts(x)`, `.jsx` and `.css` under the folder, skipping `node_modules`, build output and `*.min.*` vendored bundles. Comments are ignored.
+
+| Level | Rule | Why |
+|---|---|---|
+| FAIL | `random` — `Math.random()`, `getRandomValues()` | A seek to the same time paints different pixels |
+| FAIL | `clock` — `Date.now()`, `new Date()`, `performance.now()` | Wall-clock time is not timeline time |
+| FAIL | `timer` — `setTimeout`, `setInterval`, `requestAnimationFrame` | Motion outside the paused timeline or the frame |
+| FAIL | `css-motion` — `@keyframes`, `animation:`, `transition:` (`none` is fine) | Not seekable; Remotion does not render it |
+| WARN | `will-change` | Soft scaled glyphs; it has broken seek determinism |
+| WARN | `layout-tween` — a `.to/.from/.fromTo` on width, height, top, left, margin or padding | Layout work every frame; move with x, y, scale or clip-path |
+| WARN | `linear-move` — an entrance or exit (position plus opacity) on `ease: "none"` | Entrances ease out, exits ease in (`motion-design.md`). A cut-to-cut drift with no fade is not flagged |
+
+- **Worst level wins** per file and for the run. Exit 1 on any FAIL, else 0. Clean files collapse to one PASS line, so a long report means real findings.
+- **Each finding** names the rule, the file and line, what is wrong, and the fix.
+- **Intended exceptions** (the one-shape morph in `templates.md` tweens width and height) get `audit-ok` and a reason on that line. Never mark a FAIL `audit-ok` to get a render out.
+- **Limits:** text patterns, not a parser. It misses motion built from strings or spread across helper files it cannot follow, and it does not judge taste, timing or overshoot. HyperFrames `lint` and `check` still run; the stills and scores still decide.
+
+*Source: the audit shape — one level per animation with the worst one winning, a concrete fix per finding, and no padding when a file is clean — after motiondivision/ai-kit (MIT, github.com/motiondivision/ai-kit @1e42494), `plugins/motion/agents/motion-reviewer.md`. Its scoring method is a paid server resource and was not used. The rules are Reelsmith's own engine rules (`hyperframes.md`, `motion-design.md`). Tests: `scripts/test_motion_audit.py`.*
+
 ## Kinetic type, before the full render
 For client sizzle and hand-authored kinetic pieces, pull stills at the BRIEF frame numbers (`storyboard.md`)
 **before** you trust playback. HyperFrames: `$HF snapshot --at`. Remotion: `npx remotion still --frame=N`.

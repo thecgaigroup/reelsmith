@@ -61,11 +61,11 @@ Load in this order, and do not skip ahead to a render:
 2. `storyboard.md` — copy `examples/storyboard/` and swap in the real beats. A "how was this made?" reference gets a shot ledger (`BREAKDOWN.md`).
 3. `kinetic-type.md` — implement a house recipe (default `mask-reveal-up`). Do not pass house ids to HyperFrames as registry blocks.
 4. `transitions.md` — one primary seam, at most two accents. Name only real blocks.
-5. `motion-design.md` — taste numbers, motion grammar, ambient idle, bans, one named spectacle. A series keeps one `LOOK.md` per look and varies the look across episodes.
+5. `motion-design.md` — taste numbers, springs by feel, motion grammar, ambient idle, bans, one named spectacle. A series keeps one `LOOK.md` per look and varies the look across episodes.
 6. `music.md` — cue sheet on the same beat grid as the picture. Launch hits use `offset_ms` and `bed_db`. −14 LUFS (`loudness-accessibility.md`).
 7. `hyperframes.md` — default engine. Skills on. Harness first: reference, then data, then motion. Never `HYPERFRAMES_SKIP_SKILLS=1`.
 8. `remotion.md` only when type locks to speech, or for a campaign matrix after the master locks. Read the optional product-hero notes there when the storyboard names a physical device. They add no Three.js package and they leave this lane on HyperFrames. `captions.md` when speech is on screen.
-9. `brand-qa.md` before a draft leaves. BRIEF frames, fresh reviewer, item-by-item on a later pass, scores to 8+. The SageCut ladder in that file stays off. Do not require `SAGE_API_KEY`.
+9. `brand-qa.md` before a draft leaves. `review.py audit` on the comp before the first draft render (no FAIL). BRIEF frames, fresh reviewer, item-by-item on a later pass, scores to 8+. The SageCut ladder in that file stays off. Do not require `SAGE_API_KEY`.
 Stay on this lane until the user explicitly pivots. No Flashtalk or interview TEMP mid-job.
 
 ## Workflow (templates)
@@ -85,7 +85,7 @@ Stay on this lane until the user explicitly pivots. No Flashtalk or interview TE
 ## Scripts (`scripts/`)
 `capabilities.py` features on/off | `brand.py` validate, bundle, from-logo, from-site | `reelsmith.py` list,
 sample, render, loop, seam | `script_lint.py` | `beats.py` grid, snap, fit, synth, lock | `stock.py` search, fetch,
-credit (API keys only, `--dry-run`) | `captions.py` build/burn | `review.py` check (incl. cut list, clicks at cuts), approve, status |
+credit (API keys only, `--dry-run`) | `captions.py` build/burn | `review.py` check (incl. cut list, clicks at cuts), audit (static motion audit of a comp), approve, status |
 `export.py` run, overlay, list, loudnorm | `youtube_prep.py` | `presets.json`.
 HyperFrames setup and pin: references/hyperframes.md. Kokoro needs `HYPERFRAMES_PYTHON=<venv>/bin/python`.
 

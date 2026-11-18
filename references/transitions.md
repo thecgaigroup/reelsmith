@@ -148,3 +148,22 @@ Not a default. Not on body copy, captions, or UI chrome. One grade for the film,
 | Motion blur | [Remotion motion blur](https://www.remotion.dev/docs/motion-blur) | Whips and fast camera moves only. |
 
 Glow, bloom, and particle bursts stay on the banned list in `motion-design.md`. Polish does not excuse a thin select or a fade-card title.
+
+### Polish recipes (numbers, no new package)
+
+The same restraint, as numbers you can build in HyperFrames (CSS, SVG and GSAP on the paused timeline), in Remotion, or as one `ffmpeg` pass on the export. Pixel sizes are written at 1080 high; scale by `height / 1080`. Every random value comes from one seed and the frame index. Each one is named on the storyboard, or it is not in the film.
+
+| Finish | Build | Numbers |
+|---|---|---|
+| Chromatic fringe | Red and blue copies of a plate, shifted opposite ways, or `rgbashift=rh=-2:bh=2` | About 0.1% of the width horizontally (2 px at 1920), half that vertically. On a whip or a still plate, ramped on and off over 3–4 frames |
+| Glitch (only when the brief asks for the tone) | 3–6 horizontal bands copied with `clip-path` and shifted sideways, plus a short fringe | Bursts of 2–4 frames, at least 1.5 s apart, offsets 8–40 px. No brightness flip, so the flash rule (≤3 per second) holds. Never on a line the viewer must read |
+| Rack focus | CSS `blur()` on the far plate and the near plate, crossed | Far plate 0 → 10–16 px over 12–18 frames while the near plate clears. Never on glyphs; type sits on its own sharp layer. If blur is costly, crossfade three or four pre-blurred copies |
+| Trail behind a moving subject | Draw the subject's closed-form position at `t`, `t − 1/fps`, … | 6–10 ghosts, opacity `(1 − i/N)²`, scale 1 → 0.6. One trail on the one subject that moves (a cursor path, the product on a whip). Not a particle burst |
+| Whip motion blur | Average sub-frames inside each output frame | Sub-frames per frame = `ceil(fastest on-screen px moved per frame / 4)`, capped at 24 (`remotion.md`); 1 when nothing moves fast. A fixed small count shows separate copies on a whip. Off an engine render at N× the frame rate: `tmix=frames=N,select='not(mod(n\,N))',setpts=N/<fps>/TB` |
+| Grain | `noise()` in Remotion, or at export: `noise=alls=6:allf=t:all_seed=7` | Off by default (it bloats the file and smears after platform re-encode). The fixed seed gives the same grain on every re-export. Check the export size before and after |
+| Vignette | Radial gradient over the plate, or `vignette=angle=PI/5` | Edges only, under the type layer |
+| Practical-light bloom | Footage only: keep the brightest pixels, blur, screen them back. `split[b][h];[h]lutyuv=y='if(gte(val,230),val,16)':u=128:v=128,gblur=sigma=20[g];[b][g]blend=all_mode=screen:all_opacity=0.35` | Only on real lamps, screens or sun in the footage, at 0.3–0.4. Never on type, logos or UI chrome (the ban stands) |
+
+The `ffmpeg` lines above were run on a synthetic 1080p clip for this page; they need no build beyond the `ffmpeg` already required. Run `review.py check` after any finishing pass: grain and glitch can trip the flash and pop checks.
+
+*Source: technique survey of pmndrs/react-postprocessing (MIT, @e07ef9a; effect parameters in `docs/effects/`), fand/vfx-js (MIT, @1d9bb68; its effect list), Alchemist0823/three.quarks (MIT, @9d0445c; ribbon trails), and the speed-based shutter in annnguyentt/anatomy-reveal-skill (MIT, @dd01e1c, `references/shots.md`). None of those packages is used; every recipe above is a CSS, GSAP or `ffmpeg` rebuild in our words.*

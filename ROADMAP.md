@@ -204,6 +204,32 @@ Liquid-chrome shaders below stay parked. These notes do not start that work.
 
 A Remotion + `@remotion/three` + `postprocessing` world (ink outline pass before lens blur, painted Canvas2D textures, billboard 2D characters, synthesized march score and SFX). MIT, free, offline. Not folded: it adds three.js packages that `remotion.md` keeps out, needs Kenney CC0 models (~1.3 GB `public/`), and a short is a multi-day hand-built project (2K renders about 4 fps). Revisit when a CGAI series wants a recurring character world; start from its `templates/bridge/` in a separate project, never in this repo.
 
+## Motion list harvest: springs by feel, motion audit, exploded reveal (2026-11-18)
+
+**Status:** in the skill. One new script command with tests; the rest is docs. No vendored code, no new package, no paid generation, no new keys.
+
+**Source list:** [@HeLi8866's 20 motion repos](https://x.com/HeLi8866/status/2122773874706452604).
+
+| Repo | Commit | License | Folded into |
+|---|---|---|---|
+| [LottieFiles/motion-design-skill](https://github.com/LottieFiles/motion-design-skill) | 2e1f3c0 | MIT | Phase shares inside one move, ambient layers, symptom table, signature curves (`motion-design.md`); motion findings by severity (`brand-qa.md`) |
+| [motiondivision/ai-kit](https://github.com/motiondivision/ai-kit) | 1e42494 | MIT (package and README; no LICENSE file) | Springs by feel (`motion-design.md`); audit shape for `review.py audit` (`review-and-qa.md`) |
+| [annnguyentt/anatomy-reveal-skill](https://github.com/annnguyentt/anatomy-reveal-skill) on [wheresryan22/anatomy](https://github.com/wheresryan22/anatomy) | dd01e1c · 1482e84 | MIT · MIT | Exploded reveal shot (`templates.md`); speed-based whip blur (`transitions.md`) |
+| [pmndrs/react-postprocessing](https://github.com/pmndrs/react-postprocessing), [fand/vfx-js](https://github.com/fand/vfx-js), [Alchemist0823/three.quarks](https://github.com/Alchemist0823/three.quarks) | e07ef9a · 1d9bb68 · 9d0445c | MIT | Polish recipes rebuilt in CSS, GSAP or `ffmpeg` (`transitions.md`) |
+
+**librosa:** already covered. `beats.py grid` uses librosa's onset envelope, beat tracker and tempo, plus a low-band onset envelope for the downbeat phase and RMS sections. It does not export discrete onset times (off-beat accents); that is a possible follow-up, not part of this fold.
+
+**Skipped on purpose:**
+
+- **ai-kit's audit method, MCP servers and paid tier:** the scoring method is served by a sign-in server and is part of a paid plan. Not read, not rebuilt. Its Motion-library and web-UI rules (hover, layout animations, reduced motion) do not apply to rendered video.
+- **LottieFiles emotion and color tables, web accessibility rows, Lottie export notes:** UI-specific, or already in `helpers.md`.
+- **The anatomy kit, renderer, interactive figure page and worked example:** a separate Puppeteer and ImageMagick toolchain, and a third renderer. The shot rhythm is kept; the build stays in HyperFrames or Remotion.
+- **theatre-js/theatre** (Apache-2.0 core, AGPL-3.0 studio): a keyframe editor. Our paused GSAP timeline and Remotion frames already cover seekable keyframes. Nothing new.
+- **lucasmarkes/hairline** (MIT): pointer-driven web figures; no render path (also noted in the Video Decompiler section). Nothing new.
+- **AudioCraft:** generated music is against the house music rule, and its weights are non-commercial.
+- **blender-agents:** needs a local Blender and paid 3D.
+- **HyperFrames, Remotion, Remotion Skills, three.js, GSAP, Manim, WhisperX, FFmpeg:** already covered. Nothing new.
+
 ## Animation list harvest: shot ledger, beat lock, generic tells (2026-11-17)
 
 **Status:** in the skill. One new script command with tests; the rest is docs. No vendored code.

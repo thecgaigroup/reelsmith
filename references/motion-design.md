@@ -114,6 +114,22 @@ Before a delivery render, and before a client draft leaves the box:
 
 `review.py` prints this table into `review.md`. It does not change pass/fail. The generic 1–5 rubric in that file stays for every job.
 
+### When a score is low
+
+Diagnose a symptom before you add motion. Each fix still obeys the house caps below (0% overshoot on display type, logos and numbers).
+
+| Symptom | Usual cause | Fix |
+|---|---|---|
+| Robotic | Linear moves, equal durations, everything starting together | Directional eases; start offsets of 50–150 ms; a small arc on long travel (Choreography) |
+| Slow | Durations over the element budget, too much wind-up, a long settle | Back to the duration table; wind-up 10% or none; a firmer spring (Springs by feel) |
+| Jarring | No settle, a big move with no wind-up | Add 50–100 ms of settle; 100–200 ms wind-up on large moves only |
+| Cheap or flat | Only the primary moves; opacity carries a state change on its own | Add a secondary and an ambient layer; pair opacity with position or scale |
+| Busy | Several heroes, big ambient, no gap between ideas | One hero per moment; ambient under a fifth of the primary; 100–200 ms of settled read |
+| No identity | Default eases, one duration for everything | One signature curve and the energy palette (Taste layer) |
+| Inconsistent | Same kind of element, different ease, duration or entry side | One rule per element type; one entry origin |
+
+A fix that only makes the motion bigger is usually wrong. Re-score from new stills after the change.
+
 ## Premium motion (HyperFrames eight)
 
 Source: [HyperFrames motion](https://hyperframes.heygen.com/prompting/motion). Rules 1–3 and 7 already sit in the numbered list above (idle, camera, overlap, pace). These are the ones that change a client cut:
@@ -192,6 +208,8 @@ Name the feeling before the ease (`brand.motion.energy`, or `voice.tone` from `b
 
 Element caps, then multiply by distance (50 px ×0.8, 100 px ×1.0, 200 px ×1.3, 300 px ×1.5, full frame ×1.8–2.0). A type reveal still caps near 800 ms (`kinetic-type.md`). Exit duration is 65–75% of the entrance. Entrance eases out. Exit eases in. A move that stays on screen eases in-out. Ambient loops use `sine.inOut`. Linear is for rotation, progress, and timers, not for position.
 
+**Signature curve.** Most moves in one film share one curve, so the motion reads as a voice: calm or premium `cubic-bezier(0.4, 0, 0.2, 1)`, product or corporate `cubic-bezier(0.2, 0, 0, 1)`, energetic `expo.out`. Borrow a second voice for one moment at most (a success state, the spectacle). A playful bounce stays on UI chrome. The named type presets in `kinetic-type.md` still win on display lines, logos and numbers. A cut-to-cut drift or Ken Burns may stay linear: it has no visible start or end.
+
 | Element | Duration | Ease |
 |---|---|---|
 | Cursor press, toggle | 80–180 ms | snappy UI; tiny overshoot allowed |
@@ -206,6 +224,26 @@ Element caps, then multiply by distance (50 px ×0.8, 100 px ×1.0, 200 px ×1.3
 At 24 fps, quick is 4–6 frames, standard 8–12, deliberate 16–24. At 30 fps multiply those frame counts by 1.25. At 60 fps multiply by 2.5. A hit-stop on an impact is 1–2 frames, then motion returns. The hold after a result is part of the timing, not a bug, as long as the frame is not frozen (ambient idle).
 
 Stagger, same ease family, vary only the start: characters 20–40 ms, lines 60–100 ms, a dramatic cascade 100–200 ms. The whole cascade stays under 500 ms, except `kinetic-center-build`, which is sequential on purpose. Exits stagger in reverse. A shared trigger starts its elements within 50 ms of each other.
+
+### Springs by feel
+
+Say a spring as two numbers: **T**, the time it should look arrived (first within 2% of the target), and how far it may pass the target. Convert for `spring01` above, or for Remotion with `mass: 1` (same physics):
+
+`w0 = A / T`, `stiffness = w0²`, `damping = 2 · ζ · w0`
+
+| Feel | ζ | A | Overshoot | Fully settled (±0.5%) | Use on |
+|---|---|---|---|---|---|
+| Firm | 1.0 | 5.83 | 0% | about 1.3 × T | Display type, logos, numbers, anything serious |
+| Light | 0.85 | 4.19 | 0.6% | about 1.6 × T | Cards, panels, device moves |
+| UI cap | 0.7 | 3.11 | 4.6% | about 2.25 × T | Cursor, toggles, chips. The same ceiling as `back.out(1.15)` (4.9%) |
+
+Examples: a light 0.4 s card is stiffness 110, damping 17.8. A firm 0.7 s line is stiffness 70, damping 16.7, close to the house display spring `spring01(t, 64, 16)` (arrives at 0.73 s). Nothing past the UI cap goes in a client cut.
+
+- **Cue off T, not the settle.** Siblings, the next stagger, the `b(n)` hit, and the cut are timed from the arrival time. The tail keeps running under the next event, which is what makes the hand-off feel continuous.
+- **Interruptions stay closed-form.** A retarget is the sum rule under `spring01`, never a simulated velocity carried from the previous frame.
+- **Product sets the ceiling.** Finance, health, enterprise and premium: firm only. Playful consumer work may use the UI cap on chrome. Display type stays firm everywhere.
+
+*Source: describing a spring by perceived duration and bounce, and timing siblings off the asked duration rather than the settle, after motiondivision/ai-kit (MIT, github.com/motiondivision/ai-kit @1e42494), `plugins/motion/skills/motion/css-spring/index.md` and `best-practices/index.md`. The A constants and the table were computed for this repo from the closed-form spring; no code or text copied.*
 
 ### Acted effects (characters and impacts)
 
@@ -241,6 +279,17 @@ Apply these. Skip the rest of any upstream skill tree.
 
 Each shot is setup (20–30% of its length), action (30–40%), resolution (30–40%). Inside the shot, leave 100–200 ms of settled read before the next idea. A beat-locked cut can be the punctuation. Do not add a fade to make that gap.
 
+**Inside one move** (a card, a panel, a product turn; not a whole shot), share its length out by phase. Wind-up is the anticipation row in the Disney table; for a character blow it is the wind-up and contact freeze in Acted effects, not a second rule. Reaction is follow-through and secondary action, timed as in that table.
+
+| Move length | Wind-up | Main move | Reaction | Settle |
+|---|---|---|---|---|
+| Under 200 ms | none | 60–70% | none | 30–40% |
+| 200–400 ms | 10–15% | 40–50% | 10–15% | 25–30% |
+| 400–800 ms | 15–20% | 30–40% | 15–20% | 20–25% |
+| Over 800 ms | about 20% | 30–35% | 15–20% | 25–30% |
+
+Even 50 ms of settle changes how a move lands. A move with no settle reads as cut off.
+
 - One hero. Supports are quieter in distance and ease.
 - Elements share an origin. Mixed entry directions read as noise.
 - Counter-motion: the background shifts against the hero at 20–30% of the hero's travel.
@@ -248,6 +297,22 @@ Each shot is setup (20–30% of its length), action (30–40%), resolution (30�
 - Travel past about a third of the frame gets an intermediate key or an arc.
 - With three or more moving elements, at most a third of them are in transit at once.
 - Overshoot budget, after the house rule: premium and display type 0%. UI success 5–10% and still inside `back.out(1.15)`. Celebration overshoot belongs only on the named spectacle.
+
+### Ambient layers (numbers)
+
+Ambient keeps a hold alive (rule 1). It never competes with the primary: keep its total energy under about a fifth of the primary move's, and keep moving ambient elements under 20.
+
+| Layer | Move | Numbers |
+|---|---|---|
+| Breathing | Scale | 0.98–1.02 over 3–4 s, `sine.inOut`. Over ±5% demands attention |
+| Float | y, plus an optional ±2–3° tilt | ±8–12 px at 1080 high, 3.5–5.5 s per cycle. Give each element its own period and phase (0, 30%, 60%) so they never move in step |
+| Background shift | Gradient angle or position | ±10–20% or ±15°, 8–20 s per cycle; should not be noticed at a glance |
+| Gleam | One soft band across a surface | 1.5–2.5 s per sweep, then 2–5 s of rest; peak about 30% opacity. Not on type or logos |
+| Motes | 5–10 dots | 2–5 px, 20–50% opacity, 10–30 px/s, seeded positions |
+
+On a loop, every ambient period must divide the loop length, or the seam pops (a 12 s loop takes 3, 4 and 6 s, which still never fall in step). Positions come from time and one seed (rule 8), never from `Math.random()`. Ambient is silent (`music.md`).
+
+*Source: four-phase shares, ambient numbers, the symptom table and the signature curves after LottieFiles/motion-design-skill (MIT, Copyright (c) 2025 LottieFiles, github.com/LottieFiles/motion-design-skill @2e1f3c0), `director/narrative-structure.md`, `director/motion-personality.md`, `patterns/ambient-continuous.md`, `reference/troubleshooting.md`. Selected for video, rewritten, and capped by the house rules; the loop-period rule is ours.*
 
 ## Motion grammar
 
@@ -356,7 +421,8 @@ Browse the free [MotionVideo gallery](https://motionvideo.xyz/) for density, not
 
 Principles rewritten here. Nothing from these repos is installed.
 
-- [LottieFiles/motion-design-skill](https://github.com/LottieFiles/motion-design-skill) — duration tables, directional easing, stagger budgets, choreography shares.
+- [LottieFiles/motion-design-skill](https://github.com/LottieFiles/motion-design-skill) (MIT) — duration tables, directional easing, stagger budgets, choreography shares; re-read at `2e1f3c0` for phase shares inside one move, ambient layers, the symptom table and signature curves. Its emotion-to-color table, UI hover and reduced-motion rules, and Lottie export notes stay out (web-only or already in `helpers.md`).
+- [motiondivision/ai-kit](https://github.com/motiondivision/ai-kit) (MIT per its package and README) — springs by feel. Its audit method is a paid, server-held resource and was not read or rebuilt; the free static audit in `review.py audit` is our own.
 - [dylantarre/animation-principles](https://github.com/dylantarre/animation-principles) — selected Disney-12 micros (timing frames, anticipation, follow-through, staging). The rest of that tree stays out.
 - House overrides that those sources do not share: 0% overshoot on display type, no blur on glyphs, no third `seek(t)` renderer.
 - [echris6/motion-video-kit](https://github.com/echris6/motion-video-kit) (MIT, Copyright (c) 2026 echris6) — six motion-grammar rules and the mechanism catalog above. Timing numbers in that file that repeat this page were left out. `business-offers.md`, sample commercials, and their scripts were not folded.

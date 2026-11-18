@@ -7,6 +7,8 @@
          DIR/review.md (checklist), DIR/review.json (auto results, approved=false)
   review.py approve DIR --by "name or 'user in chat'"     # record the user's OK
   review.py status DIR                                     # exit 0 only if approved
+  review.py audit COMP_DIR_OR_FILE [--json report.json]    # static motion audit of a HyperFrames/Remotion comp
+                                                           # (exit 1 on any FAIL; no render, no network)
 
 Auto checks: resolution/fps/duration vs preset, loudness (EBU R128 integrated + true peak),
 black frames, long silence (dead air), frozen mid-video stretches, frozen ending, photosensitive flashes (WCAG 2.3.1 heuristic),
@@ -353,6 +355,143 @@ def check(video, out, preset=None, expect=None, credits=None, job=None):
     print(f"review -> {out}/review.md ({'auto PASS' if auto_pass else 'auto FAIL'}; awaiting approval)")
     return res
 
+# --- Static motion audit (no render) -------------------------------------------------------------
+# Reads composition source and flags motion that cannot be seeked deterministically (FAIL) or that
+# costs layout, softens type, or moves on a linear ease (WARN). Worst level wins per file. Clean files
+# get one line. A line containing `audit-ok` is skipped (write why next to it).
+
+AUDIT_EXT = {".html", ".htm", ".js", ".mjs", ".cjs", ".jsx", ".ts", ".tsx", ".css"}
+AUDIT_SKIP_DIRS = {"node_modules", ".git", "dist", "build", "_review", "__pycache__", ".venv"}
+AUDIT_MAX_BYTES = 1_000_000  # larger files are vendored bundles, not comps
+
+AUDIT_LINE_RULES = [
+    ("FAIL", "random", r"\bMath\.random\s*\(|\bgetRandomValues\s*\(",
+     "random value: seeking the same time twice paints different pixels",
+     "seed once (mulberry32) or derive the value from the frame index"),
+    ("FAIL", "clock", r"\bDate\.now\s*\(|\bnew\s+Date\s*\(\s*\)|\bperformance\.now\s*\(",
+     "wall-clock time drives the picture",
+     "derive it from timeline time (HyperFrames) or useCurrentFrame() (Remotion)"),
+    ("FAIL", "timer", r"\b(?:setTimeout|setInterval|requestAnimationFrame)\s*\(",
+     "a timer or frame callback moves things outside the timeline",
+     "put the move on the paused GSAP timeline, or interpolate from the frame"),
+    ("FAIL", "css-motion", r"@keyframes\b|(?<![\w-])(?:transition|animation(?:-name)?)\s*:(?!\s*(?:none|unset|initial)\b)",
+     "CSS animation or transition: not on the seekable clock (Remotion does not render it)",
+     "rebuild it as a timeline tween or an interpolate()"),
+    ("WARN", "will-change", r"\bwill-change\b|\bwillChange\b",
+     "will-change softens scaled glyphs and has broken seek determinism",
+     "remove it"),
+]
+_TWEEN_CALL = re.compile(r"\.(?:to|from|fromTo)\s*\(")
+_LAYOUT_KEY = re.compile(r"(?<![\w$.-])[\"']?(?:width|height|top|left|right|bottom|margin\w*|padding\w*)[\"']?\s*:")
+_POS_KEY = re.compile(r"(?<![\w$.-])[\"']?(?:x|y|xPercent|yPercent|left|top)[\"']?\s*:")
+_FADE_KEY = re.compile(r"(?<![\w$.-])[\"']?(?:opacity|autoAlpha)[\"']?\s*:")
+_LINEAR_EASE = re.compile(r"(?<![\w$.-])[\"']?ease[\"']?\s*:\s*[\"'](?:none|linear)[\"']")
+
+
+def _strip_comments(text):
+    """Blank out comments but keep every newline, so line numbers still match the file."""
+    def blank(m):
+        return re.sub(r"[^\n]", " ", m.group(0))
+    text = re.sub(r"<!--.*?-->", blank, text, flags=re.S)
+    text = re.sub(r"/\*.*?\*/", blank, text, flags=re.S)
+    return re.sub(r"(?<![:\"'\w\\])//[^\n]*", blank, text)
+
+
+def _call_args(text, start):
+    """Text from an opening paren to its match (bounded), or '' if unbalanced."""
+    depth = 0
+    for i in range(start, min(len(text), start + 4000)):
+        c = text[i]
+        if c in "([{":
+            depth += 1
+        elif c in ")]}":
+            depth -= 1
+            if depth == 0:
+                return text[start:i + 1]
+    return ""
+
+
+def audit_text(text, name="<text>"):
+    """Findings for one source text: dicts with level, rule, file, line, what, fix."""
+    raw_lines = text.splitlines()
+    skip = {i + 1 for i, ln in enumerate(raw_lines) if "audit-ok" in ln}
+    clean = _strip_comments(text)
+    found = []
+    for n, ln in enumerate(clean.splitlines(), 1):
+        if n in skip:
+            continue
+        for level, rule, pat, what, fix in AUDIT_LINE_RULES:
+            if re.search(pat, ln):
+                found.append({"level": level, "rule": rule, "file": name, "line": n, "what": what, "fix": fix})
+    for m in _TWEEN_CALL.finditer(clean):
+        n = clean.count("\n", 0, m.start()) + 1
+        if n in skip:
+            continue
+        args = _call_args(clean, m.end() - 1)
+        if not args:
+            continue
+        if _LAYOUT_KEY.search(args):
+            found.append({"level": "WARN", "rule": "layout-tween", "file": name, "line": n,
+                          "what": "tween on a layout property (width, height, top, left, margin, padding)",
+                          "fix": "move with x, y, scale or clip-path; a named one-shape morph gets `audit-ok` and a reason"})
+        # Linear is fine on a cut-to-cut drift or Ken Burns (no fade). An entrance or exit is not.
+        if _LINEAR_EASE.search(args) and _POS_KEY.search(args) and _FADE_KEY.search(args):
+            found.append({"level": "WARN", "rule": "linear-move", "file": name, "line": n,
+                          "what": "entrance or exit that moves on a linear ease",
+                          "fix": "ease out on entrances, in on exits, in-out on moves; linear is for rotation, progress and timers"})
+    found.sort(key=lambda f: (f["line"], f["rule"]))
+    return found
+
+
+def _audit_files(target):
+    t = Path(target)
+    if t.is_file():
+        return [t]
+    out = []
+    for f in sorted(t.rglob("*")):
+        if not f.is_file() or f.suffix.lower() not in AUDIT_EXT:
+            continue
+        if AUDIT_SKIP_DIRS.intersection(f.relative_to(t).parts) or ".min." in f.name:
+            continue
+        if f.stat().st_size > AUDIT_MAX_BYTES:
+            continue
+        out.append(f)
+    return out
+
+
+def audit(target, json_out=None):
+    """Audit every comp source under target. Returns the report dict; level is the worst finding."""
+    base = Path(target) if Path(target).is_dir() else Path(target).parent
+    files = []
+    for f in _audit_files(target):
+        rel = str(f.relative_to(base)) if base in f.parents or f.parent == base else str(f)
+        found = audit_text(f.read_text(errors="replace"), rel)
+        worst = "FAIL" if any(x["level"] == "FAIL" for x in found) else "WARN" if found else "PASS"
+        files.append({"file": rel, "level": worst, "findings": found})
+    levels = {x["level"] for x in files}
+    level = "FAIL" if "FAIL" in levels else "WARN" if "WARN" in levels else "PASS"
+    rep = {"target": str(target), "level": level, "files": files}
+    if json_out:
+        Path(json_out).write_text(json.dumps(rep, indent=2))
+    return rep
+
+
+def print_audit(rep):
+    if not rep["files"]:
+        print(f"audit: no composition sources under {rep['target']}")
+        return
+    for f in rep["files"]:
+        if not f["findings"]:
+            continue
+        print(f"{f['level']:4} {f['file']}")
+        for x in f["findings"]:
+            print(f"     {x['level']:4} {x['rule']} line {x['line']}: {x['what']}. Fix: {x['fix']}.")
+    clean = [f["file"] for f in rep["files"] if not f["findings"]]
+    if clean:
+        print(f"PASS {len(clean)} file(s) clean")
+    print(f"audit -> {rep['level']}")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sp = ap.add_subparsers(dest="cmd", required=True)
@@ -360,7 +499,14 @@ def main():
     p.add_argument("--expect-seconds", type=float); p.add_argument("--music-credits", "--credits", dest="credits"); p.add_argument("--job", help="job.json from reelsmith.py render (scene frames + timing checks)")
     p = sp.add_parser("approve"); p.add_argument("dir"); p.add_argument("--by", required=True)
     p = sp.add_parser("status"); p.add_argument("dir")
+    p = sp.add_parser("audit"); p.add_argument("target"); p.add_argument("--json", dest="json_out")
     a = ap.parse_args()
+    if a.cmd == "audit":
+        if not Path(a.target).exists():
+            sys.exit(f"no such path: {a.target}")
+        rep = audit(a.target, a.json_out)
+        print_audit(rep)
+        sys.exit(1 if rep["level"] == "FAIL" else 0)
     if a.cmd == "check":
         res = check(a.video, a.out, a.preset, a.expect_seconds, a.credits, a.job)
         sys.exit(0 if res["auto_pass"] else 1)
