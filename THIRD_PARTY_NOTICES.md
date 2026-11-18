@@ -1076,7 +1076,7 @@ Techniques adapted from [skills](https://github.com/coleam00/skills) by Cole Med
 **Source commit:** main branch (read 2026-11-18)
 
 **What was adapted (no files copied):**
-- `scripts/review.py` `check_sync_drift()` — audio/video sync drift detection using ffmpeg sync analysis at four probe points (start, 25%, 75%, end), after the edit-video skill's sync validation approach. Reports worst drift and flags WARNING when any probe exceeds ±50 ms.
+- `scripts/review.py` `check_sync_drift()` — audio/video sync drift detection using ffprobe to read audio and video stream start_time and duration. Reports start offset and end duration mismatch in milliseconds (2 probes), after the edit-video skill's sync validation approach. Flags WARNING when drift exceeds ±50 ms. Measurement failures are reported as visible 'could not measure' WARN, never silent pass.
 - `scripts/doctor.py` — environment diagnostic script that checks Python, ffmpeg/ffprobe (and the encoders/filters the pipeline uses), Python packages, Node/npx, and fonts before the first render. Exits 1 if core dependencies are missing. Approach after edit-video `doctor.py`, adapted for Reelsmith's stack. CUDA/NVENC/torch checks (optional, not required) and forced alignment (requires torch, out of scope for this harvest) were omitted.
 
 **License (MIT):**
