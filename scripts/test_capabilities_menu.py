@@ -264,6 +264,39 @@ def test_skill_and_readme_stay_in_sync():
     print("✓ SKILL.md and README.md both have synced capabilities menus")
 
 
+def test_entry_references_are_correct():
+    """Each entry without an example file references its correct documentation."""
+    # Run the menu generator
+    result = subprocess.run(
+        [sys.executable, str(HERE / "capabilities_menu.py")],
+        capture_output=True,
+        text=True,
+        cwd=REPO
+    )
+    assert result.returncode == 0, f"Menu generation failed: {result.stderr}"
+    
+    # Check that Update Reelsmith doesn't point to client-sizzle.md
+    assert "Update Reelsmith" in result.stdout, "Update Reelsmith entry missing"
+    # Find the Update Reelsmith line
+    for line in result.stdout.splitlines():
+        if "Update Reelsmith" in line:
+            assert "client-sizzle" not in line.lower(), \
+                "Update Reelsmith must not reference client-sizzle.md"
+            assert ("doctor.py" in line or "README" in line.lower()), \
+                "Update Reelsmith should reference doctor.py or README"
+            break
+    
+    # Check that Client sizzle reels correctly references client-sizzle.md
+    for line in result.stdout.splitlines():
+        if "Client sizzle" in line:
+            assert "client-sizzle" in line.lower(), \
+                "Client sizzle should reference client-sizzle.md"
+            break
+    
+    print("✓ Each entry's rendered pointer is correct")
+    print("✓ Update Reelsmith does not mention client-sizzle")
+
+
 def main():
     """Run all tests."""
     tests = [
@@ -275,6 +308,7 @@ def main():
         ("No internal function names", test_menu_has_no_internal_function_names),
         ("Real examples only", test_menu_references_real_examples_only),
         ("SKILL and README stay in sync", test_skill_and_readme_stay_in_sync),
+        ("Entry references correct", test_entry_references_are_correct),
     ]
     
     failed = []
