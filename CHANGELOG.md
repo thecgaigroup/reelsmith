@@ -5,6 +5,75 @@ All notable changes to Reelsmith will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.5.0] - 2026-11-21
+
+### Added
+
+**Stream-Highlights Mode** - Extract vertical 9:16 highlight clips from live streams and gaming VODs
+
+- **Chat-burst analysis**: Priority-based moment detection (chat bursts > RMS loudness > speech-lexicon)
+  - Twitch IRC and YouTube live chat collection support (optional)
+  - Chat.json file input for pre-recorded chat logs
+  - Spam-resistant scoring with Median Absolute Deviation (MAD)
+  - Peak 5-second bucket detection within windows
+- **URL input**: Process streams directly from YouTube, Twitch, etc. via yt-dlp (optional dependency)
+  - Requires `--rights-confirmed` flag to proceed
+  - Lazy import - works without yt-dlp for local files
+- **90-second chunking**: Efficient processing of long streams
+- **Advanced face/person detection** (optional models):
+  - YuNet face detection (MIT License, 233 KB, OpenCV Zoo)
+  - YOLOX-S person tracking (Apache-2.0, 35 MB, OpenCV Zoo)
+  - Graceful fallback to OpenCV Haar cascade when models unavailable
+  - Model download via `scripts/fetch_models.py` with SHA-256 verification
+- **Facecam-aware crop**: 9:16 crop positioning keeps facecam corner OUT of frame
+- **Player-follow panning**: YOLOX-S tracks player movement for dynamic crop
+- **6-second lead-in**: Clips start 6s before peak moment for context
+- **Stream-pop captions**: 3-word pop-in captions (yellow new, white spoken)
+- **Profanity masking**: Automatic masking in burned-in captions (audio unchanged)
+  - Enabled by default, disable with `--no-profanity-mask`
+  - Custom masking implementation (first letter + asterisks)
+- **Optional dependencies**: `requirements-stream.txt` for yt-dlp, faster-whisper, onnxruntime
+- **Comprehensive tests**: All with mocks, no network in CI
+  - Chat scoring tests with synthetic data
+  - Profanity masking tests
+  - Rights-flag enforcement test (mocked yt-dlp)
+  - Model fallback tests (no downloads in CI)
+
+**New modules**:
+- `scripts/chat_scoring.py`: Chat burst analysis with MAD-based scoring
+- `scripts/stream_chat.py`: Twitch IRC and YouTube live chat collectors
+- `scripts/profanity_mask.py`: Profanity masking for captions
+- `scripts/fetch_models.py`: Model downloader with SHA-256 verification
+- `scripts/test_stream_highlights.py`: Comprehensive test suite with mocks
+- `requirements-stream.txt`: Optional stream-mode dependencies
+- `THIRD_PARTY_NOTICES`: Dependency and model license notices
+
+**Extended modules**:
+- `scripts/highlights.py`: Added `--mode stream` with chat-burst scoring
+- `scripts/facetrack.py`: Added `--detector` (haar/yunet/yolox) with fallbacks
+- `scripts/clipping.py`: Added `--mode stream-highlights` with URL input and chunking
+
+**Documentation**:
+- Comprehensive README section for stream-highlights mode
+- Updated `references/clipping.md` with stream-highlights workflow
+- Updated capabilities menu
+
+### Changed
+
+- VERSION bumped to 5.5.0
+- README updated with stream-highlights installation and usage
+- references/clipping.md expanded with stream mode documentation
+
+### Technical Details
+
+- All code written from scratch in Reelsmith style
+- No close paraphrasing of external projects
+- Models from OpenCV Zoo (MIT/Apache-2.0)
+- Optional dependencies lazy-loaded
+- Graceful degradation when optional features unavailable
+- Rights confirmation required for URL input
+- All tests use mocks, CI runs without network access
+
 ## [5.4.0] - 2026-11-21
 
 ### Added
