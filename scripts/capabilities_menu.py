@@ -73,6 +73,13 @@ CAPABILITIES = [
         "example": "feature-explainer-1x1.gif",
     },
     {
+        "name": "Educational explainers with charts and timelines",
+        "description": "Signal Shorts format explainers with visual data, maps, and timelines",
+        "template": None,  # explainer format workflow, not a template
+        "example": None,  # No single example file
+        "reference": "references/explainer-format-signal-shorts.md",
+    },
+    {
         "name": "Client sizzle reels and awards cuts",
         "description": "Production-quality cuts from real footage with beat-synced kinetic type",
         "template": None,  # No template, custom HyperFrames workflow

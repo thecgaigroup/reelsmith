@@ -9,16 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Clipping capability entry**: Added "Extract highlight clips from long-form video" to capabilities menu (`scripts/capabilities_menu.py`) with reference to `references/clipping.md`. This entry was missing after PR #28 added the clipping lane to the route table.
-- **Drift test**: New test in `scripts/test_capabilities_menu.py` that parses all routes from SKILL.md's route table and verifies each user-facing route has a matching CAPABILITIES entry. This prevents future drift between the route table and capabilities menu. Test includes intelligent matching for template-based routes and specific capability mappings.
+- **Educational explainer capability entry**: Added "Educational explainers with charts and timelines" for Signal Shorts format to capabilities menu, with reference to `references/explainer-format-signal-shorts.md`. This entry was previously missing from the capabilities menu.
+- **Strict drift test**: New test in `scripts/test_capabilities_menu.py` that parses all routes from SKILL.md's route table and verifies each user-facing route has a matching CAPABILITIES entry using strict one-to-one mapping. Each route maps to exactly one capability via template name or reference path, with no substring catch-alls. Explicit exclusion list for helper functions and advanced workflows with reasons. This prevents future drift between the route table and capabilities menu.
 - **Up-to-date doctor message**: `scripts/doctor.py` now prints exactly one line "Reelsmith X.Y.Z is up to date" when the installed version matches the latest release, making the output cleaner when no update is needed.
 - **Test for up-to-date path**: Added `test_up_to_date_message()` in `scripts/test_doctor.py` that mocks the GitHub API response to verify the up-to-date message is printed correctly.
 
 ### Changed
 - `scripts/doctor.py`: Added case for when current version equals latest version to print clean up-to-date message.
-- `scripts/test_capabilities_menu.py`: Added drift test as 10th test in the suite.
-- `scripts/test_doctor.py`: Added imports for `json` and `unittest.mock` to support mocked network tests.
+- `scripts/test_capabilities_menu.py`: Rewrote drift test with strict matching logic that maps each route to exactly one capability by template name or reference path. Added explicit exclusion list with one-line reasons for each excluded route.
+- `scripts/test_doctor.py`: Added imports for `json` and `unittest.mock` to support mocked network tests. Fixed wrapper script to apply mock before importing doctor.py.
 
-No new dependencies. All changes improve maintainability and user experience with clearer messaging.
+No new dependencies. All changes improve maintainability and user experience with clearer messaging and stricter drift detection.
 
 ## [5.4.2] - 2026-11-21
 
