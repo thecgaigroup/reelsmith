@@ -529,9 +529,12 @@ def process_stream_highlights(video_source, output_dir, chat_json=None,
         apply_clip_crop(raw_clip, tracking_data, start, end, cropped_clip)
         
         # Generate and burn captions
+        print(f"\nClip {i}: words available: {len(words) if words else 0}", file=sys.stderr)
         if words:
             clip_words = [w for w in words if start <= w["start"] < end]
+            print(f"  Filtered clip_words (start={start}, end={end}): {len(clip_words)}", file=sys.stderr)
             shifted_words = shift_captions(clip_words, start)
+            print(f"  Shifted words: {len(shifted_words)}", file=sys.stderr)
             
             if shifted_words:
                 clip_words_json = clip_dir / "words.json"
