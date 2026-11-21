@@ -206,17 +206,17 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             tmpdir = Path(tmpdir)
             
             # Generate synthetic video (60s, 1920x1080)
-            # Simple approach: solid colors with text overlay marking time regions
-            # Facecam box: white rectangle top-right corner
+            # Blue background with PURE MAGENTA facecam box for pixel detection
+            # Magenta (255,0,255) chosen because it won't appear in natural content
             
             video_file = tmpdir / "synthetic_stream.mp4"
             
             ffmpeg_cmd = [
                 "ffmpeg", "-f", "lavfi", "-i",
-                # Video: blue background with facecam box
-                "color=c=blue:s=1920x1080:d=60:r=30,drawbox=x=1700:y=20:w=200:h=150:color=white:t=fill",
+                # Video: blue background with MAGENTA facecam box (top-right 1700-1900, 20-170)
+                "color=c=blue:s=1920x1080:d=60:r=30,drawbox=x=1700:y=20:w=200:h=150:color=magenta:t=fill",
                 "-f", "lavfi", "-i",
-                # Audio: sine wave that varies in volume
+                # Audio: sine wave
                 "sine=f=440:d=60",
                 "-map", "0:v", "-map", "1:a",
                 "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac",
@@ -319,25 +319,35 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             self.assertGreater(duration, 29.5, f"Duration {duration}s < 29.5s")
             self.assertLess(duration, 30.5, f"Duration {duration}s > 30.5s")
             
-            # Test 4: Verify clip starts 6s ±1 before the calculated burst peak
-            # Chat burst at 22-23s falls in 10s sub-bucket, peak calculated at ~25s
-            # With 6s lead-in: clip starts at ~19s. Verify 6s ±1 from calculated peak.
+            # Test 4: Verify clip starts 6s ±1 before the ACTUAL burst peak
+            # Read peak_time from the chat analysis output, not hard-coded
             highlights_file = output_dir / "highlights.json"
             self.assertTrue(highlights_file.exists(), "highlights.json not found")
             
             highlights = json.loads(highlights_file.read_text())
             self.assertGreater(len(highlights), 0, "No highlights found")
             
-            clip_start = highlights[0]["start"]
-            # Peak time from scoring is stored in highlights; verify 6s lead-in from it
-            # Expected: peak_time from window calculation, then start = peak - 6
-            # For burst at 22-23s in 30s window starting at 20s: peak ~25s, start ~19s
+            highlight = highlights[0]
+            clip_start = highlight["start"]
             
-            # Verify start is 6s ±1s before the burst area (21-24s range)
-            self.assertGreater(clip_start, 14.0, 
-                             f"Start {clip_start}s too early (should be ~19s for 25s peak)")
-            self.assertLess(clip_start, 20.0,
-                           f"Start {clip_start}s too late (should be ~19s for 25s peak)")
+            # For stream mode, the peak_time should be in the highlight metadata
+            # If not directly stored, we need to recompute from chat scoring
+            # Let's read the actual chat scoring output
+            from chat_scoring import analyze_chat_bursts
+            chat_messages = json.loads(chat_file.read_text())
+            
+            # Find which window this clip came from
+            windows = analyze_chat_bursts(chat_messages, [0, 10, 20], 30)
+            # Find the highest-scoring window
+            best_window = max(windows, key=lambda w: w["burst_score"])
+            peak_time = best_window["peak_time"]
+            
+            # Assert: 5.0 <= peak_time - clip_start <= 7.0 (6s ±1s lead-in)
+            lead_in = peak_time - clip_start
+            self.assertGreaterEqual(lead_in, 5.0,
+                                   f"Lead-in {lead_in:.1f}s < 5s (peak={peak_time:.1f}, start={clip_start:.1f})")
+            self.assertLessEqual(lead_in, 7.0,
+                                f"Lead-in {lead_in:.1f}s > 7s (peak={peak_time:.1f}, start={clip_start:.1f})")
             
             # Test 5: Verify passes scripts/review.py check
             review_out = tmpdir / "review_out"
@@ -350,37 +360,172 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             self.assertEqual(review_result.returncode, 0,
                            f"review.py check failed: {review_result.stderr}")
             
-            # Test 6: Verify facecam region (white box at 1700-1920, 20-170) is EXCLUDED
-            # Extract a frame and check the facecam region is NOT white
-            test_frame = tmpdir / "test_frame.png"
+            # Test 6: Verify facecam region (MAGENTA box) is EXCLUDED from output clip
+            # Positive control: verify magenta exists in SOURCE frame
+            source_frame = tmpdir / "source_frame.png"
             subprocess.run([
-                "ffmpeg", "-y", "-i", str(clip_path),
-                "-vf", "select='eq(n\\,0)'",
-                "-frames:v", "1",
-                str(test_frame)
+                "ffmpeg", "-y", "-ss", "25", "-i", str(video_file),
+                "-frames:v", "1", "-f", "image2",
+                str(source_frame)
             ], capture_output=True, check=True)
             
-            # Check if the facecam region appears in the crop
-            # The 1080x1920 crop should NOT include the source's right edge where facecam is
-            # We can't easily pixel-check without PIL, but we verified resolution and the
-            # crop logic mathematically excludes x > ~1312 from any 1080-wide crop of 1920-wide source
-            # Structural verification: 1080px crop from 1920px source leaves 840px uncropped;
-            # facecam starts at x=1700, so any crop starting before x=920 excludes it
+            # Read source frame as raw RGB bytes
+            source_probe = subprocess.run([
+                "ffprobe", "-v", "error", "-select_streams", "v:0",
+                "-show_entries", "stream=width,height",
+                "-of", "csv=p=0", str(source_frame)
+            ], capture_output=True, text=True, check=True)
+            src_w, src_h = map(int, source_probe.stdout.strip().split(","))
             
-            # Test 7: Verify captions were generated (structural check)
-            # The clipping pipeline calls captions.py which burns in subtitles
-            # Verify the clip has audio stream (captions require audio for timing)
-            audio_check = subprocess.run([
-                "ffprobe", "-v", "error",
-                "-select_streams", "a:0",
-                "-show_entries", "stream=codec_type",
-                "-of", "default=noprint_wrappers=1:nokey=1",
-                str(clip_path)
-            ], capture_output=True, text=True)
+            # Extract raw RGB
+            source_rgb = subprocess.run([
+                "ffmpeg", "-y", "-i", str(source_frame),
+                "-f", "rawvideo", "-pix_fmt", "rgb24", "-"
+            ], capture_output=True, check=True).stdout
             
-            # Should have audio stream
-            self.assertIn("audio", audio_check.stdout.lower(),
-                         "Clip should have audio stream for caption timing")
+            # Count near-magenta pixels in source (magenta = 255,0,255)
+            # Allow small tolerance for encoding artifacts
+            source_magenta_count = 0
+            for i in range(0, len(source_rgb), 3):
+                r, g, b = source_rgb[i], source_rgb[i+1], source_rgb[i+2]
+                if r > 240 and g < 15 and b > 240:  # Near magenta
+                    source_magenta_count += 1
+            
+            source_magenta_fraction = source_magenta_count / (src_w * src_h)
+            self.assertGreater(source_magenta_fraction, 0.01,
+                             f"Positive control failed: source has {source_magenta_fraction:.4f} magenta (expected >0.01)")
+            
+            # Now check OUTPUT clip frames - should have NO magenta
+            # Extract 3 frames from different times in the clip
+            for frame_time in [2, 15, 25]:
+                clip_frame = tmpdir / f"clip_frame_{frame_time}.png"
+                subprocess.run([
+                    "ffmpeg", "-y", "-ss", str(frame_time), "-i", str(clip_path),
+                    "-frames:v", "1", "-f", "image2",
+                    str(clip_frame)
+                ], capture_output=True, check=True)
+                
+                # Read clip frame
+                clip_probe = subprocess.run([
+                    "ffprobe", "-v", "error", "-select_streams", "v:0",
+                    "-show_entries", "stream=width,height",
+                    "-of", "csv=p=0", str(clip_frame)
+                ], capture_output=True, text=True, check=True)
+                clip_w, clip_h = map(int, clip_probe.stdout.strip().split(","))
+                
+                clip_rgb = subprocess.run([
+                    "ffmpeg", "-y", "-i", str(clip_frame),
+                    "-f", "rawvideo", "-pix_fmt", "rgb24", "-"
+                ], capture_output=True, check=True).stdout
+                
+                # Count magenta pixels in output
+                clip_magenta_count = 0
+                for i in range(0, len(clip_rgb), 3):
+                    r, g, b = clip_rgb[i], clip_rgb[i+1], clip_rgb[i+2]
+                    if r > 240 and g < 15 and b > 240:
+                        clip_magenta_count += 1
+                
+                clip_magenta_fraction = clip_magenta_count / (clip_w * clip_h)
+                self.assertLess(clip_magenta_fraction, 0.001,
+                              f"Frame @{frame_time}s has {clip_magenta_fraction:.4f} magenta (facecam not excluded)")
+            
+            # Test 7: Verify captions are burned in (pixel-level frame diff)
+            # Generate a no-caption version by re-extracting without caption burn-in
+            no_caption_clip = tmpdir / "no_caption.mp4"
+            
+            # Extract the same time range but skip caption rendering
+            # (Just crop and scale, no caption filter)
+            clip_dir = clips[0].parent
+            
+            # Read the highlight timing
+            clip_end = highlight["end"]
+            
+            # Create no-caption version with same crop/scale but no captions
+            subprocess.run([
+                "ffmpeg", "-y", "-ss", str(clip_start), "-t", str(clip_end - clip_start),
+                "-i", str(video_file),
+                "-vf", "crop=607:1080:656:0,scale=1080:1920",  # Same crop as applied
+                "-an",  # No audio needed for diff
+                str(no_caption_clip)
+            ], capture_output=True, check=True)
+            
+            # Extract frames at caption-likely times (mid-clip) from BOTH versions
+            # Captions appear in lower third (~bottom 30% of frame)
+            caption_time = clip_start + (clip_end - clip_start) / 2  # Middle of clip
+            
+            with_caption_frame = tmpdir / "with_caption.png"
+            without_caption_frame = tmpdir / "without_caption.png"
+            
+            # Extract from captioned clip (relative to clip, not source)
+            subprocess.run([
+                "ffmpeg", "-y", "-ss", "15", "-i", str(clip_path),
+                "-frames:v", "1", "-f", "image2",
+                str(with_caption_frame)
+            ], capture_output=True, check=True)
+            
+            # Extract from no-caption version (same relative position)
+            subprocess.run([
+                "ffmpeg", "-y", "-ss", "15", "-i", str(no_caption_clip),
+                "-frames:v", "1", "-f", "image2",
+                str(without_caption_frame)
+            ], capture_output=True, check=True)
+            
+            # Get frame dimensions
+            frame_probe = subprocess.run([
+                "ffprobe", "-v", "error", "-select_streams", "v:0",
+                "-show_entries", "stream=width,height",
+                "-of", "csv=p=0", str(with_caption_frame)
+            ], capture_output=True, text=True, check=True)
+            frame_w, frame_h = map(int, frame_probe.stdout.strip().split(","))
+            
+            # Read both frames as raw RGB
+            with_caption_rgb = subprocess.run([
+                "ffmpeg", "-y", "-i", str(with_caption_frame),
+                "-f", "rawvideo", "-pix_fmt", "rgb24", "-"
+            ], capture_output=True, check=True).stdout
+            
+            without_caption_rgb = subprocess.run([
+                "ffmpeg", "-y", "-i", str(without_caption_frame),
+                "-f", "rawvideo", "-pix_fmt", "rgb24", "-"
+            ], capture_output=True, check=True).stdout
+            
+            # Compare pixels in LOWER THIRD (caption region)
+            # Lower third = bottom 30% of frame
+            caption_region_start = int(frame_h * 0.7) * frame_w * 3
+            
+            diff_count = 0
+            region_pixels = (frame_h - int(frame_h * 0.7)) * frame_w
+            
+            for i in range(caption_region_start, len(with_caption_rgb), 3):
+                r1, g1, b1 = with_caption_rgb[i], with_caption_rgb[i+1], with_caption_rgb[i+2]
+                r2, g2, b2 = without_caption_rgb[i], without_caption_rgb[i+1], without_caption_rgb[i+2]
+                
+                # Count significant differences (>10 in any channel)
+                if abs(r1 - r2) > 10 or abs(g1 - g2) > 10 or abs(b1 - b2) > 10:
+                    diff_count += 1
+            
+            diff_fraction = diff_count / region_pixels
+            
+            # Captions should cause significant difference in lower third
+            self.assertGreater(diff_fraction, 0.05,
+                             f"Caption region diff {diff_fraction:.4f} too low - captions may not be burned in")
+            
+            # Control: upper region should have minimal difference (same video content)
+            upper_diff_count = 0
+            upper_region_pixels = int(frame_h * 0.4) * frame_w  # Top 40%
+            
+            for i in range(0, int(frame_h * 0.4) * frame_w * 3, 3):
+                r1, g1, b1 = with_caption_rgb[i], with_caption_rgb[i+1], with_caption_rgb[i+2]
+                r2, g2, b2 = without_caption_rgb[i], without_caption_rgb[i+1], without_caption_rgb[i+2]
+                
+                if abs(r1 - r2) > 10 or abs(g1 - g2) > 10 or abs(b1 - b2) > 10:
+                    upper_diff_count += 1
+            
+            upper_diff_fraction = upper_diff_count / upper_region_pixels
+            
+            # Upper region should have minimal diff (control)
+            self.assertLess(upper_diff_fraction, 0.02,
+                          f"Upper region diff {upper_diff_fraction:.4f} too high - encoding mismatch?")
             
             # Test 8: Verify legacy path under-ranks the spike (or fails to run)
             # Legacy either failed (no transcript) or didn't pick the chat burst optimally
