@@ -335,7 +335,7 @@ def detect_highlights_stream_mode(video_path, chat_messages, min_clip=10, max_cl
             
             # Extract hook from window start
             hook = f"Chat burst at {int(window['start'])}s"
-            reason = f"Chat: {window['unique_users']} users, {window['excited_users']} excited"
+            reason = f"Chat: {window['unique_users']} users, engagement={window['engagement_density']:.2f}"
             
             candidates.append({
                 "start": round(start, 2),
