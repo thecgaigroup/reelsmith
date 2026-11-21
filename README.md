@@ -58,6 +58,11 @@ Showreel kinetic type, transitions, and an open storyboard are in the skill. An 
 - Licenses: HyperFrames Apache-2.0; Remotion free for individuals and teams of up to 3 (remotion.pro/license);
   Manim and lottie-web MIT. Bundled music CC BY 3.0 (credit required; see `assets/music/CREDITS.txt`).
 
+## Quick reference
+- **List capabilities and keys**: `python3 scripts/capabilities.py`
+- **Check dependencies**: `python3 scripts/doctor.py`
+- **Update Reelsmith**: See `python3 scripts/doctor.py` for update instructions
+
 ## Dependency updates
 Dependabot opens weekly PRs (Mondays): minor+patch grouped per ecosystem, majors one-per-PR, security fixes separately.
 Lovit reviews and merges green minor/patch groups; any major (label it "major, needs Marc") or anything touching deploy files or Ignition-live waits for Marc.
