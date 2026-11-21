@@ -258,18 +258,37 @@ jobs:
           python3 -c "import json; json.load(open('/tmp/smoke-test/output/job.json'))"
           echo "✓ job.json is valid JSON"
           
-          # Verify expected fields in job.json
+          # Verify expected fields in job.json (from actual dry-run structure)
           python3 << 'EOF'
           import json
           with open('/tmp/smoke-test/output/job.json') as f:
               job = json.load(f)
           
-          required = ['template', 'brand', 'content', 'aspects', 'music', 'vo']
+          # Check required fields that dry-run actually produces
+          required = ['version', 'template', 'engine', 'brand', 'total_seconds', 'scenes', 'voiceover']
           missing = [k for k in required if k not in job]
           if missing:
               print(f"ERROR: Missing fields in job.json: {missing}")
               exit(1)
           print(f"✓ job.json has all required fields: {required}")
+          
+          # Verify it's a dry run
+          if not job.get('version') == 1:
+              print(f"ERROR: Expected version 1, got {job.get('version')}")
+              exit(1)
+          print(f"✓ job version is correct")
+          
+          # Verify template
+          if job.get('template') != 'product-launch':
+              print(f"ERROR: Expected template 'product-launch', got {job.get('template')}")
+              exit(1)
+          print(f"✓ template is product-launch")
+          
+          # Verify scenes exist
+          if not isinstance(job.get('scenes'), list) or len(job['scenes']) == 0:
+              print("ERROR: job.json has no scenes")
+              exit(1)
+          print(f"✓ job has {len(job['scenes'])} scenes")
           EOF
 
       - name: Run review checks
