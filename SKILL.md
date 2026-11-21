@@ -49,6 +49,7 @@ kinetic type, correct logos — not grey placeholders or a talk-head TEMP divert
 | Narrated product explainer with captions | `feature-explainer` (Remotion; `render.sh`) | remotion.md. Optional product-hero notes in that file only when the storyboard names a physical device. No Three.js package |
 | Custom kinetic piece, overlay, alpha, GIF | HyperFrames by hand (Remotion if speech-locked) | hyperframes.md, motion-design.md, kinetic-type.md, transitions.md, music.md, brand-qa.md |
 | Title card, endslate or bumper someone will retime in a GUI; must pass Studio lint + export verify | OpenMotion (HyperFrames format, `openmotion-example/`) | openmotion.md, then the same motion, music and QA files as HyperFrames |
+| **Extract highlight clips from long-form video (talking-head, local files only)** | **clipping lane**, `clipping.py` | **clipping.md** — long-form to 9:16, face-tracked crop, highlight detection (CPU-only, $0, no LLM), shifted captions |
 | Diagrams / math, Lottie, cut user footage, transcribe | Manim, Lottie, auto-editor, parakeet | helpers.md |
 | Script or VO lines | 2–3 options + `script_lint.py` | scriptwriting.md, voiceover.md |
 | Captions (SRT/VTT/ASS, burn-in) | `captions.py` | captions.md |
