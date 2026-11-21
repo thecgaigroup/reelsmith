@@ -1,5 +1,43 @@
 # Development Log
 
+## 2026-11-21 (Reelsmith 5.4.0: long-form to vertical 9:16 clipping lane)
+
+**What changed**
+- Added complete long-form to vertical 9:16 clipping lane for extracting face-tracked highlight moments from local videos
+- Created `scripts/highlights.py`: highlight detection using transcript + audio energy heuristics (no LLM, $0)
+- Created `scripts/facetrack.py`: face tracking with OpenCV Haar cascades with IoU-based tracker IDs for stable 9:16 crop windows
+- Created `scripts/clipping.py`: main orchestrator integrating highlights, tracking, caption shifting, and review
+- Created `scripts/test_clipping.py`: comprehensive tests for all 5 task requirements (8 tests, all pass)
+- Added `references/clipping.md`: complete documentation including workflow, when to use/not use, techniques harvested, limitations
+- Updated README.md with "When to use the clipping lane" section
+- Updated SKILL.md route table to include clipping workflow
+- Updated CHANGELOG.md with full 5.4.0 entry including attribution and dependency license table
+- Bumped VERSION to 5.4.0
+- Updated CI workflow to install new dependencies (opencv-python, pysubs2) and run clipping tests
+
+**State**
+- Working: all 102 tests pass (8 new clipping tests + 94 existing tests)
+- All CI checks expected to pass (lints, type checks, builds, tests)
+- PR #28 opened against main: https://github.com/thecgaigroup/reelsmith/pull/28
+- HEAD commit: 34244e0b9d4693ad6e8337da4b56cb83e8013531
+- Branch: cursor/clipping-lane-5-4-0-251d
+
+**Where we left off**
+- PR is ready for review with complete test results and dependency license verification
+- All 5 task requirements met:
+  1. ✅ Highlight JSON has score/hook/reason/start/end; clips are 9:16 and duration matches within 1 frame
+  2. ✅ Tracked subject center stays in crop window ≥95% of frames
+  3. ✅ Continuous segments keep single tracker_id
+  4. ✅ SRT shifting preserves cue count and moves last cue end by T
+  5. ✅ 48kHz audio check passes on clips
+- Dependencies verified: opencv-python (Apache-2.0), pysubs2 (MIT) - no GPL/AGPL/LGPL/MPL
+- Techniques harvested from AI-Youtube-Shorts-Generator (MIT) and re-implemented
+- No LLM required - uses transcript + audio energy heuristics for highlight scoring
+- Awaiting CI results and review
+
+**Open**
+- None: implementation complete, all tests pass, documentation comprehensive
+
 ## 2026-11-18 (Reelsmith 5.2.2: auto motion audit during render)
 
 **What changed**

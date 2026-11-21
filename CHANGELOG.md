@@ -5,6 +5,30 @@ All notable changes to Reelsmith will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.4.0] - 2026-11-21
+
+### Added
+- **Long-form to vertical 9:16 clipping lane** for extracting highlight moments from user-owned local videos. Workflow: detect highlights using transcript + audio energy heuristics, track faces with OpenCV for stable 9:16 crop, generate shifted captions with pysubs2, and export face-tracked clips with burned-in captions. All CPU-only, $0, no LLM required.
+- `scripts/highlights.py`: Highlight detection using word-level transcript and audio energy scoring. Ranks segments by speech pacing, punctuation patterns (questions, exclamations), and audio dynamics. No LLM or paid API required; uses transcript + ffmpeg volumedetect heuristics only.
+- `scripts/facetrack.py`: Face detection and tracking using OpenCV Haar cascades (CPU-only, ships with opencv-python) with IoU-based tracker ID management (technique inspired by supervision pattern; supervision is not a dependency). Generates smooth 9:16 crop windows centered on tracked faces with position smoothing.
+- `scripts/clipping.py`: Main orchestrator that runs the full pipeline: transcribe → detect highlights → track faces → extract clips → shift captions → burn captions → review each clip. Outputs one directory per clip with video, captions (SRT/ASS), burned video, and review results.
+- `scripts/test_clipping.py`: Comprehensive tests for all five task requirements: (1) highlight JSON structure and clip aspect/duration, (2) subject center stays in crop window ≥95% of frames, (3) continuous segments keep single tracker_id, (4) SRT shifting preserves cue count and moves last cue end by T, (5) 48kHz audio check passes.
+- `references/clipping.md`: Complete clipping lane documentation covering when to use it, workflow steps, highlight scoring approach, face tracking with OpenCV, caption shifting with pysubs2, integration with existing review/captions pipeline, and limitations.
+- Dependencies: opencv-python (Apache-2.0, CPU-only Haar cascades), pysubs2 (MIT, subtitle manipulation). All compatible licenses, no GPL/AGPL/LGPL/MPL, no gated models.
+
+### Changed
+- `README.md`: Added "When to use the clipping lane" section explaining use cases (talking-head content, local videos only) and when not to use it (music videos, multi-speaker, YouTube downloads).
+- `SKILL.md`: Added clipping workflow to route table and workflow section.
+- `.github/workflows/ci.yml`: Added `test_clipping.py` to CI test discovery.
+
+**Harvested techniques from AI-Youtube-Shorts-Generator (MIT, Anil Chandra Naidu Matcha):** highlight ranking approach (score/hook/reason schema), segment deduplication by overlap threshold, natural boundary detection at sentence breaks, and face-centered crop concept. Re-implemented from scratch; no wholesale adoption, no yt-dlp downloader, no MuAPI/OpenAI/Gemini dependency.
+
+**Dependency licenses verified:**
+- opencv-python: Apache-2.0 (core library + Haar cascade files)
+- pysubs2: MIT (tkarabela/pysubs2)
+
+No YouTube downloader, no paid services, no new credentials. Local input files only. Reuses existing parakeet/WhisperX transcription path (user must provide transcript or run separately), captions.py for burn-in, review.py for quality gates, and FFmpeg for all video operations. Clips pass through the same review gate as templates: aspect, duration, loudness, sync, flashes, cuts.
+
 ## [5.3.1] - 2026-11-21
 
 ### Added
