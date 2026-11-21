@@ -45,7 +45,8 @@ Tell me what you need — aspect ratio, length, platform, and brand — and I'll
 ## Start every job
 0. In an existing film folder, read `EDIT_LOG.md` first and say the last session in one sentence (`review-and-qa.md`, Edit log). Append to it before you end the session.
 1. **New machine:** `python3 scripts/doctor.py` once before the first render — checks ffmpeg, Python packages, Node,
-   fonts, and Reelsmith updates. Exits 1 if core dependencies are missing. See what works before starting.
+   fonts, and Reelsmith updates. Exits 1 if core dependencies are missing. Prints update instructions if a newer version
+   is available. See what works before starting.
 2. `python3 scripts/capabilities.py` — shows what is ON/OFF (never prints keys). Mention, once, which free key
    would help (e.g. Pexels for stock). Never require one.
 3. Gather: goal, audience, platform(s), length, brand (`brand.json`; build one: references/brand-kit.md), media,
@@ -53,8 +54,8 @@ Tell me what you need — aspect ratio, length, platform, and brand — and I'll
 
 ## Quick reference
 - **List capabilities and keys**: `python3 scripts/capabilities.py`
-- **Check dependencies**: `python3 scripts/doctor.py`
-- **Update Reelsmith**: See `python3 scripts/doctor.py` for update instructions
+- **Check dependencies and updates**: `python3 scripts/doctor.py`
+- **Update Reelsmith**: Run `doctor.py` for instructions, or `git pull origin main` (git install) / re-download zip (zip install)
 4. **Route honestly** (table below). If the brief is a multi-beat sizzle with real footage, use **client-sizzle** —
    do not force a social template or invent AI talk-heads.
 
