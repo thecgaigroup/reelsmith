@@ -38,7 +38,7 @@ jobs:
           
       - name: Install Python dependencies
         run: |
-          python3 -m pip install numpy scipy
+          python3 -m pip install numpy scipy Pillow
 
       - name: Check skill pin resolution
         run: |
