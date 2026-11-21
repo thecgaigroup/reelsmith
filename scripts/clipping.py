@@ -511,6 +511,10 @@ def process_stream_highlights(video_source, output_dir, chat_json=None,
     
     # Process each clip with stream-pop captions
     print(f"\nProcessing {len(highlights)} clips with captions...", file=sys.stderr)
+    print(f"Global words loaded: {len(words) if words else 0}", file=sys.stderr)
+    if words:
+        print(f"  First word: {words[0]}", file=sys.stderr)
+        print(f"  Last word: {words[-1]}", file=sys.stderr)
     results = []
     
     for i, highlight in enumerate(highlights, 1):
