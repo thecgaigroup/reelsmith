@@ -571,6 +571,12 @@ def process_stream_highlights(video_source, output_dir, chat_json=None,
                     ]
                     burn_result = run_cmd(burn_cmd)
                     
+                    # Print burn subprocess output for debugging
+                    if burn_result.stderr:
+                        print(f"Burn subprocess stderr:\n{burn_result.stderr}", file=sys.stderr)
+                    if burn_result.stdout:
+                        print(f"Burn subprocess stdout:\n{burn_result.stdout}", file=sys.stderr)
+                    
                     # Verify burned clip exists
                     if not burned_clip.exists():
                         print(f"ERROR: Burned clip not created at {burned_clip}", file=sys.stderr)
