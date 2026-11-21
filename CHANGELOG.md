@@ -5,6 +5,22 @@ All notable changes to Reelsmith will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.3.1] - 2026-11-21
+
+### Added
+- **CI smoke test** (`.github/workflows/smoke.yml`) that runs on every PR and push to main, validating:
+  - All skill pins resolve (HyperFrames 0.9.7, OpenMotion commit 9e2f87798cacbe1dad5785e03c5dd57193da4c70, referenced scripts, templates, reference files)
+  - Headless render dry run works end-to-end on synthetic input (ffmpeg lavfi testsrc + sine)
+  - Output duration/aspect matches request (via ffprobe and job.json validation)
+  - Review checks run on synthetic output
+  - No paid generation APIs are invoked (env var guards plus network monitoring)
+- Smoke test is CPU-only, $0, runs in <15 minutes, and uses pinned action versions (actions/checkout@v4.2.2, actions/setup-node@v4.1.0, actions/setup-python@v5.3.0)
+
+### Changed
+- README: added smoke test description to CI section
+
+The smoke test runs against the repository tip (fresh checkout) rather than a stale local copy, ensuring pins and references stay valid as the repository evolves.
+
 ## [5.3.0] - 2026-11-18
 
 ### Added

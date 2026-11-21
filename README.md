@@ -58,6 +58,11 @@ Showreel kinetic type, transitions, and an open storyboard are in the skill. An 
 - Licenses: HyperFrames Apache-2.0; Remotion free for individuals and teams of up to 3 (remotion.pro/license);
   Manim and lottie-web MIT. Bundled music CC BY 3.0 (credit required; see `assets/music/CREDITS.txt`).
 
+## CI and testing
+Two workflows run on every PR and push to main:
+- **`ci.yml`**: lints, typechecks, validates brand schema, runs unit tests (pytest), and verifies OpenMotion preflight on example projects
+- **`smoke.yml`**: validates skill pins resolve (HyperFrames 0.9.7, OpenMotion commit, scripts, templates, references), runs a headless render dry run with synthetic input (ffmpeg testsrc + sine), verifies output structure and review checks, and guards against paid API access. CPU-only, $0, runs in <15 minutes.
+
 ## Dependency updates
 Dependabot opens weekly PRs (Mondays): minor+patch grouped per ecosystem, majors one-per-PR, security fixes separately.
 Lovit reviews and merges green minor/patch groups; any major (label it "major, needs Marc") or anything touching deploy files or Ignition-live waits for Marc.
