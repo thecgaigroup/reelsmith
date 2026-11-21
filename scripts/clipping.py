@@ -476,14 +476,34 @@ def process_stream_highlights(video_source, output_dir, chat_json=None,
     print(f"Tracking complete (detector: {tracking_data.get('detector_used', 'unknown')})", 
           file=sys.stderr)
     
-    # Process each clip with stream-pop captions
-    print(f"\nProcessing {len(highlights)} clips with stream-pop captions...", file=sys.stderr)
-    results = []
+    # Generate transcript for captions (use faster-whisper if available, else skip)
+    words_json = output_dir / "transcript.json"
+    if not words_json.exists():
+        try:
+            print("\nGenerating transcript for captions...", file=sys.stderr)
+            from faster_whisper import WhisperModel
+            model = WhisperModel("base", device="cpu", compute_type="int8")
+            segments, _ = model.transcribe(str(video_path))
+            
+            words = []
+            for segment in segments:
+                for word in segment.words:
+                    words.append({"text": word.word.strip(), "start": word.start, "end": word.end})
+            
+            words_json.write_text(json.dumps(words, indent=2))
+            print(f"Transcript generated: {len(words)} words", file=sys.stderr)
+        except ImportError:
+            print("faster-whisper not available, skipping captions", file=sys.stderr)
+            words = []
+        except Exception as e:
+            print(f"Transcription failed: {e}, skipping captions", file=sys.stderr)
+            words = []
+    else:
+        words = json.loads(words_json.read_text())
     
-    # Note: For full implementation, we would need to generate transcript
-    # For now, placeholder implementation shows the structure
-    print("Note: Full caption generation requires transcript", file=sys.stderr)
-    print("This is a structural implementation for stream-highlights mode", file=sys.stderr)
+    # Process each clip with stream-pop captions
+    print(f"\nProcessing {len(highlights)} clips with captions...", file=sys.stderr)
+    results = []
     
     for i, highlight in enumerate(highlights, 1):
         clip_dir = output_dir / f"clip_{i:03d}"
@@ -500,8 +520,42 @@ def process_stream_highlights(video_source, output_dir, chat_json=None,
         cropped_clip = clip_dir / "video.mp4"
         apply_clip_crop(raw_clip, tracking_data, start, end, cropped_clip)
         
-        # TODO: Generate stream-pop captions with profanity masking
-        # This would require transcript + profanity_mask.mask_profanity()
+        # Generate and burn captions
+        if words:
+            clip_words = [w for w in words if start <= w["start"] < end]
+            shifted_words = shift_captions(clip_words, start)
+            
+            if shifted_words:
+                clip_words_json = clip_dir / "words.json"
+                clip_words_json.write_text(json.dumps(shifted_words, indent=2))
+                
+                # Build captions with profanity masking
+                if profanity_mask:
+                    from profanity_mask import mask_profanity_in_words
+                    shifted_words = mask_profanity_in_words(shifted_words, enabled=True)
+                    clip_words_json.write_text(json.dumps(shifted_words, indent=2))
+                
+                captions_cmd = [
+                    "python3", str(HERE / "captions.py"), "build",
+                    "--words", str(clip_words_json),
+                    "-o", str(clip_dir / "captions"),
+                    "--profile", "social",
+                    "--aspect", "9:16"
+                ]
+                run_cmd(captions_cmd)
+                
+                # Burn captions
+                if (clip_dir / "captions.ass").exists():
+                    burned_clip = clip_dir / "burned.mp4"
+                    burn_cmd = [
+                        "python3", str(HERE / "captions.py"), "burn",
+                        str(cropped_clip),
+                        str(clip_dir / "captions.ass"),
+                        "-o", str(burned_clip)
+                    ]
+                    run_cmd(burn_cmd)
+                    # Replace video.mp4 with burned version
+                    burned_clip.replace(cropped_clip)
         
         results.append({
             "clip_dir": str(clip_dir),
