@@ -73,6 +73,8 @@ def check_version_update():
                 print("Update with: cd /path/to/reelsmith && git pull origin main")
             else:
                 print("Update with: download https://github.com/thecgaigroup/reelsmith/archive/refs/heads/main.zip and unzip")
+        elif latest_parts == current_parts:
+            print(f"Reelsmith {current_version} is up to date")
     except Exception:
         pass
 

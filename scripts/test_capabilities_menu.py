@@ -297,6 +297,113 @@ def test_entry_references_are_correct():
     print("✓ Update Reelsmith does not mention client-sizzle")
 
 
+def test_skill_routes_have_capabilities_entries():
+    """Drift test: every user-facing route in SKILL.md's route table has a matching CAPABILITIES entry.
+    
+    This test parses the route table from SKILL.md and checks that each route describing a
+    user-facing video capability (not helper scripts) has a corresponding entry in CAPABILITIES.
+    Uses strict one-to-one mapping with no substring catch-alls.
+    """
+    # Read SKILL.md and extract route table
+    skill_content = SKILL_MD.read_text()
+    
+    # Find the "Route the job" table
+    route_table_match = re.search(
+        r"## Route the job\n\| Job \| Use \| Read \|\n\|---\|---\|---\|\n(.*?)(?=\n## |\Z)",
+        skill_content,
+        re.DOTALL
+    )
+    assert route_table_match, "Could not find route table in SKILL.md"
+    route_table = route_table_match.group(1)
+    
+    # Parse routes from table: (Job, Use, Read) for each row
+    routes = []
+    for line in route_table.strip().split('\n'):
+        if line.strip().startswith('|'):
+            parts = [p.strip() for p in line.split('|')]
+            if len(parts) >= 4:  # | Job | Use | Read |
+                job = parts[1]
+                use = parts[2]
+                read = parts[3]
+                routes.append({"job": job, "use": use, "read": read})
+    
+    # Load CAPABILITIES from capabilities_menu.py
+    result = subprocess.run(
+        [sys.executable, str(HERE / "capabilities_menu.py"), "--json"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    data = json.loads(result.stdout)
+    capabilities = data["capabilities"]
+    
+    # Build strict mapping: template name or reference path → capability
+    capability_by_template = {}
+    capability_by_reference = {}
+    for cap in capabilities:
+        if cap.get("template"):
+            capability_by_template[cap["template"]] = cap["name"]
+        if cap.get("reference"):
+            # Normalize reference path (remove "references/" prefix if present)
+            ref = cap["reference"]
+            if ref.startswith("references/"):
+                ref = ref[len("references/"):]
+            capability_by_reference[ref] = cap["name"]
+    
+    # Explicit exclusions with reasons
+    excluded_routes = {
+        "Script or VO lines": "Helper function, not end-user video capability",
+        "Captions (SRT/VTT/ASS, burn-in)": "Helper function, not end-user video capability",
+        "Platform specs, safe zones, delivery files": "Helper function, not end-user video capability",
+        "Diagrams / math, Lottie, cut user footage, transcribe": "Helper utilities, not primary video capabilities",
+        "AI b-roll, images, avatars, AI music (paid)": "Helper function, covered under template workflows",
+        "Custom kinetic piece, overlay, alpha, GIF": "Advanced manual workflow, not menu item",
+        "Title card, endslate or bumper someone will retime in a GUI; must pass Studio lint + export verify": "Advanced manual workflow for GUI handoff, not menu item",
+    }
+    
+    # Check each route
+    missing_routes = []
+    for route_info in routes:
+        job = route_info["job"]
+        read = route_info["read"]
+        
+        # Skip excluded routes
+        if job in excluded_routes:
+            continue
+        
+        # Extract primary reference file from Read column
+        # Read column format: "file.md" or "file.md first, then ..." or "file.md — description"
+        read_files = re.findall(r'(\w+(?:-\w+)*\.md)', read)
+        primary_ref = read_files[0] if read_files else None
+        
+        # Try to match by reference path first (strict)
+        found_match = None
+        if primary_ref and primary_ref in capability_by_reference:
+            found_match = capability_by_reference[primary_ref]
+        
+        # Try to match by template name (strict)
+        if not found_match:
+            # Extract template name from Use column (e.g., "`product-launch`" or "template `product-launch`")
+            template_matches = re.findall(r'`([a-z-]+)`', route_info["use"])
+            for template in template_matches:
+                if template in capability_by_template:
+                    found_match = capability_by_template[template]
+                    break
+        
+        if not found_match:
+            missing_routes.append(f"{job} (ref: {primary_ref or 'none'})")
+    
+    assert not missing_routes, (
+        f"The following routes in SKILL.md have no matching CAPABILITIES entry:\n"
+        + "\n".join(f"  - {route}" for route in missing_routes)
+        + "\n\nAdd these routes to CAPABILITIES in scripts/capabilities_menu.py"
+        + "\nEach route must map to exactly one capability via template name or reference path."
+    )
+    
+    user_facing_count = len(routes) - len(excluded_routes)
+    print(f"✓ All {user_facing_count} user-facing routes have matching CAPABILITIES entries")
+
+
 def main():
     """Run all tests."""
     tests = [
@@ -309,6 +416,7 @@ def main():
         ("Real examples only", test_menu_references_real_examples_only),
         ("SKILL and README stay in sync", test_skill_and_readme_stay_in_sync),
         ("Entry references correct", test_entry_references_are_correct),
+        ("SKILL routes have CAPABILITIES entries", test_skill_routes_have_capabilities_entries),
     ]
     
     failed = []
