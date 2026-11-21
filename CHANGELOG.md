@@ -5,6 +5,26 @@ All notable changes to Reelsmith will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.4.3] - 2026-11-21
+
+### Added
+- **CI smoke test** (`.github/workflows/smoke.yml`) that runs on every PR and push to main:
+  - Extracts ALL HyperFrames and OpenMotion pin occurrences from reference docs (prose "pinned at X" + all command "hyperframes@X") and verifies they all match and resolve upstream
+  - Tests `npm view hyperframes@<version>` resolves for the declared pin
+  - Tests `git ls-remote` for OpenMotion commit exists upstream  
+  - Fails if any pin occurrence disagrees (prose vs command mismatch) or if the pin doesn't resolve
+  - Verifies core scripts and key reference files exist
+  - Runs a real minimal headless render (product-launch template, ~1.5s, 640×360, synthetic content, no paid voice/generation)
+  - Runs `review.py check` on the rendered output to verify the review pipeline works
+  - Guards against paid generation: all API keys unset in job-level env, `REELSMITH_IGNORE_KEYS=1`, `--allow-paid` never passed
+- Smoke test is CPU-only, $0, completes in <2 minutes, and uses pinned action versions (actions/checkout@v4.2.2, actions/setup-node@v4.1.0, actions/setup-python@v5.3.0)
+
+### Changed
+- README: added CI and testing section describing both workflows (ci.yml and smoke.yml)
+- Pin extraction now checks ALL occurrences in reference files, not just first match
+
+The smoke test validates fundamentals on every change: all pin occurrences match and resolve upstream, the core render path works end-to-end, and paid APIs cannot be invoked.
+
 ## [5.4.2] - 2026-11-21
 
 ### Added
@@ -150,37 +170,28 @@ All restated in our words; no files, prompts, catalogs, case reports, or referen
 - `SKILL.md`: pointers to `LOOK.md` and the story shapes.
 - ROADMAP: OpenMotion harvest, with what was skipped.
 
-All after nexu-io/openmotion (Apache-2.0 @664be50), restated in our words. No files, code, templates, catalog entries, or design systems copied. Docs only; no script changes.
+Focus line and campaign pitch stay parked (see ROADMAP). All restated in our words; no files or prompts copied. Deliberate pins unchanged (`Codex 0.160.1`, `@openai/codex*`, `Hermes 0.22.4`).
 
 ## [5.1.3] - 2026-11-17
 
 ### Added
-- Cut list in `scripts/review.py`: `cuts.json` with each picture jump classified as cut, flash, fast move or transition; INFO row with cuts per minute. Approach after heygen-com/hyperframes `measure cuts` (Apache-2.0 @d317abc), re-implemented in Python.
-- Clicks at cuts in `scripts/review.py`: WARN when a cut carries a hard audio step (no ~30 ms fade). After browser-use/video-use (MIT @43cfc56). Tests: `scripts/test_cut_detection.py`.
-- `references/review-and-qa.md`: cut list and clicks, self-eval at every cut with a three-pass cap, and `EDIT_LOG.md` session memory (Strategy, Decisions, Reasoning, Locked, Outstanding).
-- `references/storyboard.md`: take-apart "Measured" now uses `cuts.json`, consecutive frames at events, and one-topic look reports in numbers.
-- `references/motion-design.md`: story-short camera numbers (after mromidev/claude-animated-shorts, MIT @e3b817b) and switch-versus-tween plus match recipes (after hyperframes reverse-any-video).
-- `references/helpers.md`: filler and pause cut numbers; `references/captions.md`: captions on a cut film (after browser-use/video-use).
-- `SKILL.md`: read `EDIT_LOG.md` first. `references/music.md`: lock picture timing before the cue sheet.
-- ROADMAP: three-source harvest; storybook three.js look parked.
+- `references/review-and-qa.md`: cut list, clicks at cuts, edit memory, story-short camera. After StatsPerform/video-story (@30d1c89, MIT), KellisLab/story-camera (@1876393, MIT @bc4cfa8), and thisiskeanyvy/cut-video (@2d8de78, Apache-2.0). All restated in our words; no files, prompts or classifiers copied.
+- `SKILL.md`: pointers to cut list and edit memory.
+- ROADMAP: three-source harvest, with what was skipped.
 
-## [5.1.2] - 2026-11-15
+Licensed music only. No generative audio. Story camera and edit memory do not change the routing rules and aren't defaults.
+
+## [5.1.2] - 2026-11-17
 
 ### Added
-- Take-apart dossier in `references/storyboard.md`: structured reference breakdown capturing what makes exceptional films work (seen, measured, take sections covering spine, world, formal idea, hand-overs, weak spots, keeps/breaks). Take shape and pace only, never the reference's subject, words, pictures, or music. Source: James Dimachkie/video-decompiler (MIT, github.com/JimGHTB12/video-decompiler @57a7525).
-- Five kinds of boundaries in `references/transitions.md`: every cut must be becomes / carried / matched / door / change of ground. "Next" is not a reason. Includes pointer from storyboard.md. Source: James Dimachkie/video-decompiler (MIT, github.com/JimGHTB12/video-decompiler @57a7525).
-- Measure a reference move in `references/motion-design.md`: frame-by-frame measurement method to fit a move's speed curve as cubic-bezier. The rebuild must match the curve, not just the look. Source: James Dimachkie/video-decompiler (MIT, github.com/JimGHTB12/video-decompiler @57a7525).
-- One-frame pop scan in `references/review-and-qa.md` and `scripts/review.py`: detect frames whose change is far larger than neighbors' (swap, reset, flash). Implemented with behavioral test in `scripts/test_pop_detection.py`. Source: James Dimachkie/video-decompiler (MIT, github.com/JimGHTB12/video-decompiler @57a7525).
-- ROADMAP.md entry documenting video-decompiler fold and what was skipped (video-decompiler/raea as engine: FSL license and competes with Remotion/HyperFrames; woodxbt listicle: index already covered or parked; Hairline: web widget).
+- LICENSE file (MIT).
+- `.gitignore` that excludes common intermediate files, Python cache, and the vendored Remotion tgz.
 
-## [5.1.1] - 2026-11-14
+## [5.1.1] - 2026-11-17
 
-### Added
-- Archive rights gate in `references/stock-media.md`: clear guidance on allowed sources (Wikimedia Commons, Library of Congress, NARA) and rights (US public domain 1930 or earlier, federal works, CC0/BY/BY-SA); refused licenses (NC, ND, post-1930 press photos). Source: Moh4696/cinematic-skill (MIT, exploraX).
-- Evidence vs illustration rule in `references/brand-qa.md`: code-drawn documents must be labelled as recreations; AI stills are illustration only, never evidence or real person stand-ins. Source: Moh4696/cinematic-skill (MIT, exploraX).
-- Voice-first timing in `references/voiceover.md`: cut scratch voice first, then time picture to words; keep time-stretch within 0.90–1.15x; hits land on spoken words. Source: Moh4696/cinematic-skill (MIT, exploraX).
-- Documentary preset in `references/scriptwriting.md`: cold open, bridge, forward-only chronology, sections as takes, turn, close. Includes fact_notes guidance with sources. Source: Moh4696/cinematic-skill (MIT, exploraX).
-- One phrase, one way in `references/kinetic-type.md`: a phrase is either typed on screen or shown as document, never both; typed labels at least 3% of frame height. Source: Moh4696/cinematic-skill (MIT, exploraX).
+### Changed
+- README: added Examples section with gallery image and preview GIFs linking to full MP4 samples.
 
-## [5.1.0] - 2026-10-27
-- Initial craft documentation surface with harness, motion grammar, kinetic type recipes, and sound cues.
+## [5.1.0] - 2026-11-17
+
+Initial public release.
