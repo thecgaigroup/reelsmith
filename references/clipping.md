@@ -100,7 +100,7 @@ combined_score = text_score * 0.4 + pacing_score * 0.3 + audio_score * 0.3
 ### 2. Face tracking (`facetrack.py`)
 
 - **Detection:** OpenCV Haar cascade frontal face detector (CPU-only, ships with opencv-python, no model download)
-- **Tracking:** supervision-style tracker ID assignment via IoU matching between frames
+- **Tracking:** IoU-based tracker ID assignment via IoU matching between frames (technique inspired by supervision pattern; supervision is not a dependency)
 - **Sampling:** 5 fps by default (configurable with `--sample-fps`)
 - **Smoothing:** 30-frame moving average window to reduce jitter
 - **Crop generation:** 9:16 windows centered on primary track (longest/most detections)
@@ -165,7 +165,6 @@ New dependencies for the clipping lane:
 | Package | Version | License | Purpose | Transitive dependencies |
 |---------|---------|---------|---------|------------------------|
 | opencv-python | ≥4.5.0 | Apache-2.0 | Face detection (Haar cascades) | numpy (BSD-3) |
-| supervision | ≥0.17.0 | MIT | Tracking helpers, stable IDs | numpy (BSD-3), opencv-python (Apache-2.0) |
 | pysubs2 | ≥1.6.0 | MIT | SRT/ASS/VTT manipulation | - |
 
 **License verification:**
@@ -175,7 +174,7 @@ New dependencies for the clipping lane:
 
 **Install:**
 ```bash
-pip install opencv-python supervision pysubs2
+pip install opencv-python pysubs2
 ```
 
 No CUDA, no torch, no GPU required. All operations are CPU-only.
@@ -192,7 +191,7 @@ From [Anil-matcha/AI-Youtube-Shorts-Generator](https://github.com/Anil-matcha/AI
 
 **Re-implemented from scratch:**
 - All scoring logic (no LLM, uses transcript + audio energy heuristics instead)
-- Face tracking (OpenCV + supervision, not their implementation)
+- Face tracking (OpenCV with IoU-based tracker ID assignment, not their implementation)
 - Deduplication (our own threshold and IoU logic)
 - Crop generation (our crop window algorithm)
 
@@ -240,5 +239,6 @@ All tests in `scripts/test_clipping.py`, run in CI with existing test suite.
 ## Attribution
 
 - **Techniques harvested from:** Anil-matcha/AI-Youtube-Shorts-Generator (MIT, Copyright 2026 Anil Chandra Naidu Matcha)
-- **Dependencies:** opencv-python (Apache-2.0), supervision (MIT, roboflow), pysubs2 (MIT, tkarabela)
+- **Dependencies:** opencv-python (Apache-2.0), pysubs2 (MIT, tkarabela)
+- **Tracker ID technique inspired by:** supervision pattern (IoU-based matching; supervision is not a dependency)
 - **Scout review:** `/workspace/scout/craft/clipping-22-repo-fit.md` (2026-11-21, 22-repo harvest, license verification, done_when conditions)

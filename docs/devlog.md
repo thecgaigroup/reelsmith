@@ -5,7 +5,7 @@
 **What changed**
 - Added complete long-form to vertical 9:16 clipping lane for extracting face-tracked highlight moments from local videos
 - Created `scripts/highlights.py`: highlight detection using transcript + audio energy heuristics (no LLM, $0)
-- Created `scripts/facetrack.py`: face tracking with OpenCV Haar cascades + supervision for stable 9:16 crop windows
+- Created `scripts/facetrack.py`: face tracking with OpenCV Haar cascades with IoU-based tracker IDs for stable 9:16 crop windows
 - Created `scripts/clipping.py`: main orchestrator integrating highlights, tracking, caption shifting, and review
 - Created `scripts/test_clipping.py`: comprehensive tests for all 5 task requirements (8 tests, all pass)
 - Added `references/clipping.md`: complete documentation including workflow, when to use/not use, techniques harvested, limitations
@@ -13,7 +13,7 @@
 - Updated SKILL.md route table to include clipping workflow
 - Updated CHANGELOG.md with full 5.4.0 entry including attribution and dependency license table
 - Bumped VERSION to 5.4.0
-- Updated CI workflow to install new dependencies (opencv-python, supervision, pysubs2) and run clipping tests
+- Updated CI workflow to install new dependencies (opencv-python, pysubs2) and run clipping tests
 
 **State**
 - Working: all 102 tests pass (8 new clipping tests + 94 existing tests)
@@ -30,7 +30,7 @@
   3. ✅ Continuous segments keep single tracker_id
   4. ✅ SRT shifting preserves cue count and moves last cue end by T
   5. ✅ 48kHz audio check passes on clips
-- Dependencies verified: opencv-python (Apache-2.0), supervision (MIT), pysubs2 (MIT) - no GPL/AGPL/LGPL/MPL
+- Dependencies verified: opencv-python (Apache-2.0), pysubs2 (MIT) - no GPL/AGPL/LGPL/MPL
 - Techniques harvested from AI-Youtube-Shorts-Generator (MIT) and re-implemented
 - No LLM required - uses transcript + audio energy heuristics for highlight scoring
 - Awaiting CI results and review

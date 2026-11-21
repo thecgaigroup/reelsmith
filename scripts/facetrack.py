@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Face tracking and 9:16 crop generation using OpenCV + supervision.
+"""Face tracking and 9:16 crop generation using OpenCV with IoU-based tracker IDs.
 
   facetrack.py detect VIDEO --out tracking.json [--sample-fps 5] [--smooth-window 30]
   facetrack.py crop VIDEO --tracking tracking.json --out OUTPUT.mp4 --aspect 9:16
 
-Uses OpenCV Haar cascade for face detection (CPU-only, $0) and supervision for stable tracker IDs.
+Uses OpenCV Haar cascade for face detection (CPU-only, $0) with IoU-based tracker ID assignment
+(technique inspired by supervision pattern; supervision is not a dependency).
 Generates smooth 9:16 crops centered on tracked faces.
 
 tracking.json format:
@@ -45,7 +46,7 @@ def get_video_info(video_path):
     }
 
 def detect_faces_opencv(video_path, sample_fps=5, smooth_window=30):
-    """Detect faces using OpenCV Haar cascade and track with supervision-style IDs."""
+    """Detect faces using OpenCV Haar cascade and track with IoU-based tracker IDs."""
     try:
         import cv2
         import numpy as np
