@@ -125,17 +125,16 @@ jobs:
           
           echo "✓ Generated 2s test video"
           
-          # Generate minimal content.json for product-launch (1.5s total)
+          # Generate minimal content.json for product-launch
           cat > /tmp/smoke-test/content.json << 'EOF'
           {
-            "name": "Test",
-            "headline": "Smoke",
-            "features": ["Fast"],
-            "hero_image": null,
-            "stat": "99",
-            "stat_label": "OK",
-            "cta": "Go",
-            "logo": null
+            "product": "Test",
+            "headline": "Smoke test",
+            "features": [
+              {"title": "Fast", "body": "Quick validation"},
+              {"title": "Free", "body": "No cost"}
+            ],
+            "cta": "OK"
           }
           EOF
           echo "✓ Generated minimal content.json"
