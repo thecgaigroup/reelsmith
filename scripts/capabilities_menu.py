@@ -78,6 +78,12 @@ CAPABILITIES = [
         "template": None,  # No template, custom HyperFrames workflow
         "example": None,  # No single example file
     },
+    {
+        "name": "Stream highlights and gaming clips",
+        "description": "Extract vertical 9:16 highlights from live streams or VODs with chat-burst analysis",
+        "template": None,  # stream-highlights mode in clipping.py
+        "example": None,  # No preview (user content)
+    },
 ]
 
 
