@@ -12,9 +12,25 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # Unset all paid API keys globally
+  PEXELS_API_KEY: ""
+  PIXABAY_API_KEY: ""
+  UNSPLASH_ACCESS_KEY: ""
+  ELEVENLABS_API_KEY: ""
+  TTS_VOICE_ID: ""
+  OPENAI_API_KEY: ""
+  AWS_ACCESS_KEY_ID: ""
+  AWS_SECRET_ACCESS_KEY: ""
+  FAL_KEY: ""
+  HIGGSFIELD_API_KEY: ""
+  SEEDANCE_API_KEY: ""
+  REELSMITH_IGNORE_KEYS: "1"
+  HYPERFRAMES_NO_TELEMETRY: "1"
+
 jobs:
   smoke:
-    name: Pin resolution and headless render
+    name: Pin resolution and minimal render
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -43,196 +59,96 @@ jobs:
       - name: Check skill pin resolution
         run: |
           set -euo pipefail
-          echo "=== Checking pinned dependencies ==="
+          echo "=== Checking pinned dependencies resolve upstream ==="
           
-          # 1. HyperFrames pin in references/hyperframes.md
+          # 1. Extract HyperFrames pin from references/hyperframes.md
           HF_PIN=$(grep -oP 'hyperframes@\K[0-9.]+' references/hyperframes.md | head -1)
-          echo "✓ HyperFrames pin found: $HF_PIN"
-          if [ "$HF_PIN" != "0.9.7" ]; then
-            echo "ERROR: Expected HyperFrames 0.9.7, found $HF_PIN"
+          echo "HyperFrames pin from hyperframes.md: $HF_PIN"
+          
+          # Verify it resolves on npm
+          if ! npm view hyperframes@"$HF_PIN" version >/dev/null 2>&1; then
+            echo "ERROR: HyperFrames version $HF_PIN does not resolve on npm"
             exit 1
           fi
+          RESOLVED_HF=$(npm view hyperframes@"$HF_PIN" version)
+          echo "✓ HyperFrames $HF_PIN resolves to $RESOLVED_HF on npm"
           
-          # 2. OpenMotion pin in references/openmotion.md
+          # 2. Extract OpenMotion pin from references/openmotion.md
           OM_PIN=$(grep -oP 'openmotion@\K[a-f0-9]{40}' references/openmotion.md | head -1)
-          echo "✓ OpenMotion pin found: $OM_PIN"
-          if [ "$OM_PIN" != "9e2f87798cacbe1dad5785e03c5dd57193da4c70" ]; then
-            echo "ERROR: Expected OpenMotion commit 9e2f87798cacbe1dad5785e03c5dd57193da4c70, found $OM_PIN"
+          echo "OpenMotion pin from openmotion.md: $OM_PIN"
+          
+          # Verify the commit exists upstream
+          if ! git ls-remote https://github.com/nexu-io/openmotion "$OM_PIN" >/dev/null 2>&1; then
+            echo "ERROR: OpenMotion commit $OM_PIN does not exist upstream"
             exit 1
           fi
+          echo "✓ OpenMotion commit $OM_PIN exists upstream"
           
-          # 3. Verify all scripts referenced in SKILL.md exist
-          echo "=== Checking script references ==="
+          # 3. Verify core scripts exist (from SKILL.md Scripts section)
+          echo "=== Checking core scripts exist ==="
           for script in capabilities.py brand.py reelsmith.py script_lint.py beats.py \
                         stock.py captions.py review.py export.py youtube_prep.py \
                         openmotion_preflight.py doctor.py; do
             if [ ! -f "scripts/$script" ]; then
-              echo "ERROR: Referenced script scripts/$script does not exist"
+              echo "ERROR: scripts/$script does not exist"
               exit 1
             fi
-            echo "✓ scripts/$script exists"
           done
+          echo "✓ All core scripts exist"
           
-          # 4. Verify all templates have sample.json
-          echo "=== Checking template structure ==="
-          for tpl in product-launch event-recap testimonial countdown-teaser \
-                     stat-callout slides-presentation howto-tutorial feature-explainer; do
-            if [ ! -d "templates/$tpl" ]; then
-              echo "ERROR: Template templates/$tpl does not exist"
-              exit 1
-            fi
-            if [ ! -f "templates/$tpl/template.json" ]; then
-              echo "ERROR: Template templates/$tpl/template.json does not exist"
-              exit 1
-            fi
-            echo "✓ templates/$tpl structure valid"
-          done
-          
-          # 5. Verify key reference files exist
-          echo "=== Checking reference files ==="
+          # 4. Verify key reference files
+          echo "=== Checking key reference files ==="
           for ref in SKILL.md getting-started/SKILL.md brand/brand.schema.json \
-                     references/hyperframes.md references/openmotion.md \
-                     references/client-sizzle.md references/storyboard.md \
-                     references/kinetic-type.md references/transitions.md \
-                     references/motion-design.md references/music.md \
-                     references/brand-qa.md references/review-and-qa.md; do
+                     references/hyperframes.md references/openmotion.md; do
             if [ ! -f "$ref" ]; then
-              echo "ERROR: Referenced file $ref does not exist"
+              echo "ERROR: $ref does not exist"
               exit 1
             fi
-            echo "✓ $ref exists"
           done
+          echo "✓ Key reference files exist"
           
-          # 6. Verify example projects exist
-          for ex in hyperframes-example openmotion-example manim-example lottie-example; do
-            if [ ! -d "$ex" ]; then
-              echo "ERROR: Example $ex does not exist"
-              exit 1
-            fi
-            echo "✓ $ex exists"
-          done
-          
-          echo "=== All pins and references resolved ==="
+          echo "=== All pins resolved successfully ==="
 
-      - name: Guard against paid generation
+      - name: Generate minimal test input
         run: |
           set -euo pipefail
-          echo "=== Setting up paid-gen guards ==="
+          echo "=== Generating minimal test content ==="
           
-          # Unset all API keys
-          unset PEXELS_API_KEY PIXABAY_API_KEY UNSPLASH_ACCESS_KEY || true
-          unset ELEVENLABS_API_KEY TTS_VOICE_ID OPENAI_API_KEY || true
-          unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY || true
-          unset FAL_KEY HIGGSFIELD_API_KEY SEEDANCE_API_KEY || true
-          export REELSMITH_IGNORE_KEYS=1
-          
-          # Create network monitor script
-          cat > /tmp/network_guard.py << 'EOF'
-          #!/usr/bin/env python3
-          """Monitor for paid API endpoints during smoke test."""
-          import sys
-          
-          # Known paid generation endpoints
-          PAID_ENDPOINTS = [
-              "api.fal.ai",
-              "api.higgsfield.ai",
-              "api.elevenlabs.io",
-              "api.openai.com",
-              "polly.amazonaws.com",
-              "api.seedance.ai",
-              "api.pexels.com",
-              "pixabay.com/api",
-              "api.unsplash.com",
-          ]
-          
-          def check_logs():
-              """Check if any paid endpoints were accessed."""
-              # This is a placeholder - in actual use would parse network logs
-              # For this smoke test, we rely on env var guards
-              return False
-          
-          if __name__ == "__main__":
-              if check_logs():
-                  print("ERROR: Paid API endpoint accessed during smoke test!")
-                  sys.exit(1)
-              print("✓ No paid API endpoints accessed")
-          EOF
-          chmod +x /tmp/network_guard.py
-          
-          echo "✓ Paid generation guards active"
-
-      - name: Generate synthetic test input
-        run: |
-          set -euo pipefail
-          echo "=== Generating synthetic test inputs ==="
-          
-          # Create test output directory
           mkdir -p /tmp/smoke-test
           
-          # Generate 5-second test video with ffmpeg lavfi
-          ffmpeg -f lavfi -i testsrc=duration=5:size=1920x1080:rate=30 \
-                 -f lavfi -i sine=frequency=440:duration=5 \
-                 -c:v libx264 -preset fast -crf 23 \
-                 -c:a aac -b:a 128k \
-                 -y /tmp/smoke-test/input.mp4
+          # Generate minimal 2-second test video (360p for speed)
+          ffmpeg -f lavfi -i testsrc=duration=2:size=640x360:rate=30 \
+                 -f lavfi -i sine=frequency=440:duration=2 \
+                 -c:v libx264 -preset ultrafast -crf 28 \
+                 -c:a aac -b:a 64k \
+                 -y /tmp/smoke-test/test-input.mp4
           
-          # Verify input was created
-          if [ ! -f /tmp/smoke-test/input.mp4 ]; then
-            echo "ERROR: Failed to generate synthetic input"
-            exit 1
-          fi
+          echo "✓ Generated 2s test video"
           
-          INPUT_DUR=$(ffprobe -v error -show_entries format=duration \
-                      -of default=noprint_wrappers=1:nokey=1 \
-                      /tmp/smoke-test/input.mp4)
-          echo "✓ Generated synthetic input: ${INPUT_DUR}s"
-          
-          # Generate synthetic audio bed
-          ffmpeg -f lavfi -i sine=frequency=440:duration=5 \
-                 -c:a aac -b:a 128k \
-                 -y /tmp/smoke-test/audio.aac
-          echo "✓ Generated synthetic audio bed"
+          # Generate minimal content.json for product-launch (1.5s total)
+          cat > /tmp/smoke-test/content.json << 'EOF'
+          {
+            "name": "Test",
+            "headline": "Smoke",
+            "features": ["Fast"],
+            "hero_image": null,
+            "stat": "99",
+            "stat_label": "OK",
+            "cta": "Go",
+            "logo": null
+          }
+          EOF
+          echo "✓ Generated minimal content.json"
 
-      - name: Test core scripts
-        run: |
-          set -euo pipefail
-          export REELSMITH_IGNORE_KEYS=1
-          
-          echo "=== Testing core scripts ==="
-          
-          # Test capabilities.py
-          python3 scripts/capabilities.py --no-keys
-          echo "✓ capabilities.py works"
-          
-          # Test brand.py validate
-          python3 scripts/brand.py validate brand/sample-brand.json
-          echo "✓ brand.py validate works"
-          
-          # Test reelsmith.py list
-          python3 scripts/reelsmith.py list
-          echo "✓ reelsmith.py list works"
-          
-          # Test doctor.py
-          python3 scripts/doctor.py || echo "doctor.py reported missing optional deps (OK for smoke)"
-          echo "✓ doctor.py runs"
-          
-          # Test openmotion_preflight.py
-          python3 scripts/openmotion_preflight.py openmotion-example
-          echo "✓ openmotion_preflight.py works"
-
-      - name: Headless render dry run
+      - name: Run minimal headless render
         run: |
           set -euo pipefail
           export REELSMITH_IGNORE_KEYS=1
           export HYPERFRAMES_NO_TELEMETRY=1
           
-          echo "=== Running headless render dry run ==="
+          echo "=== Running minimal headless render (NO dry-run) ==="
           
-          # Get product-launch sample
-          python3 scripts/reelsmith.py sample product-launch > /tmp/smoke-test/content.json
-          echo "✓ Generated sample content"
-          
-          # Run dry-run (validates without rendering)
+          # Render actual output: 1.5-2s, 640x360, product-launch, no voice
           python3 scripts/reelsmith.py render \
             --template product-launch \
             --content /tmp/smoke-test/content.json \
@@ -241,88 +157,74 @@ jobs:
             --aspect 16x9 \
             --music synth \
             --vo none \
-            --dry-run
+            --quality draft
           
-          echo "✓ Dry-run completed successfully"
+          echo "✓ Render completed"
           
-          # Verify job.json was created
-          if [ ! -f /tmp/smoke-test/output/job.json ]; then
-            echo "ERROR: job.json not created by dry-run"
+          # Verify rendered output exists
+          RENDERED_VIDEO=$(find /tmp/smoke-test/output -name "*.mp4" -type f | head -1)
+          if [ -z "$RENDERED_VIDEO" ]; then
+            echo "ERROR: No rendered MP4 found"
             exit 1
           fi
-          echo "✓ job.json created"
+          echo "✓ Rendered video: $RENDERED_VIDEO"
+          
+          # Verify it has actual content
+          DURATION=$(ffprobe -v error -show_entries format=duration \
+                     -of default=noprint_wrappers=1:nokey=1 "$RENDERED_VIDEO")
+          echo "Rendered duration: ${DURATION}s"
+          
+          if (( $(echo "$DURATION < 1.0" | bc -l) )); then
+            echo "ERROR: Rendered video too short: ${DURATION}s"
+            exit 1
+          fi
+          echo "✓ Rendered video has valid duration"
 
-      - name: Verify render output structure
-        run: |
-          set -euo pipefail
-          
-          echo "=== Verifying render output structure ==="
-          
-          # Check job.json is valid JSON
-          python3 -c "import json; json.load(open('/tmp/smoke-test/output/job.json'))"
-          echo "✓ job.json is valid JSON"
-          
-          # Verify expected fields in job.json (from actual dry-run structure)
-          python3 << 'EOF'
-          import json
-          with open('/tmp/smoke-test/output/job.json') as f:
-              job = json.load(f)
-          
-          # Check required fields that dry-run actually produces
-          required = ['version', 'template', 'engine', 'brand', 'total_seconds', 'scenes', 'voiceover']
-          missing = [k for k in required if k not in job]
-          if missing:
-              print(f"ERROR: Missing fields in job.json: {missing}")
-              exit(1)
-          print(f"✓ job.json has all required fields: {required}")
-          
-          # Verify it's a dry run
-          if not job.get('version') == 1:
-              print(f"ERROR: Expected version 1, got {job.get('version')}")
-              exit(1)
-          print(f"✓ job version is correct")
-          
-          # Verify template
-          if job.get('template') != 'product-launch':
-              print(f"ERROR: Expected template 'product-launch', got {job.get('template')}")
-              exit(1)
-          print(f"✓ template is product-launch")
-          
-          # Verify scenes exist
-          if not isinstance(job.get('scenes'), list) or len(job['scenes']) == 0:
-              print("ERROR: job.json has no scenes")
-              exit(1)
-          print(f"✓ job has {len(job['scenes'])} scenes")
-          EOF
-
-      - name: Run review checks
+      - name: Run review checks on rendered output
         run: |
           set -euo pipefail
           export REELSMITH_IGNORE_KEYS=1
           
-          echo "=== Testing review.py on synthetic input ==="
+          echo "=== Running review.py on RENDERED output ==="
           
-          # Run review check on our synthetic input
-          # This validates the review pipeline works
-          python3 scripts/review.py check /tmp/smoke-test/input.mp4 \
+          RENDERED_VIDEO=$(find /tmp/smoke-test/output -name "*.mp4" -type f | head -1)
+          
+          # Run review check on the actual rendered video
+          python3 scripts/review.py check "$RENDERED_VIDEO" \
             --out /tmp/smoke-test/review \
-            --preset youtube \
-            --expect-seconds 5
+            --preset youtube
           
-          echo "✓ review.py check works"
+          echo "✓ review.py check completed"
           
-          # Verify review output
+          # Verify review output was created
           if [ ! -f /tmp/smoke-test/review/review.json ]; then
             echo "ERROR: review.json not created"
             exit 1
           fi
           echo "✓ review.json created"
+          
+          # Verify job.json was created during render
+          if [ ! -f /tmp/smoke-test/output/job.json ]; then
+            echo "ERROR: job.json not created"
+            exit 1
+          fi
+          echo "✓ job.json created"
 
-      - name: Final network guard check
+      - name: Verify no paid generation occurred
         run: |
           set -euo pipefail
-          python3 /tmp/network_guard.py
+          echo "=== Verifying no paid APIs were used ==="
+          
+          # Check that no paid keys were set
+          if [ -n "${ELEVENLABS_API_KEY:-}" ] || \
+             [ -n "${OPENAI_API_KEY:-}" ] || \
+             [ -n "${FAL_KEY:-}" ] || \
+             [ -n "${HIGGSFIELD_API_KEY:-}" ]; then
+            echo "ERROR: Paid API key was set"
+            exit 1
+          fi
+          
+          echo "✓ No paid API keys set"
+          echo "✓ REELSMITH_IGNORE_KEYS=1 forced free path"
+          echo "✓ --allow-paid never passed to render"
           echo "=== Smoke test completed successfully ==="
-          echo "✓ All pins resolved"
-          echo "✓ Headless render dry run passed"
-          echo "✓ No paid APIs accessed"

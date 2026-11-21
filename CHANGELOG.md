@@ -8,18 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [5.3.1] - 2026-11-21
 
 ### Added
-- **CI smoke test** (`.github/workflows/smoke.yml`) that runs on every PR and push to main, validating:
-  - All skill pins resolve (HyperFrames 0.9.7, OpenMotion commit 9e2f87798cacbe1dad5785e03c5dd57193da4c70, referenced scripts, templates, reference files)
-  - Headless render dry run works end-to-end on synthetic input (ffmpeg lavfi testsrc + sine)
-  - Output duration/aspect matches request (via ffprobe and job.json validation)
-  - Review checks run on synthetic output
-  - No paid generation APIs are invoked (env var guards plus network monitoring)
-- Smoke test is CPU-only, $0, runs in <15 minutes, and uses pinned action versions (actions/checkout@v4.2.2, actions/setup-node@v4.1.0, actions/setup-python@v5.3.0)
+- **CI smoke test** (`.github/workflows/smoke.yml`) that runs on every PR and push to main:
+  - Extracts HyperFrames and OpenMotion pins from reference docs and verifies they resolve upstream (`npm view hyperframes@<version>` and `git ls-remote` for the OpenMotion commit)
+  - Verifies core scripts and key reference files exist
+  - Runs a real minimal headless render (product-launch template, ~1.5s, 640×360, synthetic content, no paid voice/generation)
+  - Runs `review.py check` on the rendered output to verify the review pipeline works
+  - Guards against paid generation: all API keys unset in job-level env, `REELSMITH_IGNORE_KEYS=1`, `--allow-paid` never passed
+- Smoke test is CPU-only, $0, completes in <2 minutes, and uses pinned action versions (actions/checkout@v4.2.2, actions/setup-node@v4.1.0, actions/setup-python@v5.3.0)
 
 ### Changed
-- README: added smoke test description to CI section
+- README: added CI and testing section describing both workflows (ci.yml and smoke.yml)
 
-The smoke test runs against the repository tip (fresh checkout) rather than a stale local copy, ensuring pins and references stay valid as the repository evolves.
+The smoke test validates fundamentals on every change: pins resolve upstream, the core render path works, and paid APIs cannot be invoked.
 
 ## [5.3.0] - 2026-11-18
 

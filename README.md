@@ -61,7 +61,7 @@ Showreel kinetic type, transitions, and an open storyboard are in the skill. An 
 ## CI and testing
 Two workflows run on every PR and push to main:
 - **`ci.yml`**: lints, typechecks, validates brand schema, runs unit tests (pytest), and verifies OpenMotion preflight on example projects
-- **`smoke.yml`**: validates skill pins resolve (HyperFrames 0.9.7, OpenMotion commit, scripts, templates, references), runs a headless render dry run with synthetic input (ffmpeg testsrc + sine), verifies output structure and review checks, and guards against paid API access. CPU-only, $0, runs in <15 minutes.
+- **`smoke.yml`**: extracts pins from reference docs and verifies they resolve upstream (npm + git ls-remote), runs a real minimal headless render (~1.5s product-launch at 640×360 with synthetic content), and runs review.py on the rendered output. Guards against paid generation (keys unset, REELSMITH_IGNORE_KEYS=1, --allow-paid never passed). CPU-only, $0, completes in <2 minutes.
 
 ## Dependency updates
 Dependabot opens weekly PRs (Mondays): minor+patch grouped per ecosystem, majors one-per-PR, security fixes separately.
