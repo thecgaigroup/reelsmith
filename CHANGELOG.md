@@ -5,18 +5,17 @@ All notable changes to Reelsmith will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.4.1] - 2026-11-21
+## [5.4.2] - 2026-11-21
 
 ### Added
 - **Version update awareness**: `scripts/doctor.py` now checks the installed VERSION against the latest GitHub release (falling back to main's VERSION file if no releases exist). If a newer version is available, it prints exactly one line with the update command that matches the installation method (git pull for git installs, download instructions otherwise). Network errors, timeouts (3s), or HTTP failures are handled gracefully and still pass with a "could not check" message. Uses stdlib only, no new dependencies.
-- **Capabilities menu**: `scripts/capabilities_menu.py` as the single source of truth for Reelsmith's capabilities menu. Generates content for SKILL.md and README.md via `--markdown` flag. Menu entries cleanly handle missing preview GIFs without weakening drift tests.
-- **Quick reference sections**: Added to SKILL.md and README.md with links to capabilities, dependency checks, and update instructions.
-- **Behavioral tests**: `scripts/test_version_check.py` covers newer version, same version, and offline/timeout scenarios with mocked network calls. `scripts/test_capabilities_menu.py` verifies menu structure, output formats, and documentation generation. Both test files added to CI workflow.
+- **Update Reelsmith entry**: Added to capabilities menu in `scripts/capabilities_menu.py` to help users discover version update functionality.
+- **Behavioral tests**: `scripts/test_version_check.py` covers newer version, same version, and offline/timeout scenarios with mocked network calls (5 tests). Added to CI workflow.
 
 ### Changed
 - `scripts/doctor.py`: Now checks for Reelsmith updates at startup. Prints update instructions only when a newer version is detected. Never auto-installs or runs updates.
-- `.github/workflows/ci.yml`: Added `test_version_check.py` and `test_capabilities_menu.py` to test discovery.
-- SKILL.md and README.md: Updated "Start every job" section to mention update checks. Added "Quick reference" sections with menu entries.
+- `.github/workflows/ci.yml`: Added `test_version_check.py` to test discovery.
+- `scripts/capabilities_menu.py`: Added "Update Reelsmith" entry to CAPABILITIES list.
 
 No new dependencies. All checks use stdlib (urllib.request, json). Suggestion only—never auto-installs or touches anything mid-project.
 
