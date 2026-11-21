@@ -64,9 +64,9 @@ jobs:
           # 1. Extract ALL HyperFrames pins from references/hyperframes.md
           echo "Extracting HyperFrames pins..."
           
-        # Get prose pin from "pinned at X.Y.Z" (strip trailing punctuation)
-        PROSE_PIN=$(grep -oP 'pinned at \K[0-9.]+' references/hyperframes.md | head -1 | sed 's/\.$//')
-        echo "  Prose pin: $PROSE_PIN"
+          # Get prose pin from "pinned at X.Y.Z" (strip trailing punctuation)
+          PROSE_PIN=$(grep -oP 'pinned at \K[0-9.]+' references/hyperframes.md | head -1 | sed 's/\.$//')
+          echo "  Prose pin: $PROSE_PIN"
           
           # Get all command pins from "hyperframes@X.Y.Z"
           mapfile -t CMD_PINS < <(grep -oP 'hyperframes@\K[0-9.]+' references/hyperframes.md)
