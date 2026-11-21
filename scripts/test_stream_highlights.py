@@ -519,18 +519,6 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             # Extract at t=3.0s when "the" and "stream" words are on screen
             frame_time = "3.0"
             
-            # First, verify we're reading the RIGHT files
-            print(f"\nCaptioned clip path: {captioned_clip}", file=sys.stderr)
-            print(f"Captioned clip exists: {captioned_clip.exists()}", file=sys.stderr)
-            print(f"Captioned clip size: {captioned_clip.stat().st_size if captioned_clip.exists() else 0}", file=sys.stderr)
-            print(f"No-caption clip path: {no_caption_clip}", file=sys.stderr)
-            print(f"No-caption clip exists: {no_caption_clip.exists()}", file=sys.stderr)
-            print(f"No-caption clip size: {no_caption_clip.stat().st_size if no_caption_clip.exists() else 0}", file=sys.stderr)
-            
-            # Check if burned.mp4 exists (it shouldn't - it should be moved to video.mp4)
-            burned_captioned = captioned_clip_dir / "burned.mp4"
-            print(f"Burned.mp4 exists in captioned dir: {burned_captioned.exists()}", file=sys.stderr)
-            
             with_caption_frame = tmpdir / "with_caption.png"
             without_caption_frame = tmpdir / "without_caption.png"
             
@@ -545,10 +533,6 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
                 "-frames:v", "1", "-f", "image2",
                 str(without_caption_frame)
             ], capture_output=True, check=True)
-            
-            # Save frames for manual inspection
-            print(f"Extracted with_caption frame to: {with_caption_frame}", file=sys.stderr)
-            print(f"Extracted without_caption frame to: {without_caption_frame}", file=sys.stderr)
             
             # Read both frames as RGB
             frame_probe = subprocess.run([
