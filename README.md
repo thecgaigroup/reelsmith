@@ -108,3 +108,4 @@ Dependency PRs use CI minutes; keep open PRs low and close stale ones rather tha
 Code and docs: MIT (see `LICENSE`). Bundled third-party media and music keep their own licenses (CC0 / CC BY), listed in
 their credits files. Remotion has its own license: free for individuals and teams of up to 3, companies need a
 company license (remotion.pro/license).
+
