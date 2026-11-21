@@ -240,10 +240,10 @@ def apply_clip_crop(input_video, tracking_data, start_time, end_time, output_vid
         x, y, w, h = crop_window["x"], crop_window["y"], crop_window["w"], crop_window["h"]
         crop_filter = f"crop={w}:{h}:{x}:{y}"
     
-    # Apply crop
+    # Apply crop and scale to 1080x1920 (vertical 9:16 format)
     cmd = [
         "ffmpeg", "-y", "-i", str(input_video),
-        "-vf", crop_filter,
+        "-vf", f"{crop_filter},scale=1080:1920",
         "-c:a", "copy",
         str(output_video)
     ]
