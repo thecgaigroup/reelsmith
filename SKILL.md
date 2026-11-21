@@ -36,6 +36,8 @@ kinetic type, correct logos — not grey placeholders or a talk-head TEMP divert
 - **Tutorials and how-tos**: Step-by-step instructional videos with chapter markers for YouTube (see `examples/previews/howto-tutorial-16x9.gif`)
 - **Slide presentations and kiosk loops**: Animated decks for talks, booths, or continuous display (see `examples/previews/slides-presentation-16x9.gif`)
 - **Feature explainers with narration**: Product walkthroughs with voiceover and auto-generated captions (see `examples/previews/feature-explainer-1x1.gif`)
+- **Educational explainers with charts and timelines**: Signal Shorts format explainers with visual data, maps, and timelines (no single example; see references/explainer-format-signal-shorts.md)
+- **Vertical clips from long-form video**: Extract face-tracked highlight moments from talking-head content for Reels, Shorts, TikTok (no single example; see references/clipping.md)
 - **Client sizzle reels and awards cuts**: Production-quality cuts from real footage with beat-synced kinetic type (no single example; see references/client-sizzle.md)
 
 Everything works free and offline. Optional API keys add features: a **Pexels** key unlocks high-quality stock photos and videos. Run `python3 scripts/capabilities.py` to see what's available.
