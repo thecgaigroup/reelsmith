@@ -1,29 +1,31 @@
 #!/usr/bin/env python3
 """Live chat collection from streaming platforms.
 
-Supports Twitch (via IRC) and YouTube (via Data API v3) for real-time chat monitoring.
-All network operations are in background threads with graceful error handling.
+Generator-based chat fetchers for Twitch IRC and YouTube Data API v3.
+Each source yields normalized ChatMessage records into a list with time-bounded capture.
 """
 import json
 import os
 import re
 import socket
 import ssl
-import threading
 import time
-from collections import deque
+from collections import namedtuple
 from datetime import datetime
 from urllib.parse import urlparse
 
 
+# Normalized chat message structure
+ChatMessage = namedtuple("ChatMessage", ["timestamp", "username", "text"])
+
+
 def extract_youtube_video_id(url):
-    """Extract video ID from various YouTube URL formats."""
+    """Parse YouTube video ID from URL."""
     patterns = [
-        r"v=([A-Za-z0-9_-]{11})",           # ?v=VIDEO_ID
-        r"youtu\.be/([A-Za-z0-9_-]{11})",   # youtu.be/VIDEO_ID
-        r"youtube\.com/live/([A-Za-z0-9_-]{11})"  # /live/VIDEO_ID
+        r"v=([A-Za-z0-9_-]{11})",
+        r"youtu\.be/([A-Za-z0-9_-]{11})",
+        r"youtube\.com/live/([A-Za-z0-9_-]{11})"
     ]
-    
     for pattern in patterns:
         match = re.search(pattern, url or "")
         if match:
@@ -31,316 +33,312 @@ def extract_youtube_video_id(url):
     return None
 
 
-class ChatCollectorBase:
-    """Base class for platform chat collectors."""
+def parse_irc_message(raw_line):
+    """Parse IRCv3 message per RFC1459 and IRCv3 message-tags spec.
     
-    def __init__(self):
-        self._chat_buffer = deque(maxlen=50000)
-        self._lock = threading.Lock()
-        self._stop_flag = threading.Event()
-        self._worker_thread = None
-        self.connection_status = "initializing"
-        self.error_message = None
+    Format: [@tags] [:prefix] COMMAND [params] [:trailing]
     
-    def begin_collection(self):
-        """Start collecting messages in a background thread."""
-        self._worker_thread = threading.Thread(
-            target=self._safe_run, 
-            daemon=True
-        )
-        self._worker_thread.start()
-        return self
+    Returns: (command, params, trailing, tags_dict) or None
+    """
+    line = raw_line.strip()
+    if not line:
+        return None
     
-    def end_collection(self):
-        """Stop the collection thread."""
-        self._stop_flag.set()
-        if self._worker_thread and self._worker_thread.is_alive():
-            self._worker_thread.join(timeout=2.0)
+    # Parse tags (IRCv3)
+    tags = {}
+    if line.startswith("@"):
+        tags_end = line.find(" ")
+        if tags_end == -1:
+            return None
+        tags_str = line[1:tags_end]
+        line = line[tags_end + 1:].lstrip()
+        
+        # Parse tag=value pairs separated by semicolon
+        for tag_pair in tags_str.split(";"):
+            if "=" in tag_pair:
+                key, value = tag_pair.split("=", 1)
+                tags[key] = value
     
-    def get_messages_in_range(self, start_epoch, end_epoch):
-        """Retrieve messages within a time range."""
-        with self._lock:
-            return [
-                dict(msg) for msg in self._chat_buffer
-                if start_epoch <= msg["epoch"] <= end_epoch
-            ]
+    # Parse prefix (optional, starts with colon)
+    if line.startswith(":"):
+        prefix_end = line.find(" ")
+        if prefix_end == -1:
+            return None
+        line = line[prefix_end + 1:].lstrip()
     
-    def clear_messages_before(self, epoch_cutoff):
-        """Remove old messages to save memory."""
-        with self._lock:
-            while self._chat_buffer and self._chat_buffer[0]["epoch"] < epoch_cutoff:
-                self._chat_buffer.popleft()
+    # Parse command and parameters
+    if " :" in line:
+        # Has trailing parameter
+        command_params, trailing = line.split(" :", 1)
+        parts = command_params.split()
+    else:
+        # No trailing
+        parts = line.split()
+        trailing = None
     
-    def _record_message(self, epoch_time, username, message_text, msg_id=None):
-        """Store a chat message."""
-        with self._lock:
-            self._chat_buffer.append({
-                "epoch": float(epoch_time),
-                "user": str(username or "unknown"),
-                "text": str(message_text or "")[:500],
-                "id": msg_id
-            })
+    if not parts:
+        return None
     
-    def _safe_run(self):
-        """Wrapper with error handling."""
-        try:
-            self.collect_messages()
-        except Exception as exc:
-            self.error_message = f"{type(exc).__name__}: {exc}"
-            self.connection_status = "error"
+    command = parts[0]
+    params = parts[1:] if len(parts) > 1 else []
     
-    def collect_messages(self):
-        """Override this to implement platform-specific collection."""
-        raise NotImplementedError
+    return (command, params, trailing, tags)
 
 
-class YouTubeLiveChatCollector(ChatCollectorBase):
-    """Collects live chat from YouTube streams via Data API v3."""
+def collect_twitch_irc(channel, username, oauth_token, duration_seconds=None, max_messages=10000):
+    """Generator-based Twitch IRC collector.
     
-    def __init__(self, video_id, api_key):
-        super().__init__()
-        self.video_id = video_id
-        self.api_key = api_key
+    Connects to Twitch IRC, yields ChatMessage records until time limit or message limit.
     
-    def _fetch_json(self, api_url):
-        """Make an authenticated API request."""
-        import urllib.request
-        req = urllib.request.Request(api_url, headers={"Accept": "application/json"})
+    Args:
+        channel: Twitch channel name
+        username: Bot username for IRC connection
+        oauth_token: OAuth token (with or without 'oauth:' prefix)
+        duration_seconds: Stop after N seconds (None = unlimited)
+        max_messages: Stop after N messages (default 10000)
+        
+    Yields:
+        ChatMessage(timestamp, username, text) tuples
+    """
+    channel = channel.lower()
+    username = username.lower()
+    token = oauth_token.removeprefix("oauth:").strip()
+    
+    start_time = time.time()
+    message_count = 0
+    
+    # Connect to Twitch IRC over TLS
+    ssl_context = ssl.create_default_context()
+    
+    with socket.create_connection(("irc.chat.twitch.tv", 6697), timeout=20) as sock:
+        with ssl_context.wrap_socket(sock, server_hostname="irc.chat.twitch.tv") as tls_sock:
+            tls_sock.settimeout(2.0)  # 2s timeout for recv
+            
+            # Send IRC handshake
+            tls_sock.sendall(f"PASS oauth:{token}\r\n".encode())
+            tls_sock.sendall(f"NICK {username}\r\n".encode())
+            tls_sock.sendall("CAP REQ :twitch.tv/tags\r\n".encode())
+            tls_sock.sendall(f"JOIN #{channel}\r\n".encode())
+            
+            buffer = ""
+            
+            while True:
+                # Check time limit
+                if duration_seconds and (time.time() - start_time) > duration_seconds:
+                    break
+                
+                # Check message limit
+                if message_count >= max_messages:
+                    break
+                
+                # Read data
+                try:
+                    chunk = tls_sock.recv(4096).decode("utf-8", errors="replace")
+                    if not chunk:
+                        break
+                    buffer += chunk
+                except socket.timeout:
+                    continue
+                except Exception:
+                    break
+                
+                # Process complete lines
+                while "\r\n" in buffer:
+                    line, buffer = buffer.split("\r\n", 1)
+                    
+                    # Handle PING
+                    if line.startswith("PING"):
+                        pong_target = line.split(" ", 1)[1] if " " in line else ""
+                        tls_sock.sendall(f"PONG {pong_target}\r\n".encode())
+                        continue
+                    
+                    # Parse IRC message
+                    parsed = parse_irc_message(line)
+                    if not parsed:
+                        continue
+                    
+                    command, params, trailing, tags = parsed
+                    
+                    # Only process PRIVMSG
+                    if command != "PRIVMSG":
+                        continue
+                    
+                    # Extract timestamp from tags
+                    ts_ms = tags.get("tmi-sent-ts", "")
+                    try:
+                        timestamp = float(ts_ms) / 1000.0
+                    except (ValueError, ZeroDivisionError):
+                        timestamp = time.time()
+                    
+                    # Extract username
+                    user_from_tag = tags.get("display-name") or tags.get("user-id", "")
+                    
+                    # Extract message text (trailing parameter)
+                    message_text = trailing or ""
+                    
+                    if message_text:
+                        yield ChatMessage(timestamp, user_from_tag, message_text)
+                        message_count += 1
+
+
+def collect_youtube_livechat(video_id, api_key, duration_seconds=None, max_messages=10000):
+    """Generator-based YouTube live chat collector.
+    
+    Polls YouTube Data API v3 liveChatMessages endpoint.
+    
+    Args:
+        video_id: YouTube video ID
+        api_key: YouTube Data API key
+        duration_seconds: Stop after N seconds (None = unlimited)
+        max_messages: Stop after N messages (default 10000)
+        
+    Yields:
+        ChatMessage(timestamp, username, text) tuples
+    """
+    import urllib.request
+    import urllib.parse
+    import urllib.error
+    
+    def fetch_json(url):
+        req = urllib.request.Request(url, headers={"Accept": "application/json"})
         with urllib.request.urlopen(req, timeout=20) as resp:
             return json.load(resp)
     
-    def collect_messages(self):
-        """Poll YouTube's live chat messages endpoint."""
-        import urllib.request
-        import urllib.parse
-        import urllib.error
+    # Get live chat ID
+    video_url = ("https://www.googleapis.com/youtube/v3/videos?" +
+                 urllib.parse.urlencode({
+                     "part": "liveStreamingDetails",
+                     "id": video_id,
+                     "key": api_key
+                 }))
+    
+    try:
+        video_data = fetch_json(video_url)
+    except urllib.error.HTTPError:
+        return  # No data, stop generator
+    
+    items = video_data.get("items", [])
+    if not items:
+        return
+    
+    live_details = items[0].get("liveStreamingDetails", {})
+    chat_id = live_details.get("activeLiveChatId")
+    
+    if not chat_id:
+        return
+    
+    # Poll for messages
+    start_time = time.time()
+    message_count = 0
+    next_page_token = None
+    
+    while True:
+        # Check limits
+        if duration_seconds and (time.time() - start_time) > duration_seconds:
+            break
+        if message_count >= max_messages:
+            break
         
-        # Step 1: Get the live chat ID for this video
-        video_params = urllib.parse.urlencode({
-            "part": "liveStreamingDetails",
-            "id": self.video_id,
-            "key": self.api_key
-        })
-        video_url = f"https://www.googleapis.com/youtube/v3/videos?{video_params}"
+        # Build request
+        params = {
+            "part": "snippet,authorDetails",
+            "liveChatId": chat_id,
+            "maxResults": 200,
+            "key": api_key
+        }
+        if next_page_token:
+            params["pageToken"] = next_page_token
+        
+        chat_url = ("https://www.googleapis.com/youtube/v3/liveChat/messages?" +
+                   urllib.parse.urlencode(params))
         
         try:
-            video_data = self._fetch_json(video_url)
-        except urllib.error.HTTPError as e:
-            self.connection_status = "error"
-            self.error_message = f"YouTube API error: {e.code}"
-            return
+            chat_data = fetch_json(chat_url)
+        except urllib.error.HTTPError:
+            break
         
-        items = video_data.get("items", [])
-        if not items:
-            self.connection_status = "error"
-            self.error_message = "Video not found"
-            return
-        
-        streaming_details = items[0].get("liveStreamingDetails", {})
-        chat_id = streaming_details.get("activeLiveChatId")
-        
-        if not chat_id:
-            self.connection_status = "error"
-            self.error_message = "No active live chat"
-            return
-        
-        # Step 2: Poll for messages
-        self.connection_status = "connected"
-        next_page = None
-        
-        while not self._stop_flag.is_set():
-            msg_params = {
-                "part": "snippet,authorDetails",
-                "liveChatId": chat_id,
-                "maxResults": 200,
-                "key": self.api_key
-            }
-            if next_page:
-                msg_params["pageToken"] = next_page
+        # Process messages
+        for item in chat_data.get("items", []):
+            snippet = item.get("snippet", {})
+            author = item.get("authorDetails", {})
             
-            msg_url = ("https://www.googleapis.com/youtube/v3/liveChat/messages?" +
-                      urllib.parse.urlencode(msg_params))
-            
+            # Parse timestamp
+            published = snippet.get("publishedAt", "")
             try:
-                chat_data = self._fetch_json(msg_url)
-            except urllib.error.HTTPError as e:
-                self.connection_status = "error"
-                self.error_message = f"Chat API error: {e.code}"
-                return
+                dt = datetime.fromisoformat(published.replace("Z", "+00:00"))
+                timestamp = dt.timestamp()
+            except (ValueError, AttributeError):
+                timestamp = time.time()
             
-            # Process messages
-            for item in chat_data.get("items", []):
-                snippet = item.get("snippet", {})
-                author = item.get("authorDetails", {})
-                
-                # Parse timestamp
-                published = snippet.get("publishedAt", "")
-                try:
-                    timestamp = datetime.fromisoformat(
-                        published.replace("Z", "+00:00")
-                    ).timestamp()
-                except (ValueError, AttributeError):
-                    timestamp = time.time()
-                
-                # Extract message text
-                text_details = snippet.get("textMessageDetails", {})
-                message = text_details.get("messageText") or snippet.get("displayMessage", "")
-                
-                # Extract author
-                author_name = (author.get("displayName") or 
-                             author.get("channelId") or "unknown")
-                
-                self._record_message(
-                    timestamp,
-                    author_name,
-                    message,
-                    item.get("id")
-                )
+            # Extract username and message
+            username = author.get("displayName") or author.get("channelId") or "unknown"
             
-            # Pagination and polling interval
-            next_page = chat_data.get("nextPageToken")
-            poll_ms = int(chat_data.get("pollingIntervalMillis", 5000))
-            self._stop_flag.wait(max(1.0, poll_ms / 1000.0))
-
-
-class TwitchIRCChatCollector(ChatCollectorBase):
-    """Collects live chat from Twitch via IRC protocol."""
-    
-    def __init__(self, channel_name, bot_username, oauth_token):
-        super().__init__()
-        self.channel = channel_name.lower()
-        self.username = bot_username.lower()
-        self.token = oauth_token.removeprefix("oauth:").strip()
-    
-    def collect_messages(self):
-        """Connect to Twitch IRC and stream messages."""
-        ssl_context = ssl.create_default_context()
-        
-        with socket.create_connection(
-            ("irc.chat.twitch.tv", 6697), timeout=20
-        ) as sock:
-            with ssl_context.wrap_socket(
-                sock, server_hostname="irc.chat.twitch.tv"
-            ) as secure_sock:
-                secure_sock.settimeout(1.0)
+            text_details = snippet.get("textMessageDetails", {})
+            message_text = text_details.get("messageText") or snippet.get("displayMessage", "")
+            
+            if message_text:
+                yield ChatMessage(timestamp, username, message_text)
+                message_count += 1
                 
-                # Authenticate
-                secure_sock.sendall(f"PASS oauth:{self.token}\r\n".encode())
-                secure_sock.sendall(f"NICK {self.username}\r\n".encode())
-                secure_sock.sendall("CAP REQ :twitch.tv/tags\r\n".encode())
-                secure_sock.sendall(f"JOIN #{self.channel}\r\n".encode())
-                
-                self.connection_status = "connected"
-                line_buffer = b""
-                
-                while not self._stop_flag.is_set():
-                    try:
-                        chunk = secure_sock.recv(4096)
-                        if not chunk:
-                            self.connection_status = "disconnected"
-                            return
-                        line_buffer += chunk
-                    except socket.timeout:
-                        continue
-                    
-                    # Process complete lines
-                    while b"\r\n" in line_buffer:
-                        line_bytes, line_buffer = line_buffer.split(b"\r\n", 1)
-                        line_text = line_bytes.decode("utf-8", errors="replace")
-                        
-                        # Handle PING
-                        if line_text.startswith("PING "):
-                            pong = "PONG " + line_text[5:] + "\r\n"
-                            secure_sock.sendall(pong.encode())
-                            continue
-                        
-                        # Parse chat message
-                        self._parse_irc_message(line_text)
-    
-    def _parse_irc_message(self, line):
-        """Extract message details from IRC format."""
-        # Parse IRCv3 tags if present
-        tag_dict = {}
-        if line.startswith("@"):
-            tags_str, _, line = line.partition(" ")
-            for tag in tags_str[1:].split(";"):
-                if "=" in tag:
-                    key, value = tag.split("=", 1)
-                    tag_dict[key] = value
+                if message_count >= max_messages:
+                    return
         
-        # Only process PRIVMSG
-        if " PRIVMSG " not in line:
-            return
-        
-        # Extract username and message
-        prefix, _, remainder = line.partition(" PRIVMSG ")
-        username = prefix.lstrip(":").split("!", 1)[0]
-        _, _, message_text = remainder.partition(" :")
-        
-        # Parse timestamp from tags (milliseconds)
-        try:
-            epoch_time = float(tag_dict.get("tmi-sent-ts", "0")) / 1000.0
-        except ValueError:
-            epoch_time = time.time()
-        
-        if epoch_time == 0:
-            epoch_time = time.time()
-        
-        self._record_message(
-            epoch_time,
-            tag_dict.get("user-id") or username,
-            message_text,
-            tag_dict.get("id")
-        )
+        # Pagination and polling delay
+        next_page_token = chat_data.get("nextPageToken")
+        poll_ms = int(chat_data.get("pollingIntervalMillis", 5000))
+        time.sleep(max(1.0, poll_ms / 1000.0))
 
 
 def create_chat_collector(stream_url, video_id_override=None, env=None):
-    """Factory function to create the appropriate chat collector.
+    """Factory to create appropriate chat collector generator.
     
     Args:
-        stream_url: The stream URL (YouTube or Twitch)
+        stream_url: Stream URL (YouTube or Twitch)
         video_id_override: Explicit video ID for YouTube
-        env: Environment variables dict (defaults to os.environ)
+        env: Environment variables dict (default os.environ)
         
     Returns:
-        (collector, platform_name, error_reason) tuple
-        collector is None if creation failed, with error_reason explaining why
+        (collector_fn, platform, error) tuple
+        collector_fn is a callable() that returns a generator, or None if unavailable
     """
     environment = env if env is not None else os.environ
     parsed = urlparse(stream_url or "")
-    hostname = (parsed.hostname or "").lower()
-    hostname = hostname.removeprefix("www.")
+    hostname = (parsed.hostname or "").lower().removeprefix("www.")
     
-    # YouTube detection
+    # YouTube
     if hostname in ("youtube.com", "m.youtube.com", "youtu.be"):
         api_key = environment.get("YOUTUBE_API_KEY", "").strip()
         if not api_key:
-            return None, "youtube", "YOUTUBE_API_KEY environment variable not set"
+            return None, "youtube", "YOUTUBE_API_KEY not set"
         
         vid_id = video_id_override or extract_youtube_video_id(stream_url)
         if not vid_id:
-            return None, "youtube", "Could not extract video ID from URL"
+            return None, "youtube", "Could not extract video ID"
         
-        collector = YouTubeLiveChatCollector(vid_id, api_key)
+        # Return a callable that creates the generator
+        def collector():
+            return collect_youtube_livechat(vid_id, api_key)
+        
         return collector, "youtube", None
     
-    # Twitch detection
+    # Twitch
     if hostname == "twitch.tv":
-        # Extract channel from URL path
-        path_segments = [p for p in parsed.path.split("/") if p]
-        channel = path_segments[0] if path_segments else None
+        path_parts = [p for p in parsed.path.split("/") if p]
+        channel = path_parts[0] if path_parts else None
         
         if not channel:
-            return None, "twitch", "Could not extract channel name from URL"
+            return None, "twitch", "Could not extract channel name"
         
         bot_user = environment.get("TWITCH_CHAT_USERNAME", "").strip()
         bot_token = environment.get("TWITCH_CHAT_TOKEN", "").strip()
         
         if not bot_user or not bot_token:
-            return (None, "twitch",
-                    "TWITCH_CHAT_USERNAME and TWITCH_CHAT_TOKEN environment variables not set")
+            return None, "twitch", "TWITCH_CHAT_USERNAME and TWITCH_CHAT_TOKEN not set"
         
-        collector = TwitchIRCChatCollector(channel, bot_user, bot_token)
+        # Return a callable that creates the generator
+        def collector():
+            return collect_twitch_irc(channel, bot_user, bot_token)
+        
         return collector, "twitch", None
     
     return None, "unknown", f"Unsupported platform: {hostname or 'none'}"

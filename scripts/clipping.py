@@ -357,11 +357,15 @@ def fetch_stream_url(url, rights_confirmed=False):
         
     Returns:
         Local file path after download
+        
+    Raises:
+        SystemExit: If rights not confirmed (exits before any import or fetch)
     """
+    # CRITICAL: Check rights BEFORE any import or network operation
     if not rights_confirmed:
         print("ERROR: --rights-confirmed is required for URL input", file=sys.stderr)
         print("You must have the rights to record, edit, and use this content.", file=sys.stderr)
-        sys.exit(1)
+        raise SystemExit(1)
     
     try:
         import yt_dlp

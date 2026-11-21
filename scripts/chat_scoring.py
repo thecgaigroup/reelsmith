@@ -1,168 +1,174 @@
 #!/usr/bin/env python3
 """Chat activity analysis for stream highlight detection.
 
-Analyzes chat message bursts from Twitch IRC or YouTube live chat to identify
-high-engagement moments. Designed to resist spam inflation by deweighting repeated
-messages from individual users.
+Uses rolling z-score spike detection over a trailing baseline to find engagement bursts.
+Designed to resist spam by requiring diverse participation.
 """
 import re
+import math
 
 
-# High-engagement indicators: excitement, reactions, clip requests
-EXCITEMENT_WORDS = {
-    "wow", "amazing", "incredible", "insane", "crazy", "epic", "perfect",
-    "nice", "clip", "highlight", "moment", "omg", "lol", "lmao", "hype"
+# Engagement keywords: reactions, clip requests, excitement
+ENGAGEMENT_KEYWORDS = {
+    "clip", "wow", "omg", "lol", "nice", "hype", "epic", "insane", "crazy"
 }
 
-EXCITEMENT_EMOTES = {
-    "pog", "poggers", "kekw", "omegalul", "hyperclap", "widehappy", 
-    "pepehype", "monkas", "monkaw"
-}
+# Twitch emote patterns (case-insensitive substring match)
+EMOTE_PATTERNS = ["pog", "kek", "monka", "pepe", "lul"]
 
-# Emoji patterns for reactions (excitement, laughter, surprise)
-EMOJI_PATTERN = re.compile(r"[😂🤣💀😱😮🔥👏🎉🎊]")
+# Emoji reactions
+REACTION_EMOJI = re.compile(r"[😂🤣💀😱😮🔥👏]")
 
 
-def is_excited_message(text):
-    """Detect if a message shows excitement or strong reaction."""
+def has_engagement_markers(text):
+    """Check if message contains engagement markers (keywords, emotes, emojis)."""
     lower = text.lower()
     
-    # Check for excitement words
-    if any(word in lower for word in EXCITEMENT_WORDS):
+    # Keywords
+    if any(kw in lower for kw in ENGAGEMENT_KEYWORDS):
         return True
     
-    # Check for common Twitch emotes
-    if any(emote in lower for emote in EXCITEMENT_EMOTES):
+    # Emotes
+    if any(emote in lower for emote in EMOTE_PATTERNS):
         return True
     
-    # Check for reaction emojis
-    if EMOJI_PATTERN.search(text):
-        return True
-    
-    # Check for exclamation marks (but require content too)
-    if "!" in text and len(text.split()) >= 2:
+    # Emojis
+    if REACTION_EMOJI.search(text):
         return True
     
     return False
 
 
 def analyze_chat_bursts(messages, window_starts, window_duration):
-    """Analyze chat activity in time windows to find engagement bursts.
+    """Detect chat engagement bursts using rolling z-score spike analysis.
     
-    Scores windows based on unique participant activity with spam resistance.
-    A single user spamming the same message has minimal impact.
+    Approach:
+    - Compute message rate (unique chatters per window)
+    - Use trailing 3-window baseline to detect spikes via z-score
+    - Require minimum diversity (chatter-to-message ratio)
+    - Boost score for engagement markers
     
     Args:
-        messages: List of dicts with keys: t (timestamp), user (username), text (message)
-        window_starts: List of start times (seconds) to analyze
-        window_duration: Window length in seconds
+        messages: List of dicts with t (timestamp), user, text keys
+        window_starts: Start times to analyze (seconds)
+        window_duration: Window size in seconds
         
     Returns:
-        List of dicts with: start, message_count, unique_users, excited_users,
-                           unique_messages, peak_time, peak_user_count, burst_score
+        List of dicts with start, burst_score, peak_time, stats
     """
-    results = []
+    # Step 1: Compute per-window metrics
+    window_metrics = []
     
-    for start_time in window_starts:
-        end_time = start_time + window_duration
+    for start in window_starts:
+        end = start + window_duration
         
-        # Filter messages in this window
-        window_msgs = [
-            m for m in messages 
-            if start_time <= float(m.get("t", -1)) < end_time
-        ]
+        # Filter messages in window
+        window_msgs = [m for m in messages if start <= float(m.get("t", -1)) < end]
         
-        # Group messages by user, tracking unique message texts
-        user_messages = {}  # user -> set of unique message texts
-        time_buckets = {}   # time_bucket -> (set of users, set of excited users)
+        # Group by user, track unique messages per user
+        user_texts = {}
+        engagement_count = 0
+        sub_buckets = {}  # 10-second sub-buckets for peak detection
         
         for msg in window_msgs:
             user = str(msg.get("user", "")).strip() or "anon"
-            text = re.sub(r"\s+", " ", str(msg.get("text", ""))).strip()
+            text = str(msg.get("text", "")).strip()
             
             if not text:
                 continue
             
-            # Track unique messages per user
-            user_messages.setdefault(user, set()).add(text.lower())
+            # Track unique messages per user (spam resistance)
+            user_texts.setdefault(user, set()).add(text.lower())
             
-            # Track activity in 5-second buckets for peak detection
-            bucket_idx = int((float(msg["t"]) - start_time) / 5.0)
-            users_set, excited_set = time_buckets.setdefault(
-                bucket_idx, (set(), set())
-            )
-            users_set.add(user)
-            if is_excited_message(text):
-                excited_set.add(user)
+            # Count engagement markers
+            if has_engagement_markers(text):
+                engagement_count += 1
+            
+            # Sub-buckets (10s intervals) for peak timing
+            bucket = int((float(msg["t"]) - start) / 10.0)
+            sub_buckets.setdefault(bucket, set()).add(user)
         
-        # Compute metrics
-        unique_user_count = len(user_messages)
-        excited_user_count = sum(
-            1 for user, texts in user_messages.items()
-            if any(is_excited_message(text) for text in texts)
-        )
+        unique_users = len(user_texts)
+        total_messages = len(window_msgs)
         
-        # Total unique messages (prevents one person from inflating the count)
-        unique_message_count = sum(len(texts) for texts in user_messages.values())
+        # Diversity ratio: unique users / total messages
+        # High ratio = many different people talking (good)
+        # Low ratio = few people spamming (bad)
+        diversity = unique_users / max(1, total_messages)  # 0.8 = diverse, 0.1 = spam
         
-        # Find peak bucket
-        if time_buckets:
-            peak_bucket, (peak_users, peak_excited) = max(
-                time_buckets.items(),
-                key=lambda item: len(item[1][0]) + 2 * len(item[1][1])
-            )
-            peak_time = start_time + peak_bucket * 5.0 + 2.5
-            peak_user_count = len(peak_users)
+        # Engagement density: messages with engagement markers / total
+        engagement_density = engagement_count / max(1, total_messages)
+        
+        # Find peak sub-bucket for timing
+        if sub_buckets:
+            peak_bucket = max(sub_buckets.items(), key=lambda x: len(x[1]))[0]
+            peak_time = start + peak_bucket * 10.0 + 5.0  # Middle of 10s bucket
         else:
-            peak_time = start_time + window_duration / 2
-            peak_user_count = 0
+            peak_time = start + window_duration / 2
         
-        # Compute burst score using MAD (Median Absolute Deviation) later
-        results.append({
-            "start": float(start_time),
-            "message_count": len(window_msgs),
-            "unique_users": unique_user_count,
-            "excited_users": excited_user_count,
-            "unique_messages": unique_message_count,
+        window_metrics.append({
+            "start": float(start),
+            "unique_users": unique_users,
+            "total_messages": total_messages,
+            "diversity": diversity,
+            "engagement_density": engagement_density,
             "peak_time": float(peak_time),
-            "peak_user_count": peak_user_count,
-            "burst_score": 0.0  # Computed after we have all windows
+            "burst_score": 0.0  # Computed in step 2
         })
     
-    # Compute burst scores using MAD (Median Absolute Deviation)
-    # This is robust to outliers and works with small sample sizes
-    activity_counts = [
-        min(r["unique_messages"], r["unique_users"] * 3) 
-        for r in results
-    ]
+    # Step 2: Compute rolling z-score for spike detection
+    # Use trailing 3-window baseline (avoids contamination from current spike)
+    baseline_size = 3  # Previous 3 windows as baseline
     
-    if activity_counts:
-        sorted_counts = sorted(activity_counts)
-        median = sorted_counts[len(sorted_counts) // 2]
+    for i, metrics in enumerate(window_metrics):
+        # Baseline: previous 3 windows (or fewer if near start)
+        baseline_start = max(0, i - baseline_size)
+        baseline_windows = window_metrics[baseline_start:i]
         
-        deviations = sorted(abs(count - median) for count in activity_counts)
-        mad = max(1.0, deviations[len(deviations) // 2])
+        if not baseline_windows:
+            # First window: no baseline, use default score
+            z_score = 0.0
+        else:
+            # Compute mean and stddev of baseline unique_users
+            baseline_users = [w["unique_users"] for w in baseline_windows]
+            mean = sum(baseline_users) / len(baseline_users)
+            
+            # Standard deviation (with Bessel correction)
+            if len(baseline_users) > 1:
+                variance = sum((x - mean) ** 2 for x in baseline_users) / (len(baseline_users) - 1)
+                stddev = math.sqrt(variance)
+            else:
+                stddev = 1.0
+            
+            # Z-score: how many standard deviations above baseline
+            stddev = max(0.5, stddev)  # Floor at 0.5 to avoid div-by-zero
+            z_score = (metrics["unique_users"] - mean) / stddev
+            z_score = max(0.0, z_score)  # Clamp negative (below-baseline not interesting)
         
-        for result, activity in zip(results, activity_counts):
-            # Deviation from median (in MAD units)
-            deviation_score = max(0.0, (activity - median) / mad)
-            
-            # Participation score (0-1): how many unique users engaged
-            participation = min(result["unique_users"], 16) / 16.0
-            
-            # Excitement score (0-1): how many users showed excitement
-            excitement = min(result["excited_users"], 5) / 5.0
-            
-            # Combined burst score (0-4 range)
-            # Weights: deviation=0.55, participation=0.75, excitement=1.25
-            score = (
-                min(2.5, deviation_score * 0.55) +
-                participation * 0.75 +
-                excitement * 1.25
-            )
-            result["burst_score"] = round(min(4.0, score), 2)
+        # Score components with rationale:
+        
+        # 1. Spike intensity (z-score): 0-2.0 range
+        #    Rationale: 2 std devs above baseline = strong spike
+        #    Weight: 1.0 (primary signal)
+        spike_component = min(2.0, z_score * 1.0)
+        
+        # 2. Diversity requirement: 0-1.0 range
+        #    Rationale: diversity > 0.3 = healthy, < 0.1 = spam
+        #    Weight: 1.5 (essential for spam resistance)
+        #    Sigmoid scaling: low diversity heavily penalizes
+        diversity_component = min(1.0, metrics["diversity"] / 0.3) * 1.5
+        
+        # 3. Engagement markers: 0-0.8 range
+        #    Rationale: 20% of messages with engagement = strong
+        #    Weight: 0.8 (bonus for excited chat)
+        engagement_component = min(0.8, metrics["engagement_density"] / 0.2) * 0.8
+        
+        # Final score: sum of weighted components
+        # Max theoretical: 2.0 + 1.5 + 0.8 = 4.3, clamp to 4.0
+        burst_score = spike_component + diversity_component + engagement_component
+        metrics["burst_score"] = round(min(4.0, burst_score), 2)
     
-    return results
+    return window_metrics
 
 
 def summarize_chat_activity(messages, start_time, duration):
