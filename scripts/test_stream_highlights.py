@@ -461,22 +461,7 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             self.assertEqual(captioned_result.returncode, 0,
                            f"Captioned clip generation failed: {captioned_result.stderr}")
             
-            # Debug: print stderr to see what happened
-            if captioned_result.stderr:
-                print("\nCaptioned clip stderr:", captioned_result.stderr, file=sys.stderr)
             
-            # Debug: check what the actual clip times are
-            captioned_summary = captioned_output / "summary.json"
-            if captioned_summary.exists():
-                summary_data = json.loads(captioned_summary.read_text())
-                print(f"\nCaptioned clip times: {summary_data.get('clips', [])}", file=sys.stderr)
-                
-                # Check what files were created in the clip directory
-                clip_dir = Path(summary_data['clips'][0]['clip_dir'])
-                print(f"Clip dir contents: {list(clip_dir.glob('*'))}", file=sys.stderr)
-                if (clip_dir / "words.json").exists():
-                    clip_words_data = json.loads((clip_dir / "words.json").read_text())
-                    print(f"Clip words.json: {clip_words_data}", file=sys.stderr)
             
             captioned_clips = list(captioned_output.glob("clip_*/video.mp4"))
             self.assertGreater(len(captioned_clips), 0, "No captioned clips generated")
@@ -498,16 +483,15 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             self.assertEqual(no_caption_result.returncode, 0,
                            f"No-caption clip generation failed: {no_caption_result.stderr}")
             
-            # Debug: print stderr to see what happened  
-            if no_caption_result.stderr:
-                print("\nNo-caption clip stderr:", no_caption_result.stderr, file=sys.stderr)
             
             no_caption_clips = list(no_caption_output.glob("clip_*/video.mp4"))
             self.assertGreater(len(no_caption_clips), 0, "No non-captioned clips generated")
             no_caption_clip = no_caption_clips[0]
             
-            # Extract same frame from both clips at t=6s (when "stream" word is on screen)
-            frame_time = "6"
+            # Extract same frame from both clips at t=3.5s (when "stream" word is on screen)
+            # Words are shifted to clip-relative times: 21s - 19s clip_start = 2s
+            # "stream" is at t=3.2-3.6s in the clip
+            frame_time = "3.5"
             
             with_caption_frame = tmpdir / "with_caption.png"
             without_caption_frame = tmpdir / "without_caption.png"
