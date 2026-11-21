@@ -467,13 +467,19 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             self.assertGreater(len(captioned_clips), 0, "No captioned clips generated")
             captioned_clip = captioned_clips[0]
             
-            # Debug: Check if captions.ass and burned.mp4 exist
+            # Debug: Check captions.ass contents and video file sizes
             captioned_clip_dir = captioned_clip.parent
             print(f"\nCaptioned clip dir: {captioned_clip_dir}", file=sys.stderr)
-            print(f"Files: {list(captioned_clip_dir.glob('*'))}", file=sys.stderr)
-            if (captioned_clip_dir / "words.json").exists():
-                words_data = json.loads((captioned_clip_dir / "words.json").read_text())
-                print(f"words.json: {words_data}", file=sys.stderr)
+            ass_file = captioned_clip_dir / "captions.ass"
+            if ass_file.exists():
+                ass_content = ass_file.read_text()
+                print(f"captions.ass length: {len(ass_content)} chars", file=sys.stderr)
+                # Show a few lines to verify it has actual dialogue
+                lines = ass_content.split('\n')
+                dialogue_lines = [l for l in lines if l.startswith('Dialogue:')]
+                print(f"Dialogue lines: {len(dialogue_lines)}", file=sys.stderr)
+                if dialogue_lines:
+                    print(f"First dialogue: {dialogue_lines[0][:200]}", file=sys.stderr)
             
             # Generate clip WITHOUT captions (no transcript)
             no_caption_output = tmpdir / "no_caption_output"
