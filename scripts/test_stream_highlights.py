@@ -470,6 +470,13 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             if captioned_summary.exists():
                 summary_data = json.loads(captioned_summary.read_text())
                 print(f"\nCaptioned clip times: {summary_data.get('clips', [])}", file=sys.stderr)
+                
+                # Check what files were created in the clip directory
+                clip_dir = Path(summary_data['clips'][0]['clip_dir'])
+                print(f"Clip dir contents: {list(clip_dir.glob('*'))}", file=sys.stderr)
+                if (clip_dir / "words.json").exists():
+                    clip_words_data = json.loads((clip_dir / "words.json").read_text())
+                    print(f"Clip words.json: {clip_words_data}", file=sys.stderr)
             
             captioned_clips = list(captioned_output.glob("clip_*/video.mp4"))
             self.assertGreater(len(captioned_clips), 0, "No captioned clips generated")
