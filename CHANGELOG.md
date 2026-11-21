@@ -5,6 +5,19 @@ All notable changes to Reelsmith will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.3.1] - 2026-11-21
+
+### Added
+- **Capabilities menu** for user discovery: plain-language list of what Reelsmith can make, shown when users ask "what can you do" or when they're new to the skill. Each entry names one capability with a sample clip from `examples/previews/`. Menu is generated from `scripts/capabilities_menu.py`, which derives the free-key recommendation from `capabilities.py`'s actual feature detection (currently recommends Pexels when no stock provider is configured).
+- **SKILL.md**: capabilities menu added to main body, with trigger guidance in the description that fires only on discovery questions ("what can you do", new users). Clarifies that menu is for automatic discovery only — users never need to pick from it for normal requests.
+- **README.md**: capabilities menu added as a table with example GIFs, matching the SKILL.md menu content.
+- **Tests**: `scripts/test_capabilities_menu.py` verifies (1) every menu entry's sample path exists, (2) README and SKILL menus match (both generated from the same source), (3) free-key line matches what `capabilities.py` reports, (4) trigger guidance only fires on appropriate cases, plus determinism, plain-language, and real-examples-only checks. 8 tests, all in CI.
+
+### Changed
+- `.github/workflows/ci.yml`: added `test_capabilities_menu.py` to test discovery.
+
+No new dependencies, no paid services, no new keys. Menu generation is deterministic and stays in sync with actual capabilities. Routing and normal workflow unchanged — menu is opt-in discovery only.
+
 ## [5.3.0] - 2026-11-18
 
 ### Added
