@@ -148,6 +148,19 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     return head + "\n".join(ev) + "\n"
 
 def burn(video, ass, out, fontsdir=None):
+    # Debug: check ASS file exists and has content
+    ass_file = Path(ass)
+    if not ass_file.exists():
+        raise FileNotFoundError(f"ASS file not found: {ass}")
+    
+    ass_size = ass_file.stat().st_size
+    print(f"DEBUG burn: ASS file {ass} exists, size={ass_size} bytes", file=sys.stderr)
+    
+    if ass_size < 100:
+        print(f"WARNING: ASS file suspiciously small ({ass_size} bytes)", file=sys.stderr)
+        ass_content = ass_file.read_text()
+        print(f"ASS content:\n{ass_content}", file=sys.stderr)
+    
     # Escape path for ffmpeg subtitles filter per https://ffmpeg.org/ffmpeg-filters.html#subtitles-1
     # Must escape: \ ' : [ ] , ;
     ass_path = str(Path(ass).resolve())
@@ -156,13 +169,14 @@ def burn(video, ass, out, fontsdir=None):
     
     vf = f"subtitles='{esc}'" + (f":fontsdir='{Path(fontsdir).resolve()}'" if fontsdir else "")
     
+    cmd = ["ffmpeg", "-y", "-loglevel", "warning", "-i", str(video), "-vf", vf, 
+           "-c:v", "libx264", "-crf", "18", "-preset", "medium", "-pix_fmt", "yuv420p", 
+           "-c:a", "copy", "-map_metadata", "-1", str(out)]
+    
+    print(f"DEBUG burn command: {' '.join(cmd)}", file=sys.stderr)
+    
     # Use check=True to ensure burn failures are fatal, not silent
-    result = subprocess.run(
-        ["ffmpeg", "-y", "-loglevel", "warning", "-i", str(video), "-vf", vf, 
-         "-c:v", "libx264", "-crf", "18", "-preset", "medium", "-pix_fmt", "yuv420p", 
-         "-c:a", "copy", "-map_metadata", "-1", str(out)],
-        capture_output=True, text=True, check=False
-    )
+    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
     
     if result.returncode != 0:
         print(f"ERROR: Caption burn failed for {ass}", file=sys.stderr)
