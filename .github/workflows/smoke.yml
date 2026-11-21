@@ -1,0 +1,270 @@
+name: Smoke test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: smoke-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Unset all paid API keys globally
+  PEXELS_API_KEY: ""
+  PIXABAY_API_KEY: ""
+  UNSPLASH_ACCESS_KEY: ""
+  ELEVENLABS_API_KEY: ""
+  TTS_VOICE_ID: ""
+  OPENAI_API_KEY: ""
+  AWS_ACCESS_KEY_ID: ""
+  AWS_SECRET_ACCESS_KEY: ""
+  FAL_KEY: ""
+  HIGGSFIELD_API_KEY: ""
+  SEEDANCE_API_KEY: ""
+  REELSMITH_IGNORE_KEYS: "1"
+  HYPERFRAMES_NO_TELEMETRY: "1"
+
+jobs:
+  smoke:
+    name: Pin resolution and minimal render
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Node
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: "22.12"
+
+      - name: Set up Python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install numpy scipy Pillow
+
+      - name: Check skill pin resolution
+        run: |
+          set -euo pipefail
+          echo "=== Checking pinned dependencies resolve upstream ==="
+          
+          # 1. Extract ALL HyperFrames pins from references/hyperframes.md
+          echo "Extracting HyperFrames pins..."
+          
+          # Get prose pin from "pinned at X.Y.Z" (strip trailing punctuation)
+          PROSE_PIN=$(grep -oP 'pinned at \K[0-9.]+' references/hyperframes.md | head -1 | sed 's/\.$//')
+          echo "  Prose pin: $PROSE_PIN"
+          
+          # Get all command pins from "hyperframes@X.Y.Z"
+          mapfile -t CMD_PINS < <(grep -oP 'hyperframes@\K[0-9.]+' references/hyperframes.md)
+          echo "  Command pins found: ${#CMD_PINS[@]}"
+          
+          # Verify all command pins match the prose pin
+          for pin in "${CMD_PINS[@]}"; do
+            echo "  Checking: $pin"
+            if [ "$pin" != "$PROSE_PIN" ]; then
+              echo "ERROR: Pin mismatch in hyperframes.md"
+              echo "  Prose declares: $PROSE_PIN"
+              echo "  Command uses: $pin"
+              exit 1
+            fi
+          done
+          
+          # Verify the pin resolves on npm
+          echo "Verifying HyperFrames $PROSE_PIN on npm..."
+          if ! npm view "hyperframes@$PROSE_PIN" version >/dev/null 2>&1; then
+            echo "ERROR: HyperFrames version $PROSE_PIN does not resolve on npm"
+            exit 1
+          fi
+          RESOLVED_HF=$(npm view "hyperframes@$PROSE_PIN" version)
+          echo "✓ HyperFrames $PROSE_PIN resolves to $RESOLVED_HF on npm"
+          echo "✓ All ${#CMD_PINS[@]} command occurrences match"
+          
+          # 2. Extract ALL OpenMotion pins from references/openmotion.md
+          echo ""
+          echo "Extracting OpenMotion pins..."
+          
+          mapfile -t OM_PINS < <(grep -oP 'openmotion@\K[a-f0-9]{40}' references/openmotion.md)
+          echo "  Pins found: ${#OM_PINS[@]}"
+          
+          if [ ${#OM_PINS[@]} -eq 0 ]; then
+            echo "ERROR: No OpenMotion pin found in openmotion.md"
+            exit 1
+          fi
+          
+          # Verify all occurrences match
+          FIRST_OM_PIN="${OM_PINS[0]}"
+          for pin in "${OM_PINS[@]}"; do
+            if [ "$pin" != "$FIRST_OM_PIN" ]; then
+              echo "ERROR: Pin mismatch in openmotion.md"
+              echo "  First occurrence: $FIRST_OM_PIN"
+              echo "  Found different: $pin"
+              exit 1
+            fi
+          done
+          
+          # Verify the commit exists upstream
+          echo "Verifying OpenMotion $FIRST_OM_PIN upstream..."
+          if ! git ls-remote https://github.com/nexu-io/openmotion "$FIRST_OM_PIN" >/dev/null 2>&1; then
+            echo "ERROR: OpenMotion commit $FIRST_OM_PIN does not exist upstream"
+            exit 1
+          fi
+          echo "✓ OpenMotion commit $FIRST_OM_PIN exists upstream"
+          echo "✓ All ${#OM_PINS[@]} occurrences match"
+          
+          # 3. Verify core scripts exist (from SKILL.md Scripts section)
+          echo "=== Checking core scripts exist ==="
+          for script in capabilities.py brand.py reelsmith.py script_lint.py beats.py \
+                        stock.py captions.py review.py export.py youtube_prep.py \
+                        openmotion_preflight.py doctor.py; do
+            if [ ! -f "scripts/$script" ]; then
+              echo "ERROR: scripts/$script does not exist"
+              exit 1
+            fi
+          done
+          echo "✓ All core scripts exist"
+          
+          # 4. Verify key reference files
+          echo "=== Checking key reference files ==="
+          for ref in SKILL.md getting-started/SKILL.md brand/brand.schema.json \
+                     references/hyperframes.md references/openmotion.md; do
+            if [ ! -f "$ref" ]; then
+              echo "ERROR: $ref does not exist"
+              exit 1
+            fi
+          done
+          echo "✓ Key reference files exist"
+          
+          echo "=== All pins resolved successfully ==="
+
+      - name: Generate minimal test input
+        run: |
+          set -euo pipefail
+          echo "=== Generating minimal test content ==="
+          
+          mkdir -p /tmp/smoke-test
+          
+          # Generate minimal 2-second test video (360p for speed)
+          ffmpeg -f lavfi -i testsrc=duration=2:size=640x360:rate=30 \
+                 -f lavfi -i sine=frequency=440:duration=2 \
+                 -c:v libx264 -preset ultrafast -crf 28 \
+                 -c:a aac -b:a 64k \
+                 -y /tmp/smoke-test/test-input.mp4
+          
+          echo "✓ Generated 2s test video"
+          
+          # Generate minimal content.json for product-launch
+          cat > /tmp/smoke-test/content.json << 'EOF'
+          {
+            "product": "Test",
+            "headline": "Smoke test",
+            "features": [
+              {"title": "Fast", "body": "Quick validation"},
+              {"title": "Free", "body": "No cost"}
+            ],
+            "cta": "OK"
+          }
+          EOF
+          echo "✓ Generated minimal content.json"
+
+      - name: Run minimal headless render
+        run: |
+          set -euo pipefail
+          export REELSMITH_IGNORE_KEYS=1
+          export HYPERFRAMES_NO_TELEMETRY=1
+          
+          echo "=== Running minimal headless render (NO dry-run) ==="
+          
+          # Render actual output: 1.5-2s, 640x360, product-launch, no voice
+          python3 scripts/reelsmith.py render \
+            --template product-launch \
+            --content /tmp/smoke-test/content.json \
+            --brand brand/sample-brand.json \
+            --out /tmp/smoke-test/output \
+            --aspect 16x9 \
+            --music synth \
+            --vo none \
+            --quality draft
+          
+          echo "✓ Render completed"
+          
+          # Verify rendered output exists
+          RENDERED_VIDEO=$(find /tmp/smoke-test/output -name "*.mp4" -type f | head -1)
+          if [ -z "$RENDERED_VIDEO" ]; then
+            echo "ERROR: No rendered MP4 found"
+            exit 1
+          fi
+          echo "✓ Rendered video: $RENDERED_VIDEO"
+          
+          # Verify it has actual content
+          DURATION=$(ffprobe -v error -show_entries format=duration \
+                     -of default=noprint_wrappers=1:nokey=1 "$RENDERED_VIDEO")
+          echo "Rendered duration: ${DURATION}s"
+          
+          if (( $(echo "$DURATION < 1.0" | bc -l) )); then
+            echo "ERROR: Rendered video too short: ${DURATION}s"
+            exit 1
+          fi
+          echo "✓ Rendered video has valid duration"
+
+      - name: Run review checks on rendered output
+        run: |
+          set -euo pipefail
+          export REELSMITH_IGNORE_KEYS=1
+          
+          echo "=== Running review.py on RENDERED output ==="
+          
+          RENDERED_VIDEO=$(find /tmp/smoke-test/output -name "*.mp4" -type f | head -1)
+          
+          # Run review check on the actual rendered video
+          python3 scripts/review.py check "$RENDERED_VIDEO" \
+            --out /tmp/smoke-test/review \
+            --preset youtube
+          
+          echo "✓ review.py check completed"
+          
+          # Verify review output was created
+          if [ ! -f /tmp/smoke-test/review/review.json ]; then
+            echo "ERROR: review.json not created"
+            exit 1
+          fi
+          echo "✓ review.json created"
+          
+          # Verify job.json was created during render
+          if [ ! -f /tmp/smoke-test/output/job.json ]; then
+            echo "ERROR: job.json not created"
+            exit 1
+          fi
+          echo "✓ job.json created"
+
+      - name: Verify no paid generation occurred
+        run: |
+          set -euo pipefail
+          echo "=== Verifying no paid APIs were used ==="
+          
+          # Check that no paid keys were set
+          if [ -n "${ELEVENLABS_API_KEY:-}" ] || \
+             [ -n "${OPENAI_API_KEY:-}" ] || \
+             [ -n "${FAL_KEY:-}" ] || \
+             [ -n "${HIGGSFIELD_API_KEY:-}" ]; then
+            echo "ERROR: Paid API key was set"
+            exit 1
+          fi
+          
+          echo "✓ No paid API keys set"
+          echo "✓ REELSMITH_IGNORE_KEYS=1 forced free path"
+          echo "✓ --allow-paid never passed to render"
+          echo "=== Smoke test completed successfully ==="

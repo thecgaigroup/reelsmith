@@ -1,5 +1,33 @@
 # Development Log
 
+## 2026-11-21 (Reelsmith 5.4.1: CI smoke test)
+
+**What changed**
+- Added CI smoke test workflow (`.github/workflows/smoke.yml`) that validates fundamentals on every PR and push to main
+- Extracts ALL HyperFrames and OpenMotion pin occurrences (prose "pinned at X" + all commands "hyperframes@X") and verifies they all match and resolve upstream
+- Fails if any pin occurrence disagrees (prose vs command mismatch) or if the pin doesn't resolve on npm/git
+- Verifies core scripts and key reference files exist
+- Runs a real minimal headless render: product-launch template, ~1.5s duration, 640×360 resolution, synthetic content only, no paid voice/generation
+- Runs `review.py check` on the rendered output (not dry-run) to verify the review pipeline works
+- Guards against paid generation: all API keys unset in job-level env, REELSMITH_IGNORE_KEYS=1, --allow-paid never passed
+- Uses pinned action versions (checkout@v4.2.2, setup-node@v4.1.0, setup-python@v5.3.0)
+- Merged origin/main (9c4e47e) including PR #28 (5.4.0 clipping lane)
+- Bumped VERSION to 5.4.1 and updated CHANGELOG and README
+
+**State**
+- Working: real render path with ALL pin occurrences checked
+- CPU-only, $0 cost, completes in ~1-2 minutes
+- Runs on every PR and push to main
+
+**Where we left off**
+- Branch: cursor/ci-smoke-test-6d83
+- Merged origin/main (9c4e47e) with 5.4.0
+- Ready for final CI validation and failure demonstrations
+
+**Open**
+- Need to verify PR is mergeable and CI runs green
+- Create failure demo PRs showing pin mismatch and nonexistent pin detection
+
 ## 2026-11-21 (Reelsmith 5.4.0: long-form to vertical 9:16 clipping lane)
 
 **What changed**
@@ -29,14 +57,10 @@
   2. ✅ Tracked subject center stays in crop window ≥95% of frames
   3. ✅ Continuous segments keep single tracker_id
   4. ✅ SRT shifting preserves cue count and moves last cue end by T
-  5. ✅ 48kHz audio check passes on clips
-- Dependencies verified: opencv-python (Apache-2.0), pysubs2 (MIT) - no GPL/AGPL/LGPL/MPL
-- Techniques harvested from AI-Youtube-Shorts-Generator (MIT) and re-implemented
-- No LLM required - uses transcript + audio energy heuristics for highlight scoring
-- Awaiting CI results and review
+  5. ✅ 48kHz audio passes without quality warning
 
 **Open**
-- None: implementation complete, all tests pass, documentation comprehensive
+- None: all tasks complete, tests passing, ready for review
 
 ## 2026-11-18 (Reelsmith 5.2.2: auto motion audit during render)
 

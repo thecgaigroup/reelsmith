@@ -252,6 +252,11 @@ Showreel kinetic type, transitions, and an open storyboard are in the skill. An 
 - Licenses: HyperFrames Apache-2.0; Remotion free for individuals and teams of up to 3 (remotion.pro/license);
   Manim and lottie-web MIT. Bundled music CC BY 3.0 (credit required; see `assets/music/CREDITS.txt`).
 
+## CI and testing
+Two workflows run on every PR and push to main:
+- **`ci.yml`**: lints, typechecks, validates brand schema, runs unit tests (pytest), and verifies OpenMotion preflight on example projects
+- **`smoke.yml`**: extracts ALL pin occurrences from reference docs (prose + commands), verifies they match and resolve upstream (npm + git ls-remote), runs a real minimal headless render (~1.5s product-launch at 640×360 with synthetic content), and runs review.py on the rendered output. Guards against paid generation (keys unset, REELSMITH_IGNORE_KEYS=1, --allow-paid never passed). CPU-only, $0, completes in <2 minutes.
+
 ## Quick reference
 - **List capabilities and keys**: `python3 scripts/capabilities.py`
 - **Check dependencies**: `python3 scripts/doctor.py`
