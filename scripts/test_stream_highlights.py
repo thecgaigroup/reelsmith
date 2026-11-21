@@ -340,9 +340,11 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
                            f"Start {clip_start}s too late (should be ~19s for 25s peak)")
             
             # Test 5: Verify passes scripts/review.py check
+            review_out = tmpdir / "review_out"
             review_result = subprocess.run([
                 sys.executable, str(HERE / "review.py"),
-                "check", str(clip_path)
+                "check", str(clip_path),
+                "--out", str(review_out)
             ], capture_output=True, text=True)
             
             self.assertEqual(review_result.returncode, 0,
