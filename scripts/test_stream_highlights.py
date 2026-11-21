@@ -594,6 +594,11 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             upper_half_mean_diff = upper_half_diff_sum / (upper_half_pixels * 3)
             upper_half_changed_fraction = upper_half_changed_pixels / upper_half_pixels
             
+            # Print diff numbers for CI logs
+            print(f"\nFrame diff @ t={frame_time}s:", file=sys.stderr)
+            print(f"  Lower third: changed={lower_third_changed_fraction:.4f}, mean_diff={lower_third_mean_diff:.2f}", file=sys.stderr)
+            print(f"  Upper half:  changed={upper_half_changed_fraction:.4f}, mean_diff={upper_half_mean_diff:.2f}", file=sys.stderr)
+            
             # Assert: lower third has material difference (captions present)
             self.assertGreater(lower_third_changed_fraction, 0.02,
                              f"Lower third changed pixels {lower_third_changed_fraction:.4f} too low - captions not burned in")

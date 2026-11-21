@@ -148,11 +148,31 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     return head + "\n".join(ev) + "\n"
 
 def burn(video, ass, out, fontsdir=None):
-    esc = str(Path(ass).resolve()).replace(":", r"\:").replace("'", r"\'")
+    # Escape path for ffmpeg subtitles filter per https://ffmpeg.org/ffmpeg-filters.html#subtitles-1
+    # Must escape: \ ' : [ ] , ;
+    ass_path = str(Path(ass).resolve())
+    esc = ass_path.replace("\\", "\\\\").replace(":", r"\:").replace("'", r"\'")
+    esc = esc.replace("[", r"\[").replace("]", r"\]").replace(",", r"\,").replace(";", r"\;")
+    
     vf = f"subtitles='{esc}'" + (f":fontsdir='{Path(fontsdir).resolve()}'" if fontsdir else "")
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(video), "-vf", vf, "-c:v", "libx264", "-crf", "18",
-                    "-preset", "medium", "-pix_fmt", "yuv420p", "-c:a", "copy", "-map_metadata", "-1", str(out)], check=True)
-    print(f"burned {ass} -> {out}")
+    
+    # Use check=True to ensure burn failures are fatal, not silent
+    result = subprocess.run(
+        ["ffmpeg", "-y", "-loglevel", "warning", "-i", str(video), "-vf", vf, 
+         "-c:v", "libx264", "-crf", "18", "-preset", "medium", "-pix_fmt", "yuv420p", 
+         "-c:a", "copy", "-map_metadata", "-1", str(out)],
+        capture_output=True, text=True, check=False
+    )
+    
+    if result.returncode != 0:
+        print(f"ERROR: Caption burn failed for {ass}", file=sys.stderr)
+        print(f"ffmpeg stderr: {result.stderr}", file=sys.stderr)
+        raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
+    
+    if result.stderr:
+        print(f"ffmpeg warnings during burn: {result.stderr}", file=sys.stderr)
+    
+    print(f"burned {ass} -> {out}", file=sys.stderr)
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
