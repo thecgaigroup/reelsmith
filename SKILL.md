@@ -12,7 +12,10 @@ description: >-
   timeline handoff or OpenMotion's Studio lint and export verifier. Optional product-hero notes in that file add no Three.js
   package and do not change the engine. captions.md when speech is on screen. Also promo, launch,
   recap, testimonial, how-to, slides, explainer, social clips. Paid AI only
-  after a quote.
+  after a quote. When the user asks "what can you do" or "what can Reelsmith make",
+  show the capabilities menu (run `python3 scripts/capabilities_menu.py` and display
+  the output), then ask what they need. The menu is automatic discovery only — never
+  require users to pick from it for normal requests.
 ---
 # Reelsmith
 
@@ -22,6 +25,22 @@ Everything works free and offline; optional keys add features. Paths below (`scr
 
 **Craft bar:** client and awards work must feel like a production-house cut — real selects, speech- or beat-locked
 kinetic type, correct logos — not grey placeholders or a talk-head TEMP diverted from the brief.
+
+## What Reelsmith can make
+
+- **Product launches and feature promos**: Music-driven announcement videos with kinetic type and brand animations (see `examples/previews/product-launch-9x16.gif`)
+- **Event recaps and highlights**: Turn event photos into engaging video recaps with music and transitions (see `examples/previews/event-recap-16x9.gif`)
+- **Testimonials and customer stories**: Showcase customer quotes and reviews with polished typography (see `examples/previews/testimonial-16x9.gif`)
+- **Coming soon teasers**: Countdown and date-reveal videos with loopable animations (see `examples/previews/countdown-teaser-9x16.gif`)
+- **Stats and milestone callouts**: Highlight key numbers, metrics, and achievements (see `examples/previews/stat-callout-9x16.gif`)
+- **Tutorials and how-tos**: Step-by-step instructional videos with chapter markers for YouTube (see `examples/previews/howto-tutorial-16x9.gif`)
+- **Slide presentations and kiosk loops**: Animated decks for talks, booths, or continuous display (see `examples/previews/slides-presentation-16x9.gif`)
+- **Feature explainers with narration**: Product walkthroughs with voiceover and auto-generated captions (see `examples/previews/feature-explainer-1x1.gif`)
+- **Client sizzle reels and awards cuts**: Production-quality cuts from real footage with beat-synced kinetic type (no single example; see references/client-sizzle.md)
+
+Everything works free and offline. Optional API keys add features: a **Pexels** key unlocks high-quality stock photos and videos. Run `python3 scripts/capabilities.py` to see what's available.
+
+Tell me what you need — aspect ratio, length, platform, and brand — and I'll write the script, plan the cut, and render the video.
 
 ## Start every job
 0. In an existing film folder, read `EDIT_LOG.md` first and say the last session in one sentence (`review-and-qa.md`, Edit log). Append to it before you end the session.

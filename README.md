@@ -6,6 +6,22 @@ captions, platform presets and a review gate before anything final or paid. It r
 API keys (stock media, premium voice, AI generation) switch extra features on when they are present.
 Every example was rendered end to end on Linux before packaging.
 
+## What Reelsmith makes
+
+| Capability | Example |
+|---|---|
+| **Product launches and feature promos** — Music-driven announcement videos with kinetic type and brand animations | <img src="examples/previews/product-launch-9x16.gif" width="120" alt="Product launches and feature promos"> |
+| **Event recaps and highlights** — Turn event photos into engaging video recaps with music and transitions | <img src="examples/previews/event-recap-16x9.gif" width="120" alt="Event recaps and highlights"> |
+| **Testimonials and customer stories** — Showcase customer quotes and reviews with polished typography | <img src="examples/previews/testimonial-16x9.gif" width="120" alt="Testimonials and customer stories"> |
+| **Coming soon teasers** — Countdown and date-reveal videos with loopable animations | <img src="examples/previews/countdown-teaser-9x16.gif" width="120" alt="Coming soon teasers"> |
+| **Stats and milestone callouts** — Highlight key numbers, metrics, and achievements | <img src="examples/previews/stat-callout-9x16.gif" width="120" alt="Stats and milestone callouts"> |
+| **Tutorials and how-tos** — Step-by-step instructional videos with chapter markers for YouTube | <img src="examples/previews/howto-tutorial-16x9.gif" width="120" alt="Tutorials and how-tos"> |
+| **Slide presentations and kiosk loops** — Animated decks for talks, booths, or continuous display | <img src="examples/previews/slides-presentation-16x9.gif" width="120" alt="Slide presentations and kiosk loops"> |
+| **Feature explainers with narration** — Product walkthroughs with voiceover and auto-generated captions | <img src="examples/previews/feature-explainer-1x1.gif" width="120" alt="Feature explainers with narration"> |
+| **Client sizzle reels and awards cuts** — Production-quality cuts from real footage with beat-synced kinetic type | See references/client-sizzle.md |
+
+Everything works free and offline. Optional API keys add features: a **Pexels** key unlocks high-quality stock photos and videos. Run `python3 scripts/capabilities.py` to see what's available.
+
 ## Examples
 
 ![Contact sheet of every template in 16:9, 9:16 and 1:1](examples/gallery.jpg)
@@ -63,6 +79,7 @@ Reelsmith and `getting-started/SKILL.md` as its getting-started skill, then run 
 - Client sizzles from real footage (use client-sizzle.md workflow instead)
 
 See `references/clipping.md` for the complete workflow, face tracking approach, highlight scoring (CPU-only, $0, no LLM), and limitations.
+
 
 ## Roadmap
 Showreel kinetic type, transitions, and an open storyboard are in the skill. An optional SageCut measurement ladder and an optional `poster-grid` recipe are documented; Sage API spend stays parked. Motion grammar, the independent-critic loop, and optional product-hero notes from [motion-video-kit](https://github.com/echris6/motion-video-kit) (MIT) are in the skill. That fold adds no Three.js package. Pricing templates from that kit stay parked. Launch-film sound (sync taps, bed-relative levels, a role bank, a measured SFX check) and a six-station harness (reference, data, story, frames, a one-line timing fix, then the master) are in the skill as of 2026-10-27. That fold adds no sound bank and no Remotion skill tree. v5.1 is that craft-docs surface, already on main. Pack behavior is unchanged. Other parked fold-ins and skips (MotionVideo paid pack, FilmCraft, CapCut, snapcn Pro, 3D/extrude and glitch defaults) are in [ROADMAP.md](ROADMAP.md). No sidecar packages.
