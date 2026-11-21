@@ -502,6 +502,13 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             self.assertGreater(len(no_caption_clips), 0, "No non-captioned clips generated")
             no_caption_clip = no_caption_clips[0]
             
+            # Debug: Check if no-caption clip accidentally has captions
+            no_caption_clip_dir = no_caption_clip.parent
+            print(f"\nNo-caption clip dir: {no_caption_clip_dir}", file=sys.stderr)
+            print(f"Files: {list(no_caption_clip_dir.glob('*'))}", file=sys.stderr)
+            if (no_caption_clip_dir / "captions.ass").exists():
+                print("WARNING: no-caption clip has captions.ass!", file=sys.stderr)
+            
             # Extract same frame from both clips at t=3.5s (when "stream" word is on screen)
             # Words are shifted to clip-relative times: 21s - 19s clip_start = 2s
             # "stream" is at t=3.2-3.6s in the clip
