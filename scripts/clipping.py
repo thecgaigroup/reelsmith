@@ -554,6 +554,7 @@ def process_stream_highlights(video_source, output_dir, chat_json=None,
                 
                 # Burn captions
                 if (clip_dir / "captions.ass").exists():
+                    print(f"Burning captions from {clip_dir / 'captions.ass'} into {cropped_clip}", file=sys.stderr)
                     burned_clip = clip_dir / "burned.mp4"
                     burn_cmd = [
                         "python3", str(HERE / "captions.py"), "burn",
@@ -561,9 +562,21 @@ def process_stream_highlights(video_source, output_dir, chat_json=None,
                         str(clip_dir / "captions.ass"),
                         "-o", str(burned_clip)
                     ]
-                    run_cmd(burn_cmd)
+                    burn_result = run_cmd(burn_cmd)
+                    
+                    # Verify burned clip exists
+                    if not burned_clip.exists():
+                        print(f"ERROR: Burned clip not created at {burned_clip}", file=sys.stderr)
+                        print(f"Burn command stdout: {burn_result.stdout}", file=sys.stderr)
+                        print(f"Burn command stderr: {burn_result.stderr}", file=sys.stderr)
+                        sys.exit(1)
+                    
+                    print(f"Replacing {cropped_clip} with burned version", file=sys.stderr)
                     # Replace video.mp4 with burned version
                     burned_clip.replace(cropped_clip)
+                    print(f"Caption burn complete for clip {i}", file=sys.stderr)
+                else:
+                    print(f"No captions.ass found at {clip_dir / 'captions.ass'}, skipping burn", file=sys.stderr)
         
         results.append({
             "clip_dir": str(clip_dir),
