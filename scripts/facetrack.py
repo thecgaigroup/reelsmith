@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """Face tracking and 9:16 crop generation using OpenCV with IoU-based tracker IDs.
 
-  facetrack.py detect VIDEO --out tracking.json [--sample-fps 5] [--smooth-window 30]
+  facetrack.py detect VIDEO --out tracking.json [--sample-fps 5] [--smooth-window 30] [--detector DETECTOR]
   facetrack.py crop VIDEO --tracking tracking.json --out OUTPUT.mp4 --aspect 9:16
 
-Uses OpenCV Haar cascade for face detection (CPU-only, $0) with IoU-based tracker ID assignment
-(technique inspired by supervision pattern; supervision is not a dependency).
-Generates smooth 9:16 crops centered on tracked faces.
+Detector options (--detector):
+  - haar: OpenCV Haar cascade (default, CPU-only, no downloads required)
+  - yunet: YuNet face detection (MIT License, requires model download)
+  - yolox: YOLOX-S person tracking (Apache-2.0, requires model download)
+
+Models must be downloaded first via: python3 scripts/fetch_models.py
+YuNet and YOLOX fall back to Haar cascade if models unavailable.
+
+Generates smooth 9:16 crops centered on tracked faces/people with IoU-based tracker ID assignment.
 
 tracking.json format:
 {
@@ -17,11 +23,16 @@ tracking.json format:
   "crop_windows": [{"frame": 0, "time": 0.0, "cx": 540, "cy": 540, "w": 1080, "h": 1920}, ...],
   "video_width": 1920,
   "video_height": 1080,
-  "fps": 30.0
+  "fps": 30.0,
+  "detector_used": "haar"
 }
 """
 import argparse, json, subprocess, sys, tempfile
 from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+REPO = HERE.parent
+MODELS_DIR = REPO / "models" / "stream"
 
 def get_video_info(video_path):
     """Get video dimensions and fps using ffprobe."""
@@ -363,6 +374,345 @@ def apply_crop_ffmpeg(video_path, tracking_data, output_path):
     
     print(f"Cropped video saved to {output_path}", file=sys.stderr)
 
+
+def detect_faces_yunet(video_path, sample_fps=5, smooth_window=30):
+    """Detect faces using YuNet (MIT License, OpenCV Zoo).
+    
+    Falls back to Haar cascade if model not available.
+    """
+    model_path = MODELS_DIR / "face_detection_yunet_2023mar.onnx"
+    
+    if not model_path.exists():
+        print(f"YuNet model not found at {model_path}", file=sys.stderr)
+        print("Falling back to Haar cascade. Run: python3 scripts/fetch_models.py --yunet", 
+              file=sys.stderr)
+        return detect_faces_opencv(video_path, sample_fps, smooth_window)
+    
+    try:
+        import cv2
+        import numpy as np
+    except ImportError:
+        print("Error: opencv-python required", file=sys.stderr)
+        sys.exit(1)
+    
+    # Initialize YuNet detector
+    try:
+        detector = cv2.FaceDetectorYN.create(
+            str(model_path),
+            "",
+            (320, 320),
+            score_threshold=0.8,
+            nms_threshold=0.3,
+            top_k=5000
+        )
+    except Exception as e:
+        print(f"Could not initialize YuNet: {e}", file=sys.stderr)
+        print("Falling back to Haar cascade", file=sys.stderr)
+        return detect_faces_opencv(video_path, sample_fps, smooth_window)
+    
+    # Open video
+    cap = cv2.VideoCapture(str(video_path))
+    if not cap.isOpened():
+        print(f"Error: Could not open video", file=sys.stderr)
+        sys.exit(1)
+    
+    video_fps = cap.get(cv2.CAP_PROP_FPS)
+    video_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    video_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    frame_step = max(1, int(video_fps / sample_fps))
+    
+    print(f"Using YuNet detector on {video_width}x{video_height} @ {video_fps:.2f}fps", 
+          file=sys.stderr)
+    
+    active_tracks = {}
+    next_id = 0
+    all_detections = []
+    frame_num = 0
+    processed = 0
+    
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        
+        if frame_num % frame_step == 0:
+            # Resize for detection (YuNet expects 320x320)
+            h, w = frame.shape[:2]
+            scale = min(320 / w, 320 / h)
+            resized = cv2.resize(frame, (round(w * scale), round(h * scale)))
+            
+            # Pad to 320x320
+            canvas = np.zeros((320, 320, 3), dtype=np.uint8)
+            pad_x = (320 - resized.shape[1]) // 2
+            pad_y = (320 - resized.shape[0]) // 2
+            canvas[pad_y:pad_y + resized.shape[0], pad_x:pad_x + resized.shape[1]] = resized
+            
+            # Detect
+            detector.setInputSize((320, 320))
+            _, faces = detector.detect(canvas)
+            
+            current_detections = []
+            if faces is not None:
+                factor = 1.0 / scale
+                for face in faces:
+                    x, y, fw, fh = face[:4]
+                    # Un-pad and un-scale
+                    x = int((x - pad_x) * factor)
+                    y = int((y - pad_y) * factor)
+                    fw = int(fw * factor)
+                    fh = int(fh * factor)
+                    
+                    # Clamp to video bounds
+                    x = max(0, min(x, video_width - 1))
+                    y = max(0, min(y, video_height - 1))
+                    fw = min(fw, video_width - x)
+                    fh = min(fh, video_height - y)
+                    
+                    if fw <= 0 or fh <= 0:
+                        continue
+                    
+                    bbox = [x, y, fw, fh]
+                    center = [x + fw // 2, y + fh // 2]
+                    
+                    # Match to existing tracks by IoU
+                    best_iou = 0
+                    best_id = None
+                    for tid, last_bbox in active_tracks.items():
+                        iou = compute_iou(bbox, last_bbox)
+                        if iou > best_iou:
+                            best_iou = iou
+                            best_id = tid
+                    
+                    if best_iou > 0.3:
+                        tracker_id = best_id
+                    else:
+                        tracker_id = next_id
+                        next_id += 1
+                    
+                    active_tracks[tracker_id] = bbox
+                    current_detections.append({
+                        "tracker_id": tracker_id,
+                        "bbox": bbox,
+                        "center": center
+                    })
+            
+            time_sec = frame_num / video_fps
+            all_detections.append({
+                "frame": frame_num,
+                "time": round(time_sec, 3),
+                "detections": current_detections
+            })
+            
+            processed += 1
+            if processed % 100 == 0:
+                print(f"Processed {processed} frames...", file=sys.stderr)
+        
+        frame_num += 1
+    
+    cap.release()
+    
+    # Organize by tracker_id
+    tracks = {}
+    for det in all_detections:
+        for d in det["detections"]:
+            tid = d["tracker_id"]
+            if tid not in tracks:
+                tracks[tid] = []
+            tracks[tid].append({
+                "frame": det["frame"],
+                "time": det["time"],
+                "bbox": d["bbox"],
+                "center": d["center"]
+            })
+    
+    track_list = [{"tracker_id": tid, "frames": frames} 
+                  for tid, frames in sorted(tracks.items())]
+    
+    # Smooth positions
+    for track in track_list:
+        smooth_track_positions(track["frames"], smooth_window)
+    
+    return {
+        "tracks": track_list,
+        "video_width": video_width,
+        "video_height": video_height,
+        "fps": video_fps,
+        "total_frames": total_frames,
+        "detector_used": "yunet"
+    }
+
+
+def detect_people_yolox(video_path, sample_fps=5, smooth_window=30):
+    """Detect people using YOLOX-S (Apache-2.0, OpenCV Zoo).
+    
+    Falls back to Haar cascade if model not available or onnxruntime missing.
+    """
+    model_path = MODELS_DIR / "object_detection_yolox_2022nov.onnx"
+    
+    if not model_path.exists():
+        print(f"YOLOX model not found at {model_path}", file=sys.stderr)
+        print("Falling back to Haar cascade. Run: python3 scripts/fetch_models.py --yolox", 
+              file=sys.stderr)
+        return detect_faces_opencv(video_path, sample_fps, smooth_window)
+    
+    try:
+        import cv2
+        import numpy as np
+        import onnxruntime as ort
+    except ImportError as e:
+        print(f"Missing dependency: {e}", file=sys.stderr)
+        print("Falling back to Haar cascade", file=sys.stderr)
+        return detect_faces_opencv(video_path, sample_fps, smooth_window)
+    
+    # Initialize ONNX session
+    try:
+        opts = ort.SessionOptions()
+        opts.intra_op_num_threads = 2
+        session = ort.InferenceSession(str(model_path), opts, 
+                                       providers=["CPUExecutionProvider"])
+    except Exception as e:
+        print(f"Could not initialize YOLOX: {e}", file=sys.stderr)
+        print("Falling back to Haar cascade", file=sys.stderr)
+        return detect_faces_opencv(video_path, sample_fps, smooth_window)
+    
+    # Grid for YOLOX decoding
+    def make_grids():
+        rows = []
+        for stride in (8, 16, 32):
+            n = 640 // stride
+            ys, xs = np.meshgrid(np.arange(n), np.arange(n), indexing="ij")
+            rows.append(np.stack([xs.ravel(), ys.ravel(), 
+                                 np.full(n * n, stride)], axis=1))
+        return np.concatenate(rows).astype(np.float32)
+    
+    grid = make_grids()
+    
+    # Open video
+    cap = cv2.VideoCapture(str(video_path))
+    if not cap.isOpened():
+        print("Error: Could not open video", file=sys.stderr)
+        sys.exit(1)
+    
+    video_fps = cap.get(cv2.CAP_PROP_FPS)
+    video_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    video_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    frame_step = max(1, int(video_fps / sample_fps))
+    
+    print(f"Using YOLOX person detector on {video_width}x{video_height} @ {video_fps:.2f}fps",
+          file=sys.stderr)
+    
+    active_tracks = {}
+    next_id = 0
+    all_detections = []
+    frame_num = 0
+    processed = 0
+    
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        
+        if frame_num % frame_step == 0:
+            h, w = frame.shape[:2]
+            r = min(640 / w, 640 / h)
+            
+            # Prepare input
+            img = np.full((640, 640, 3), 114, dtype=np.uint8)
+            img[:round(h * r), :round(w * r)] = cv2.resize(frame, 
+                                                           (round(w * r), round(h * r)))
+            blob = img.transpose(2, 0, 1)[None].astype(np.float32)
+            
+            # Run inference
+            output = session.run(None, {"images": blob})[0][0]
+            
+            # Decode detections
+            xy = (output[:, :2] + grid[:, :2]) * grid[:, 2:3]
+            wh = np.exp(output[:, 2:4]) * grid[:, 2:3]
+            score = output[:, 4] * output[:, 5]  # objectness * P(person)
+            keep = score > 0.35
+            
+            current_detections = []
+            if keep.any():
+                xy, wh, score = xy[keep] / r, wh[keep] / r, score[keep]
+                boxes = [[float(x - bw / 2), float(y - bh / 2), float(bw), float(bh)] 
+                        for (x, y), (bw, bh) in zip(xy, wh)]
+                idx = cv2.dnn.NMSBoxes(boxes, score.tolist(), 0.35, 0.45)
+                
+                for i in np.array(idx).ravel():
+                    x, y, pw, ph = boxes[i]
+                    bbox = [int(x), int(y), int(pw), int(ph)]
+                    center = [int(x + pw / 2), int(y + ph / 2)]
+                    
+                    # IoU matching
+                    best_iou = 0
+                    best_id = None
+                    for tid, last_bbox in active_tracks.items():
+                        iou = compute_iou(bbox, last_bbox)
+                        if iou > best_iou:
+                            best_iou = iou
+                            best_id = tid
+                    
+                    if best_iou > 0.3:
+                        tracker_id = best_id
+                    else:
+                        tracker_id = next_id
+                        next_id += 1
+                    
+                    active_tracks[tracker_id] = bbox
+                    current_detections.append({
+                        "tracker_id": tracker_id,
+                        "bbox": bbox,
+                        "center": center
+                    })
+            
+            time_sec = frame_num / video_fps
+            all_detections.append({
+                "frame": frame_num,
+                "time": round(time_sec, 3),
+                "detections": current_detections
+            })
+            
+            processed += 1
+            if processed % 100 == 0:
+                print(f"Processed {processed} frames...", file=sys.stderr)
+        
+        frame_num += 1
+    
+    cap.release()
+    
+    # Organize by tracker_id
+    tracks = {}
+    for det in all_detections:
+        for d in det["detections"]:
+            tid = d["tracker_id"]
+            if tid not in tracks:
+                tracks[tid] = []
+            tracks[tid].append({
+                "frame": det["frame"],
+                "time": det["time"],
+                "bbox": d["bbox"],
+                "center": d["center"]
+            })
+    
+    track_list = [{"tracker_id": tid, "frames": frames} 
+                  for tid, frames in sorted(tracks.items())]
+    
+    # Smooth positions
+    for track in track_list:
+        smooth_track_positions(track["frames"], smooth_window)
+    
+    return {
+        "tracks": track_list,
+        "video_width": video_width,
+        "video_height": video_height,
+        "fps": video_fps,
+        "total_frames": total_frames,
+        "detector_used": "yolox"
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                    formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -372,6 +722,8 @@ def main():
     parser.add_argument("--out", required=True, 
                        help="Output path (tracking.json for detect, video file for crop)")
     parser.add_argument("--tracking", help="Tracking JSON (required for crop action)")
+    parser.add_argument("--detector", choices=["haar", "yunet", "yolox"], default="haar",
+                       help="Detector: haar (default), yunet (MIT), yolox (Apache-2.0)")
     parser.add_argument("--sample-fps", type=float, default=5,
                        help="Frames per second to sample for detection (default: 5)")
     parser.add_argument("--smooth-window", type=int, default=30,
@@ -382,13 +734,29 @@ def main():
     args = parser.parse_args()
     
     if args.action == "detect":
-        print(f"Detecting faces in {args.video}...", file=sys.stderr)
+        print(f"Detecting with {args.detector} in {args.video}...", file=sys.stderr)
         
-        tracking_data = detect_faces_opencv(
-            args.video,
-            sample_fps=args.sample_fps,
-            smooth_window=args.smooth_window
-        )
+        # Select detector
+        if args.detector == "yunet":
+            tracking_data = detect_faces_yunet(
+                args.video,
+                sample_fps=args.sample_fps,
+                smooth_window=args.smooth_window
+            )
+        elif args.detector == "yolox":
+            tracking_data = detect_people_yolox(
+                args.video,
+                sample_fps=args.sample_fps,
+                smooth_window=args.smooth_window
+            )
+        else:  # haar (default)
+            tracking_data = detect_faces_opencv(
+                args.video,
+                sample_fps=args.sample_fps,
+                smooth_window=args.smooth_window
+            )
+            if "detector_used" not in tracking_data:
+                tracking_data["detector_used"] = "haar"
         
         # Generate crop windows
         print("Generating crop windows...", file=sys.stderr)
@@ -402,6 +770,7 @@ def main():
         
         # Print summary
         print(f"\nSummary:", file=sys.stderr)
+        print(f"  Detector used: {tracking_data.get('detector_used', 'unknown')}", file=sys.stderr)
         print(f"  Tracks: {len(tracking_data['tracks'])}", file=sys.stderr)
         print(f"  Crop windows: {len(crop_windows)}", file=sys.stderr)
         print(f"  Target aspect: {args.aspect}", file=sys.stderr)
