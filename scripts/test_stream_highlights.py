@@ -461,7 +461,10 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             self.assertEqual(captioned_result.returncode, 0,
                            f"Captioned clip generation failed: {captioned_result.stderr}")
             
-            
+            # Print subprocess stderr for debugging
+            print("\n=== Captioned clip generation stderr ===", file=sys.stderr)
+            print(captioned_result.stderr, file=sys.stderr)
+            print("=== End captioned stderr ===\n", file=sys.stderr)
             
             captioned_clips = list(captioned_output.glob("clip_*/video.mp4"))
             self.assertGreater(len(captioned_clips), 0, "No captioned clips generated")
@@ -485,6 +488,11 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             
             self.assertEqual(no_caption_result.returncode, 0,
                            f"No-caption clip generation failed: {no_caption_result.stderr}")
+            
+            # Print subprocess stderr for debugging
+            print("\n=== No-caption clip generation stderr ===", file=sys.stderr)
+            print(no_caption_result.stderr, file=sys.stderr)
+            print("=== End no-caption stderr ===\n", file=sys.stderr)
             
             
             no_caption_clips = list(no_caption_output.glob("clip_*/video.mp4"))
