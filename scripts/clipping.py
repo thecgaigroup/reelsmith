@@ -393,7 +393,7 @@ def fetch_stream_url(url, rights_confirmed=False):
 
 
 def process_stream_highlights(video_source, output_dir, chat_json=None, 
-                              min_clip=10, max_clip=30, top_n=5, 
+                              transcript_path=None, min_clip=10, max_clip=30, top_n=5, 
                               chunk_duration=90, rights_confirmed=False,
                               profanity_mask=True):
     """Process stream in chunks for highlight detection.
@@ -476,9 +476,16 @@ def process_stream_highlights(video_source, output_dir, chat_json=None,
     print(f"Tracking complete (detector: {tracking_data.get('detector_used', 'unknown')})", 
           file=sys.stderr)
     
-    # Generate transcript for captions (use faster-whisper if available, else skip)
+    # Get transcript for captions (provided > faster-whisper > skip)
     words_json = output_dir / "transcript.json"
-    if not words_json.exists():
+    
+    if transcript_path and Path(transcript_path).exists():
+        # Use provided transcript
+        shutil.copy(transcript_path, words_json)
+        words = json.loads(words_json.read_text())
+        print(f"Using provided transcript: {len(words)} words", file=sys.stderr)
+    elif not words_json.exists():
+        # Try faster-whisper
         try:
             print("\nGenerating transcript for captions...", file=sys.stderr)
             from faster_whisper import WhisperModel
@@ -499,6 +506,7 @@ def process_stream_highlights(video_source, output_dir, chat_json=None,
             print(f"Transcription failed: {e}, skipping captions", file=sys.stderr)
             words = []
     else:
+        # Use existing transcript
         words = json.loads(words_json.read_text())
     
     # Process each clip with stream-pop captions
@@ -625,6 +633,7 @@ def main():
                 args.video,
                 args.out,
                 chat_json=args.chat,
+                transcript_path=args.transcript,
                 min_clip=args.min_clip,
                 max_clip=args.max_clip,
                 top_n=args.top_n,

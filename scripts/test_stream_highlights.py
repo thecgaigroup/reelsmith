@@ -429,68 +429,149 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
                 self.assertLess(clip_magenta_fraction, 0.001,
                               f"Frame @{frame_time}s has {clip_magenta_fraction:.4f} magenta (facecam not excluded)")
             
-            # Test 7: Verify caption generation was attempted
-            # The clipping pipeline should call caption generation if transcript exists
-            # Synthetic video has sine wave (no speech), so transcription may find nothing
-            # Verify: IF transcript was generated with words, THEN captions must be burned in
+            # Test 7: UNCONDITIONAL caption burn-in verification with frame diff
+            # Create fixture transcript with words that appear during the clip
+            fixture_words = [
+                {"text": "Welcome", "start": clip_start + 5.0, "end": clip_start + 5.5},
+                {"text": "to", "start": clip_start + 5.6, "end": clip_start + 5.8},
+                {"text": "the", "start": clip_start + 5.9, "end": clip_start + 6.1},
+                {"text": "stream", "start": clip_start + 6.2, "end": clip_start + 6.6},
+                {"text": "highlights", "start": clip_start + 6.7, "end": clip_start + 7.2},
+            ]
             
-            transcript_file = output_dir / "transcript.json"
-            clip_dir = clip_path.parent
+            fixture_transcript = tmpdir / "fixture_words.json"
+            fixture_transcript.write_text(json.dumps(fixture_words, indent=2))
             
-            if transcript_file.exists():
-                transcript_data = json.loads(transcript_file.read_text())
-                
-                if isinstance(transcript_data, list) and len(transcript_data) > 0:
-                    # Transcript has words - verify captions were burned in
-                    # Extract a frame from mid-clip
-                    caption_frame = tmpdir / "caption_check.png"
-                    subprocess.run([
-                        "ffmpeg", "-y", "-ss", "15", "-i", str(clip_path),
-                        "-frames:v", "1", "-f", "image2",
-                        str(caption_frame)
-                    ], capture_output=True, check=True)
+            # Generate clip WITH captions using fixture transcript
+            captioned_output = tmpdir / "captioned_output"
+            captioned_result = subprocess.run([
+                sys.executable, str(HERE / "clipping.py"),
+                "process", str(video_file),
+                "--out", str(captioned_output),
+                "--mode", "stream-highlights",
+                "--chat", str(chat_file),
+                "--transcript", str(fixture_transcript),
+                "--min-clip", "30",
+                "--max-clip", "30",
+                "--top-n", "1"
+            ], capture_output=True, text=True)
+            
+            self.assertEqual(captioned_result.returncode, 0,
+                           f"Captioned clip generation failed: {captioned_result.stderr}")
+            
+            captioned_clips = list(captioned_output.glob("clip_*/video.mp4"))
+            self.assertGreater(len(captioned_clips), 0, "No captioned clips generated")
+            captioned_clip = captioned_clips[0]
+            
+            # Generate clip WITHOUT captions (no transcript)
+            no_caption_output = tmpdir / "no_caption_output"
+            no_caption_result = subprocess.run([
+                sys.executable, str(HERE / "clipping.py"),
+                "process", str(video_file),
+                "--out", str(no_caption_output),
+                "--mode", "stream-highlights",
+                "--chat", str(chat_file),
+                "--min-clip", "30",
+                "--max-clip", "30",
+                "--top-n", "1"
+            ], capture_output=True, text=True)
+            
+            self.assertEqual(no_caption_result.returncode, 0,
+                           f"No-caption clip generation failed: {no_caption_result.stderr}")
+            
+            no_caption_clips = list(no_caption_output.glob("clip_*/video.mp4"))
+            self.assertGreater(len(no_caption_clips), 0, "No non-captioned clips generated")
+            no_caption_clip = no_caption_clips[0]
+            
+            # Extract same frame from both clips at t=6s (when "stream" word is on screen)
+            frame_time = "6"
+            
+            with_caption_frame = tmpdir / "with_caption.png"
+            without_caption_frame = tmpdir / "without_caption.png"
+            
+            subprocess.run([
+                "ffmpeg", "-y", "-ss", frame_time, "-i", str(captioned_clip),
+                "-frames:v", "1", "-f", "image2",
+                str(with_caption_frame)
+            ], capture_output=True, check=True)
+            
+            subprocess.run([
+                "ffmpeg", "-y", "-ss", frame_time, "-i", str(no_caption_clip),
+                "-frames:v", "1", "-f", "image2",
+                str(without_caption_frame)
+            ], capture_output=True, check=True)
+            
+            # Read both frames as RGB
+            frame_probe = subprocess.run([
+                "ffprobe", "-v", "error", "-select_streams", "v:0",
+                "-show_entries", "stream=width,height",
+                "-of", "csv=p=0", str(with_caption_frame)
+            ], capture_output=True, text=True, check=True)
+            frame_w, frame_h = map(int, frame_probe.stdout.strip().split(","))
+            
+            with_caption_rgb = subprocess.run([
+                "ffmpeg", "-y", "-i", str(with_caption_frame),
+                "-f", "rawvideo", "-pix_fmt", "rgb24", "-"
+            ], capture_output=True, check=True).stdout
+            
+            without_caption_rgb = subprocess.run([
+                "ffmpeg", "-y", "-i", str(without_caption_frame),
+                "-f", "rawvideo", "-pix_fmt", "rgb24", "-"
+            ], capture_output=True, check=True).stdout
+            
+            # Frame diff: lower third (caption region) should differ materially
+            lower_third_start = int(frame_h * 0.7)
+            lower_third_diff_sum = 0
+            lower_third_changed_pixels = 0
+            lower_third_pixels = (frame_h - lower_third_start) * frame_w
+            
+            for y in range(lower_third_start, frame_h):
+                for x in range(frame_w):
+                    idx = (y * frame_w + x) * 3
+                    r1, g1, b1 = with_caption_rgb[idx], with_caption_rgb[idx+1], with_caption_rgb[idx+2]
+                    r2, g2, b2 = without_caption_rgb[idx], without_caption_rgb[idx+1], without_caption_rgb[idx+2]
                     
-                    # Get frame dimensions
-                    frame_probe = subprocess.run([
-                        "ffprobe", "-v", "error", "-select_streams", "v:0",
-                        "-show_entries", "stream=width,height",
-                        "-of", "csv=p=0", str(caption_frame)
-                    ], capture_output=True, text=True, check=True)
-                    frame_w, frame_h = map(int, frame_probe.stdout.strip().split(","))
+                    diff = abs(r1 - r2) + abs(g1 - g2) + abs(b1 - b2)
+                    lower_third_diff_sum += diff
                     
-                    # Read frame as RGB
-                    frame_rgb = subprocess.run([
-                        "ffmpeg", "-y", "-i", str(caption_frame),
-                        "-f", "rawvideo", "-pix_fmt", "rgb24", "-"
-                    ], capture_output=True, check=True).stdout
+                    if diff > 30:  # Significant change
+                        lower_third_changed_pixels += 1
+            
+            lower_third_mean_diff = lower_third_diff_sum / (lower_third_pixels * 3)
+            lower_third_changed_fraction = lower_third_changed_pixels / lower_third_pixels
+            
+            # Control: upper half should be near-identical
+            upper_half_end = int(frame_h * 0.5)
+            upper_half_diff_sum = 0
+            upper_half_changed_pixels = 0
+            upper_half_pixels = upper_half_end * frame_w
+            
+            for y in range(upper_half_end):
+                for x in range(frame_w):
+                    idx = (y * frame_w + x) * 3
+                    r1, g1, b1 = with_caption_rgb[idx], with_caption_rgb[idx+1], with_caption_rgb[idx+2]
+                    r2, g2, b2 = without_caption_rgb[idx], without_caption_rgb[idx+1], without_caption_rgb[idx+2]
                     
-                    # Check lower third for bright pixels (caption text)
-                    lower_third_start = int(frame_h * 0.7)
-                    bright_pixel_count = 0
-                    lower_third_pixels = (frame_h - lower_third_start) * frame_w
+                    diff = abs(r1 - r2) + abs(g1 - g2) + abs(b1 - b2)
+                    upper_half_diff_sum += diff
                     
-                    for y in range(lower_third_start, frame_h):
-                        for x in range(frame_w):
-                            idx = (y * frame_w + x) * 3
-                            r, g, b = frame_rgb[idx], frame_rgb[idx+1], frame_rgb[idx+2]
-                            luminance = 0.299 * r + 0.587 * g + 0.114 * b
-                            if luminance > 200:
-                                bright_pixel_count += 1
-                    
-                    bright_fraction = bright_pixel_count / lower_third_pixels
-                    
-                    # With real speech content, captions should create bright pixels
-                    self.assertGreater(bright_fraction, 0.005,
-                                     f"Transcript has {len(transcript_data)} words but no captions burned in (bright pixels {bright_fraction:.4f})")
-                else:
-                    # No words in transcript - synthetic video has no speech
-                    # Verify caption pipeline was invoked but found nothing
-                    # This is expected for sine-wave audio
-                    print("Note: Synthetic video has no speech content, captions skipped (expected)", file=sys.stderr)
-            else:
-                # No transcript file - transcription failed or was skipped
-                # This is acceptable if faster-whisper isn't available
-                print("Note: Transcription skipped (faster-whisper may be unavailable)", file=sys.stderr)
+                    if diff > 30:
+                        upper_half_changed_pixels += 1
+            
+            upper_half_mean_diff = upper_half_diff_sum / (upper_half_pixels * 3)
+            upper_half_changed_fraction = upper_half_changed_pixels / upper_half_pixels
+            
+            # Assert: lower third has material difference (captions present)
+            self.assertGreater(lower_third_changed_fraction, 0.02,
+                             f"Lower third changed pixels {lower_third_changed_fraction:.4f} too low - captions not burned in")
+            self.assertGreater(lower_third_mean_diff, 5.0,
+                             f"Lower third mean diff {lower_third_mean_diff:.2f} too low - captions not burned in")
+            
+            # Assert: upper half near-identical (control - same video content)
+            self.assertLess(upper_half_changed_fraction, 0.01,
+                          f"Upper half changed pixels {upper_half_changed_fraction:.4f} too high - encoding mismatch")
+            self.assertLess(upper_half_mean_diff, 2.0,
+                          f"Upper half mean diff {upper_half_mean_diff:.2f} too high - encoding mismatch")
             
             # Test 8: Verify legacy path under-ranks the spike (or fails to run)
             # Legacy either failed (no transcript) or didn't pick the chat burst optimally
