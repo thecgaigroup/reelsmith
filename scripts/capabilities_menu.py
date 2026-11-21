@@ -77,12 +77,21 @@ CAPABILITIES = [
         "description": "Production-quality cuts from real footage with beat-synced kinetic type",
         "template": None,  # No template, custom HyperFrames workflow
         "example": None,  # No single example file
+        "reference": "references/client-sizzle.md",
+    },
+    {
+        "name": "Update Reelsmith",
+        "description": "Check for and install newer versions of Reelsmith",
+        "template": None,  # Not a template, system command
+        "example": None,  # Not a video template
+        "reference": "python3 scripts/doctor.py",
     },
     {
         "name": "Stream highlights and gaming clips",
         "description": "Extract vertical 9:16 highlights from live streams or VODs with chat-burst analysis",
         "template": None,  # stream-highlights mode in clipping.py
         "example": None,  # No preview (user content)
+        "reference": "references/clipping.md",
     },
 ]
 
@@ -128,7 +137,8 @@ def generate_menu_text() -> str:
             example_path = f"examples/previews/{cap['example']}"
             line += f" (see `{example_path}`)"
         else:
-            line += " (no single example; see references/client-sizzle.md)"
+            ref = cap.get("reference", "references/client-sizzle.md")
+            line += f" (no single example; see {ref})"
         lines.append(line)
     
     lines.append("")
@@ -167,7 +177,8 @@ def generate_menu_markdown() -> str:
             img_path = f"examples/previews/{cap['example']}"
             example_cell = f'<img src="{img_path}" width="120" alt="{cap["name"]}">'
         else:
-            example_cell = "See references/client-sizzle.md"
+            ref = cap.get("reference", "references/client-sizzle.md")
+            example_cell = f"See {ref}"
         lines.append(f"| {desc} | {example_cell} |")
     
     lines.append("")

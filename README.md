@@ -62,6 +62,34 @@ Reelsmith and `getting-started/SKILL.md` as its getting-started skill, then run 
 **Other coding agents:** `git clone https://github.com/thecgaigroup/reelsmith.git` into your skills directory
 (for example `.cursor/skills/reelsmith` or `~/.claude/skills/reelsmith`).
 
+## Updating Reelsmith
+
+Reelsmith checks for updates automatically when you run `python3 scripts/doctor.py`. If a newer version is available, it prints:
+
+```
+A newer version of Reelsmith is available: 5.4.2 (you have 5.4.0)
+Update with: cd /path/to/reelsmith && git pull origin main
+```
+
+Or for zip installs:
+
+```
+A newer version of Reelsmith is available: 5.4.2 (you have 5.4.0)
+Update with: download https://github.com/thecgaigroup/reelsmith/archive/refs/heads/main.zip and unzip
+```
+
+If the network is unavailable or times out, doctor.py still passes and prints:
+
+```
+Could not check for Reelsmith updates (network unavailable)
+```
+
+**To update:**
+- **Git install:** `cd /path/to/reelsmith && git pull origin main`
+- **Zip install:** Download the latest zip and extract it over your existing installation
+
+**Important:** The update check only suggests — it never auto-installs or runs updates. You decide when to update.
+
 ## When to use the clipping lane
 
 **v5.4.0 adds a long-form to vertical 9:16 clipping lane** for extracting highlight moments from local videos.
@@ -223,6 +251,11 @@ Showreel kinetic type, transitions, and an open storyboard are in the skill. An 
 - Paid services are never used without a quote and your OK. Nothing is uploaded or posted for you.
 - Licenses: HyperFrames Apache-2.0; Remotion free for individuals and teams of up to 3 (remotion.pro/license);
   Manim and lottie-web MIT. Bundled music CC BY 3.0 (credit required; see `assets/music/CREDITS.txt`).
+
+## Quick reference
+- **List capabilities and keys**: `python3 scripts/capabilities.py`
+- **Check dependencies**: `python3 scripts/doctor.py`
+- **Update Reelsmith**: See `python3 scripts/doctor.py` for update instructions
 
 ## Dependency updates
 Dependabot opens weekly PRs (Mondays): minor+patch grouped per ecosystem, majors one-per-PR, security fixes separately.

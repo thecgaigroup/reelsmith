@@ -6,10 +6,10 @@ Usage: python3 scripts/doctor.py [--hyperframes]
 Checks Python version, ffmpeg/ffprobe (and the encoders and filters the pipeline uses: libx264, aac,
 loudnorm, ebur128, alimiter, xfade, drawtext), Python packages (numpy, scipy, Pillow, librosa),
 Node/npx for HyperFrames, and fonts. --hyperframes also pings npx to verify the HyperFrames version
-(downloads it on first run). Exits 1 if core dependencies are missing. Approach after coleam00/skills
-edit-video doctor.py (MIT). See THIRD_PARTY_NOTICES.md.
+(downloads it on first run). Also checks for Reelsmith updates. Exits 1 if core dependencies are missing.
+Approach after coleam00/skills edit-video doctor.py (MIT). See THIRD_PARTY_NOTICES.md.
 """
-import importlib, os, re, shutil, subprocess, sys
+import importlib, json, os, re, shutil, subprocess, sys, urllib.request
 from pathlib import Path
 
 if any(a in ("-h", "--help") for a in sys.argv[1:]): sys.exit(print(__doc__.strip()))
@@ -27,7 +27,58 @@ def sh(cmd, timeout=30):
     except (FileNotFoundError, subprocess.TimeoutExpired) as e:
         return -1, str(e)
 
+def check_version_update():
+    """Check if a newer version of Reelsmith is available. Prints update instructions if needed."""
+    here = Path(__file__).resolve().parent.parent
+    version_file = here / "VERSION"
+    if not version_file.exists():
+        return
+    
+    try:
+        current_version = version_file.read_text().strip()
+    except Exception:
+        return
+    
+    # Try to fetch latest release, with short timeout
+    latest_version = None
+    try:
+        req = urllib.request.Request("https://api.github.com/repos/thecgaigroup/reelsmith/releases/latest",
+                                      headers={"Accept": "application/vnd.github.v3+json"})
+        with urllib.request.urlopen(req, timeout=3) as response:
+            data = json.loads(response.read().decode("utf-8"))
+            tag = data.get("tag_name", "").lstrip("v")
+            if tag:
+                latest_version = tag
+    except Exception:
+        # Fall back to main's VERSION file
+        try:
+            req = urllib.request.Request("https://raw.githubusercontent.com/thecgaigroup/reelsmith/main/VERSION")
+            with urllib.request.urlopen(req, timeout=3) as response:
+                latest_version = response.read().decode("utf-8").strip()
+        except Exception:
+            print("Could not check for Reelsmith updates (network unavailable)")
+            return
+    
+    if not latest_version:
+        return
+    
+    # Compare versions
+    try:
+        current_parts = tuple(int(x) for x in current_version.split(".")[:3])
+        latest_parts = tuple(int(x) for x in latest_version.split(".")[:3])
+        if latest_parts > current_parts:
+            print(f"\nA newer version of Reelsmith is available: {latest_version} (you have {current_version})")
+            # Determine update command based on installation method
+            if (here / ".git").exists():
+                print("Update with: cd /path/to/reelsmith && git pull origin main")
+            else:
+                print("Update with: download https://github.com/thecgaigroup/reelsmith/archive/refs/heads/main.zip and unzip")
+    except Exception:
+        pass
+
 def main():
+    check_version_update()
+    
     v = sys.version_info
     row("OK" if (3, 10) <= v[:2] < (4, 0) else "WARN", "python", f"{v.major}.{v.minor}.{v.micro}",
         "" if (3, 10) <= v[:2] < (4, 0) else "Reelsmith is tested on Python 3.10+")

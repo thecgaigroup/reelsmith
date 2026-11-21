@@ -14,8 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Chat-burst analysis**: Priority-based moment detection (chat bursts > RMS loudness > speech-lexicon)
   - Twitch IRC and YouTube live chat collection support (optional)
   - Chat.json file input for pre-recorded chat logs
-  - Spam-resistant scoring with Median Absolute Deviation (MAD)
-  - Peak 5-second bucket detection within windows
+  - Spam-resistant scoring with rolling z-score spike detection
+  - Peak sub-bucket detection within windows
 - **URL input**: Process streams directly from YouTube, Twitch, etc. via yt-dlp (optional dependency)
   - Requires `--rights-confirmed` flag to proceed
   - Lazy import - works without yt-dlp for local files
@@ -26,7 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Graceful fallback to OpenCV Haar cascade when models unavailable
   - Model download via `scripts/fetch_models.py` with SHA-256 verification
 - **Facecam-aware crop**: 9:16 crop positioning keeps facecam corner OUT of frame
-- **Player-follow panning**: YOLOX-S tracks player movement for dynamic crop
 - **6-second lead-in**: Clips start 6s before peak moment for context
 - **Stream-pop captions**: 3-word pop-in captions (yellow new, white spoken)
 - **Profanity masking**: Automatic masking in burned-in captions (audio unchanged)
@@ -38,10 +37,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Profanity masking tests
   - Rights-flag enforcement test (mocked yt-dlp)
   - Model fallback tests (no downloads in CI)
+  - End-to-end synthetic fixture test (done_when requirement)
 
 **New modules**:
-- `scripts/chat_scoring.py`: Chat burst analysis with MAD-based scoring
-- `scripts/stream_chat.py`: Twitch IRC and YouTube live chat collectors
+- `scripts/chat_scoring.py`: Chat burst analysis with rolling z-score spike detection
+- `scripts/stream_chat.py`: Twitch IRC and YouTube live chat collectors (generator-based)
 - `scripts/profanity_mask.py`: Profanity masking for captions
 - `scripts/fetch_models.py`: Model downloader with SHA-256 verification
 - `scripts/test_stream_highlights.py`: Comprehensive test suite with mocks
@@ -73,6 +73,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Graceful degradation when optional features unavailable
 - Rights confirmation required for URL input
 - All tests use mocks, CI runs without network access
+
+## [5.4.2] - 2026-11-21
+
+### Added
+- **Version update awareness**: `scripts/doctor.py` now checks the installed VERSION against the latest GitHub release (falling back to main's VERSION file if no releases exist). If a newer version is available, it prints exactly one line with the update command that matches the installation method (git pull for git installs, download instructions otherwise). Network errors, timeouts (3s), or HTTP failures are handled gracefully and still pass with a "could not check" message. Uses stdlib only, no new dependencies.
+- **Update Reelsmith entry**: Added to capabilities menu in `scripts/capabilities_menu.py` to help users discover version update functionality.
+- **Behavioral tests**: `scripts/test_version_check.py` covers newer version, same version, and offline/timeout scenarios with mocked network calls (5 tests). Added to CI workflow.
+
+### Changed
+- `scripts/doctor.py`: Now checks for Reelsmith updates at startup. Prints update instructions only when a newer version is detected. Never auto-installs or runs updates.
+- `.github/workflows/ci.yml`: Added `test_version_check.py` to test discovery.
+- `scripts/capabilities_menu.py`: Added "Update Reelsmith" entry to CAPABILITIES list.
+
+No new dependencies. All checks use stdlib (urllib.request, json). Suggestion only—never auto-installs or touches anything mid-project.
 
 ## [5.4.0] - 2026-11-21
 
@@ -110,6 +124,7 @@ No YouTube downloader, no paid services, no new credentials. Local input files o
 - `.github/workflows/ci.yml`: added `test_capabilities_menu.py` to test discovery.
 
 No new dependencies, no paid services, no new keys. Menu generation is deterministic and stays in sync with actual capabilities. Routing and normal workflow unchanged — menu is opt-in discovery only.
+>>>>>>> origin/main
 
 ## [5.3.0] - 2026-11-18
 
