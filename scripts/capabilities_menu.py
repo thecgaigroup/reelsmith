@@ -87,8 +87,8 @@ CAPABILITIES = [
         "reference": "references/client-sizzle.md",
     },
     {
-        "name": "Extract highlight clips from long-form video",
-        "description": "Talking-head content to vertical 9:16 clips with face tracking and captions",
+        "name": "Vertical clips from long-form video",
+        "description": "Extract face-tracked highlight moments from talking-head content for Reels, Shorts, TikTok",
         "template": None,  # clipping.py workflow, not a template
         "example": None,  # No single example file
         "reference": "references/clipping.md",

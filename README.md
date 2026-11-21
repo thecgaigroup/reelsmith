@@ -1,4 +1,4 @@
-# Reelsmith v5.4.0
+# Reelsmith
 
 A video skill for coding agents. It writes the script with you, plans the cut, gets your approval, and renders
 16:9, 9:16 and 1:1 videos from parameterized templates driven by your brand kit, with music on a beat grid,
@@ -18,6 +18,8 @@ Every example was rendered end to end on Linux before packaging.
 | **Tutorials and how-tos** — Step-by-step instructional videos with chapter markers for YouTube | <img src="examples/previews/howto-tutorial-16x9.gif" width="120" alt="Tutorials and how-tos"> |
 | **Slide presentations and kiosk loops** — Animated decks for talks, booths, or continuous display | <img src="examples/previews/slides-presentation-16x9.gif" width="120" alt="Slide presentations and kiosk loops"> |
 | **Feature explainers with narration** — Product walkthroughs with voiceover and auto-generated captions | <img src="examples/previews/feature-explainer-1x1.gif" width="120" alt="Feature explainers with narration"> |
+| **Educational explainers with charts and timelines** — Signal Shorts format explainers with visual data, maps, and timelines | See references/explainer-format-signal-shorts.md |
+| **Vertical clips from long-form video** — Extract face-tracked highlight moments from talking-head content for Reels, Shorts, TikTok | See references/clipping.md |
 | **Client sizzle reels and awards cuts** — Production-quality cuts from real footage with beat-synced kinetic type | See references/client-sizzle.md |
 
 Everything works free and offline. Optional API keys add features: a **Pexels** key unlocks high-quality stock photos and videos. Run `python3 scripts/capabilities.py` to see what's available.

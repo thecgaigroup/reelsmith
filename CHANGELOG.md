@@ -5,6 +5,7 @@ All notable changes to Reelsmith will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+<<<<<<< HEAD
 ## [5.5.0] - 2026-11-21
 
 ### Added
@@ -73,6 +74,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Graceful degradation when optional features unavailable
 - Rights confirmation required for URL input
 - All tests use mocks, CI runs without network access
+
+## [5.4.5] - 2026-11-21
+
+### Added
+- **README version test** (`scripts/test_readme_version.py`): Validates that README H1 title doesn't contain a stale version, and any explicit version mentions match VERSION file. Catches version drift automatically in CI.
+
+### Changed
+- **README.md**: Dropped version from H1 title (now "# Reelsmith"). Added clipping lane and educational explainer to capabilities table to match `capabilities_menu.py`.
+- **capabilities_menu.py**: Updated clipping capability name and description to match README for consistency.
+- **ci.yml**: Added `test_readme_version.py` to test suite.
+
+No new dependencies. Prevents README version drift through automated testing.
 
 ## [5.4.4] - 2026-11-21
 
