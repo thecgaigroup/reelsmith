@@ -61,28 +61,69 @@ jobs:
           set -euo pipefail
           echo "=== Checking pinned dependencies resolve upstream ==="
           
-          # 1. Extract HyperFrames pin from references/hyperframes.md
-          HF_PIN=$(grep -oP 'hyperframes@\K[0-9.]+' references/hyperframes.md | head -1)
-          echo "HyperFrames pin from hyperframes.md: $HF_PIN"
+          # 1. Extract ALL HyperFrames pins from references/hyperframes.md
+          echo "Extracting HyperFrames pins..."
           
-          # Verify it resolves on npm
-          if ! npm view hyperframes@"$HF_PIN" version >/dev/null 2>&1; then
-            echo "ERROR: HyperFrames version $HF_PIN does not resolve on npm"
+          # Get prose pin from "pinned at X.Y.Z"
+          PROSE_PIN=$(grep -oP 'pinned at \K[0-9.]+' references/hyperframes.md | head -1)
+          echo "  Prose pin: $PROSE_PIN"
+          
+          # Get all command pins from "hyperframes@X.Y.Z"
+          mapfile -t CMD_PINS < <(grep -oP 'hyperframes@\K[0-9.]+' references/hyperframes.md)
+          echo "  Command pins found: ${#CMD_PINS[@]}"
+          
+          # Verify all command pins match the prose pin
+          for pin in "${CMD_PINS[@]}"; do
+            echo "  Checking: $pin"
+            if [ "$pin" != "$PROSE_PIN" ]; then
+              echo "ERROR: Pin mismatch in hyperframes.md"
+              echo "  Prose declares: $PROSE_PIN"
+              echo "  Command uses: $pin"
+              exit 1
+            fi
+          done
+          
+          # Verify the pin resolves on npm
+          echo "Verifying HyperFrames $PROSE_PIN on npm..."
+          if ! npm view "hyperframes@$PROSE_PIN" version >/dev/null 2>&1; then
+            echo "ERROR: HyperFrames version $PROSE_PIN does not resolve on npm"
             exit 1
           fi
-          RESOLVED_HF=$(npm view hyperframes@"$HF_PIN" version)
-          echo "✓ HyperFrames $HF_PIN resolves to $RESOLVED_HF on npm"
+          RESOLVED_HF=$(npm view "hyperframes@$PROSE_PIN" version)
+          echo "✓ HyperFrames $PROSE_PIN resolves to $RESOLVED_HF on npm"
+          echo "✓ All ${#CMD_PINS[@]} command occurrences match"
           
-          # 2. Extract OpenMotion pin from references/openmotion.md
-          OM_PIN=$(grep -oP 'openmotion@\K[a-f0-9]{40}' references/openmotion.md | head -1)
-          echo "OpenMotion pin from openmotion.md: $OM_PIN"
+          # 2. Extract ALL OpenMotion pins from references/openmotion.md
+          echo ""
+          echo "Extracting OpenMotion pins..."
+          
+          mapfile -t OM_PINS < <(grep -oP 'openmotion@\K[a-f0-9]{40}' references/openmotion.md)
+          echo "  Pins found: ${#OM_PINS[@]}"
+          
+          if [ ${#OM_PINS[@]} -eq 0 ]; then
+            echo "ERROR: No OpenMotion pin found in openmotion.md"
+            exit 1
+          fi
+          
+          # Verify all occurrences match
+          FIRST_OM_PIN="${OM_PINS[0]}"
+          for pin in "${OM_PINS[@]}"; do
+            if [ "$pin" != "$FIRST_OM_PIN" ]; then
+              echo "ERROR: Pin mismatch in openmotion.md"
+              echo "  First occurrence: $FIRST_OM_PIN"
+              echo "  Found different: $pin"
+              exit 1
+            fi
+          done
           
           # Verify the commit exists upstream
-          if ! git ls-remote https://github.com/nexu-io/openmotion "$OM_PIN" >/dev/null 2>&1; then
-            echo "ERROR: OpenMotion commit $OM_PIN does not exist upstream"
+          echo "Verifying OpenMotion $FIRST_OM_PIN upstream..."
+          if ! git ls-remote https://github.com/nexu-io/openmotion "$FIRST_OM_PIN" >/dev/null 2>&1; then
+            echo "ERROR: OpenMotion commit $FIRST_OM_PIN does not exist upstream"
             exit 1
           fi
-          echo "✓ OpenMotion commit $OM_PIN exists upstream"
+          echo "✓ OpenMotion commit $FIRST_OM_PIN exists upstream"
+          echo "✓ All ${#OM_PINS[@]} occurrences match"
           
           # 3. Verify core scripts exist (from SKILL.md Scripts section)
           echo "=== Checking core scripts exist ==="
