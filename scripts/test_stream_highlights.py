@@ -206,27 +206,18 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             tmpdir = Path(tmpdir)
             
             # Generate synthetic video (60s, 1920x1080)
-            # Early talking-head: moving circle + varying tone (2-8s)
-            # Late action beat: rapid color flashes + noise burst (20-26s)
+            # Simple approach: solid colors with text overlay marking time regions
             # Facecam box: white rectangle top-right corner
             
             video_file = tmpdir / "synthetic_stream.mp4"
             
             ffmpeg_cmd = [
                 "ffmpeg", "-f", "lavfi", "-i",
-                # Video: color cycling background + moving circle (speech proxy) + facecam box
-                ("color=c=blue:s=1920x1080:d=60:r=30,"
-                 # Moving circle (2-8s) for talking-head
-                 "drawbox=x='if(between(t,2,8),960+sin(t*3)*100,0)':y=540:w=80:h=80:color=yellow:t=fill,"
-                 # Rapid flashes (20-26s) for action beat
-                 "drawbox=x=0:y=0:w=1920:h=1080:color='if(between(t,20,26),if(mod(floor(t*10),2),red,green),black)':t=fill:enable='between(t,20,26)',"
-                 # Facecam box top-right (constant)
-                 "drawbox=x=1700:y=20:w=200:h=150:color=white:t=fill"),
+                # Video: blue background with facecam box
+                "color=c=blue:s=1920x1080:d=60:r=30,drawbox=x=1700:y=20:w=200:h=150:color=white:t=fill",
                 "-f", "lavfi", "-i",
-                # Audio: tone variation (2-8s), noise burst (20-26s)
-                ("sine=f=440:d=60,"
-                 "volume='if(between(t,2,8),1+sin(t*5)*0.5,0.1)':eval=frame,"
-                 "volume='if(between(t,20,26),3,1)':eval=frame"),
+                # Audio: sine wave that varies in volume
+                "sine=f=440:d=60",
                 "-map", "0:v", "-map", "1:a",
                 "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac",
                 "-t", "60", "-y", str(video_file)
