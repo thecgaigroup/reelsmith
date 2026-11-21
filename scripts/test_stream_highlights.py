@@ -430,13 +430,15 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
                               f"Frame @{frame_time}s has {clip_magenta_fraction:.4f} magenta (facecam not excluded)")
             
             # Test 7: UNCONDITIONAL caption burn-in verification with frame diff
-            # Create fixture transcript with words that appear during the clip
+            # Create fixture transcript with words that appear during the EXPECTED clip window
+            # Chat burst is at t=22s, lead-in is 6s, so clip starts around t=16s in source
+            # Place words at absolute times 21-22s in source (which will be t=5-6s in the 30s clip)
             fixture_words = [
-                {"text": "Welcome", "start": clip_start + 5.0, "end": clip_start + 5.5},
-                {"text": "to", "start": clip_start + 5.6, "end": clip_start + 5.8},
-                {"text": "the", "start": clip_start + 5.9, "end": clip_start + 6.1},
-                {"text": "stream", "start": clip_start + 6.2, "end": clip_start + 6.6},
-                {"text": "highlights", "start": clip_start + 6.7, "end": clip_start + 7.2},
+                {"text": "Welcome", "start": 21.0, "end": 21.5},
+                {"text": "to", "start": 21.6, "end": 21.8},
+                {"text": "the", "start": 21.9, "end": 22.1},
+                {"text": "stream", "start": 22.2, "end": 22.6},
+                {"text": "highlights", "start": 22.7, "end": 23.2},
             ]
             
             fixture_transcript = tmpdir / "fixture_words.json"
