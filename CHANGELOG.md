@@ -5,7 +5,7 @@ All notable changes to Reelsmith will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.3.2] - 2026-11-21
+## [5.4.1] - 2026-11-21
 
 ### Added
 - **Version update awareness**: `scripts/doctor.py` now checks the installed VERSION against the latest GitHub release (falling back to main's VERSION file if no releases exist). If a newer version is available, it prints exactly one line with the update command that matches the installation method (git pull for git installs, download instructions otherwise). Network errors, timeouts (3s), or HTTP failures are handled gracefully and still pass with a "could not check" message. Uses stdlib only, no new dependencies.
@@ -19,6 +19,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SKILL.md and README.md: Updated "Start every job" section to mention update checks. Added "Quick reference" sections with menu entries.
 
 No new dependencies. All checks use stdlib (urllib.request, json). Suggestion only—never auto-installs or touches anything mid-project.
+
+## [5.4.0] - 2026-11-21
+
+### Added
+- **Long-form to vertical 9:16 clipping lane** for extracting highlight moments from user-owned local videos. Workflow: detect highlights using transcript + audio energy heuristics, track faces with OpenCV for stable 9:16 crop, generate shifted captions with pysubs2, and export face-tracked clips with burned-in captions. All CPU-only, $0, no LLM required.
+- `scripts/highlights.py`: Highlight detection using word-level transcript and audio energy scoring. Ranks segments by speech pacing, punctuation patterns (questions, exclamations), and audio dynamics. No LLM or paid API required; uses transcript + ffmpeg volumedetect heuristics only.
+- `scripts/facetrack.py`: Face detection and tracking using OpenCV Haar cascades (CPU-only, ships with opencv-python) with IoU-based tracker ID management (technique inspired by supervision pattern; supervision is not a dependency). Generates smooth 9:16 crop windows centered on tracked faces with position smoothing.
+- `scripts/clipping.py`: Main orchestrator that runs the full pipeline: transcribe → detect highlights → track faces → extract clips → shift captions → burn captions → review each clip. Outputs one directory per clip with video, captions (SRT/ASS), burned video, and review results.
+- `scripts/test_clipping.py`: Comprehensive tests for all five task requirements: (1) highlight JSON structure and clip aspect/duration, (2) subject center stays in crop window ≥95% of frames, (3) continuous segments keep single tracker_id, (4) SRT shifting preserves cue count and moves last cue end by T, (5) 48kHz audio check passes.
+- `references/clipping.md`: Complete clipping lane documentation covering when to use it, workflow steps, highlight scoring approach, face tracking with OpenCV, caption shifting with pysubs2, integration with existing review/captions pipeline, and limitations.
+- Dependencies: opencv-python (Apache-2.0, CPU-only Haar cascades), pysubs2 (MIT, subtitle manipulation). All compatible licenses, no GPL/AGPL/LGPL/MPL, no gated models.
+
+### Changed
+- `README.md`: Added "When to use the clipping lane" section explaining use cases (talking-head content, local videos only) and when not to use it (music videos, multi-speaker, YouTube downloads).
+- `SKILL.md`: Added clipping workflow to route table and workflow section.
+- `.github/workflows/ci.yml`: Added `test_clipping.py` to CI test discovery.
+
+**Harvested techniques from AI-Youtube-Shorts-Generator (MIT, Anil Chandra Naidu Matcha):** highlight ranking approach (score/hook/reason schema), segment deduplication by overlap threshold, natural boundary detection at sentence breaks, and face-centered crop concept. Re-implemented from scratch; no wholesale adoption, no yt-dlp downloader, no MuAPI/OpenAI/Gemini dependency.
+
+**Dependency licenses verified:**
+- opencv-python: Apache-2.0 (core library + Haar cascade files)
+- pysubs2: MIT (tkarabela/pysubs2)
+
+No YouTube downloader, no paid services, no new credentials. Local input files only. Reuses existing parakeet/WhisperX transcription path (user must provide transcript or run separately), captions.py for burn-in, review.py for quality gates, and FFmpeg for all video operations. Clips pass through the same review gate as templates: aspect, duration, loudness, sync, flashes, cuts.
+
+## [5.3.1] - 2026-11-21
+
+### Added
+- **Capabilities menu** for user discovery: plain-language list of what Reelsmith can make, shown when users ask "what can you do" or when they're new to the skill. Each entry names one capability with a sample clip from `examples/previews/`. Menu is generated from `scripts/capabilities_menu.py`, which derives the free-key recommendation from `capabilities.py`'s actual feature detection (currently recommends Pexels when no stock provider is configured).
+- **SKILL.md**: capabilities menu added to main body, with trigger guidance in the description that fires only on discovery questions ("what can you do", new users). Clarifies that menu is for automatic discovery only — users never need to pick from it for normal requests.
+- **README.md**: capabilities menu added as a table with example GIFs, matching the SKILL.md menu content.
+- **Tests**: `scripts/test_capabilities_menu.py` verifies (1) every menu entry's sample path exists, (2) README and SKILL menus match (both generated from the same source), (3) free-key line matches what `capabilities.py` reports, (4) trigger guidance only fires on appropriate cases, plus determinism, plain-language, and real-examples-only checks. 8 tests, all in CI.
+
+### Changed
+- `.github/workflows/ci.yml`: added `test_capabilities_menu.py` to test discovery.
+
+No new dependencies, no paid services, no new keys. Menu generation is deterministic and stays in sync with actual capabilities. Routing and normal workflow unchanged — menu is opt-in discovery only.
+>>>>>>> origin/main
 
 ## [5.3.0] - 2026-11-18
 
