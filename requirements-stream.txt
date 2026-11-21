@@ -1,0 +1,18 @@
+# Optional dependencies for stream-highlights mode (--mode stream-highlights)
+#
+# Install with: pip install -r requirements-stream.txt
+#
+# These are separate from the core Reelsmith dependencies because:
+# - They enable URL input (yt-dlp) and live-chat collection
+# - They add speech transcription (faster-whisper)
+# - They enable advanced face/person tracking with ONNX models
+#
+# The stream-highlights mode gracefully degrades without these dependencies:
+# - Without yt-dlp: local files only
+# - Without faster-whisper: chat + RMS loudness scoring only
+# - Without onnxruntime: falls back to OpenCV Haar cascade face detection
+
+yt-dlp>=2024.8.0
+faster-whisper>=1.0.0
+onnxruntime>=1.16.0
+requests>=2.31.0
