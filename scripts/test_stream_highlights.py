@@ -465,6 +465,12 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             if captioned_result.stderr:
                 print("\nCaptioned clip stderr:", captioned_result.stderr, file=sys.stderr)
             
+            # Debug: check what the actual clip times are
+            captioned_summary = captioned_output / "summary.json"
+            if captioned_summary.exists():
+                summary_data = json.loads(captioned_summary.read_text())
+                print(f"\nCaptioned clip times: {summary_data.get('clips', [])}", file=sys.stderr)
+            
             captioned_clips = list(captioned_output.glob("clip_*/video.mp4"))
             self.assertGreater(len(captioned_clips), 0, "No captioned clips generated")
             captioned_clip = captioned_clips[0]
