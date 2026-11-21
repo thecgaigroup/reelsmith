@@ -10,7 +10,7 @@ HyperFrames is Apache-2.0 and pinned at 0.9.7. The CLI commands `doctor`, `lint`
 ## Setup (once)
 1. Node 22.12+. If older, unpack a portable Node 22 LTS (nodejs.org linux-x64) to `/workspace/tools/node22/` and
    prepend its `bin` to PATH for HyperFrames only.
-2. `export HYPERFRAMES_NO_TELEMETRY=1`; `HF="npx --yes hyperframes@0.9.7"`.
+2. `export HYPERFRAMES_NO_TELEMETRY=1`; `HF="npx --yes hyperframes@0.9.6"`.
    **Do not set `HYPERFRAMES_SKIP_SKILLS=1` for client sizzle / custom craft** — load project skills (`AGENTS.md` / `CLAUDE.md`: `/hyperframes`, `/media-use`, treatments) first. Skip skills only for throwaway smoke tests.
 3. `$HF doctor` (Chrome + FFmpeg). Save GSAP once to `/workspace/tools/gsap.min.js` (jsdelivr `gsap@3/dist/gsap.min.js`).
 4. Kokoro TTS: venv `pip install kokoro-onnx soundfile`, `HYPERFRAMES_PYTHON=<venv>/bin/python`.
