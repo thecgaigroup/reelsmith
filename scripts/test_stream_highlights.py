@@ -43,7 +43,8 @@ class TestChatScoring(unittest.TestCase):
         window_10 = next(w for w in windows if w["start"] == 10)
         self.assertGreater(window_10["burst_score"], 0)
         self.assertEqual(window_10["unique_users"], 5)
-        self.assertGreater(window_10["excited_users"], 0)
+        # New algorithm uses engagement_density (not excited_users)
+        self.assertGreater(window_10["engagement_density"], 0)
     
     def test_spam_resistance(self):
         """Single user spamming should not inflate score."""
