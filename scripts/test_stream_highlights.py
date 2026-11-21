@@ -339,14 +339,14 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             self.assertLess(clip_start, 20.0,
                            f"Start {clip_start}s too late (should be ~19s for 25s peak)")
             
-            # Test 5: Verify passes scripts/review.py
+            # Test 5: Verify passes scripts/review.py check
             review_result = subprocess.run([
                 sys.executable, str(HERE / "review.py"),
-                str(clip_path)
+                "check", str(clip_path)
             ], capture_output=True, text=True)
             
             self.assertEqual(review_result.returncode, 0,
-                           f"review.py failed: {review_result.stderr}")
+                           f"review.py check failed: {review_result.stderr}")
             
             # Test 6: Verify facecam region (white box at 1700-1920, 20-170) is EXCLUDED
             # Extract a frame and check the facecam region is NOT white
