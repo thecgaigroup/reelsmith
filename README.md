@@ -1,4 +1,4 @@
-# Reelsmith v5.3.1
+# Reelsmith v5.4.0
 
 A video skill for coding agents. It writes the script with you, plans the cut, gets your approval, and renders
 16:9, 9:16 and 1:1 videos from parameterized templates driven by your brand kit, with music on a beat grid,
@@ -61,6 +61,25 @@ Reelsmith and `getting-started/SKILL.md` as its getting-started skill, then run 
 
 **Other coding agents:** `git clone https://github.com/thecgaigroup/reelsmith.git` into your skills directory
 (for example `.cursor/skills/reelsmith` or `~/.claude/skills/reelsmith`).
+
+## When to use the clipping lane
+
+**v5.4.0 adds a long-form to vertical 9:16 clipping lane** for extracting highlight moments from local videos.
+
+**Use the clipping lane for:**
+- Talking-head content (interviews, vlogs, tutorials, presentations) where you want to extract 10-60 second highlights
+- Local video files you own or have rights to use
+- Vertical (9:16) clips for Reels, Shorts, TikTok with face-tracked reframing
+
+**Do not use the clipping lane for:**
+- Music videos or performance footage (no face to track)
+- Multi-speaker content with frequent speaker changes
+- YouTube downloads (local files only; no downloader shipped)
+- Template-driven content (use product-launch, testimonial, etc. instead)
+- Client sizzles from real footage (use client-sizzle.md workflow instead)
+
+See `references/clipping.md` for the complete workflow, face tracking approach, highlight scoring (CPU-only, $0, no LLM), and limitations.
+
 
 ## Roadmap
 Showreel kinetic type, transitions, and an open storyboard are in the skill. An optional SageCut measurement ladder and an optional `poster-grid` recipe are documented; Sage API spend stays parked. Motion grammar, the independent-critic loop, and optional product-hero notes from [motion-video-kit](https://github.com/echris6/motion-video-kit) (MIT) are in the skill. That fold adds no Three.js package. Pricing templates from that kit stay parked. Launch-film sound (sync taps, bed-relative levels, a role bank, a measured SFX check) and a six-station harness (reference, data, story, frames, a one-line timing fix, then the master) are in the skill as of 2026-10-27. That fold adds no sound bank and no Remotion skill tree. v5.1 is that craft-docs surface, already on main. Pack behavior is unchanged. Other parked fold-ins and skips (MotionVideo paid pack, FilmCraft, CapCut, snapcn Pro, 3D/extrude and glitch defaults) are in [ROADMAP.md](ROADMAP.md). No sidecar packages.

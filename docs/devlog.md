@@ -1,6 +1,6 @@
 # Development Log
 
-## 2026-11-21 (Reelsmith 5.3.2: CI smoke test)
+## 2026-11-21 (Reelsmith 5.4.1: CI smoke test)
 
 **What changed**
 - Added CI smoke test workflow (`.github/workflows/smoke.yml`) that validates fundamentals on every PR and push to main
@@ -11,22 +11,56 @@
 - Runs `review.py check` on the rendered output (not dry-run) to verify the review pipeline works
 - Guards against paid generation: all API keys unset in job-level env, REELSMITH_IGNORE_KEYS=1, --allow-paid never passed
 - Uses pinned action versions (checkout@v4.2.2, setup-node@v4.1.0, setup-python@v5.3.0)
-- Merged origin/main (ec24323, PR #30 capabilities menu)
-- Bumped VERSION to 5.3.2 and updated CHANGELOG and README
+- Merged origin/main (9c4e47e) including PR #28 (5.4.0 clipping lane)
+- Bumped VERSION to 5.4.1 and updated CHANGELOG and README
 
 **State**
-- Working: real render path tested and passing
+- Working: real render path with ALL pin occurrences checked
 - CPU-only, $0 cost, completes in ~1-2 minutes
 - Runs on every PR and push to main
 
 **Where we left off**
 - Branch: cursor/ci-smoke-test-6d83
-- Merged origin/main (ec24323)
-- Round 2: fixed pin extraction bug (now checks ALL occurrences), version bumped to 5.3.2
-- Ready for final CI validation
+- Merged origin/main (9c4e47e) with 5.4.0
+- Ready for final CI validation and failure demonstrations
 
 **Open**
-- Demo PRs #33 and #34 for failure cases (CI not triggering on bot-created PRs)
+- Need to verify PR is mergeable and CI runs green
+- Create failure demo PRs showing pin mismatch and nonexistent pin detection
+
+## 2026-11-21 (Reelsmith 5.4.0: long-form to vertical 9:16 clipping lane)
+
+**What changed**
+- Added complete long-form to vertical 9:16 clipping lane for extracting face-tracked highlight moments from local videos
+- Created `scripts/highlights.py`: highlight detection using transcript + audio energy heuristics (no LLM, $0)
+- Created `scripts/facetrack.py`: face tracking with OpenCV Haar cascades with IoU-based tracker IDs for stable 9:16 crop windows
+- Created `scripts/clipping.py`: main orchestrator integrating highlights, tracking, caption shifting, and review
+- Created `scripts/test_clipping.py`: comprehensive tests for all 5 task requirements (8 tests, all pass)
+- Added `references/clipping.md`: complete documentation including workflow, when to use/not use, techniques harvested, limitations
+- Updated README.md with "When to use the clipping lane" section
+- Updated SKILL.md route table to include clipping workflow
+- Updated CHANGELOG.md with full 5.4.0 entry including attribution and dependency license table
+- Bumped VERSION to 5.4.0
+- Updated CI workflow to install new dependencies (opencv-python, pysubs2) and run clipping tests
+
+**State**
+- Working: all 102 tests pass (8 new clipping tests + 94 existing tests)
+- All CI checks expected to pass (lints, type checks, builds, tests)
+- PR #28 opened against main: https://github.com/thecgaigroup/reelsmith/pull/28
+- HEAD commit: 34244e0b9d4693ad6e8337da4b56cb83e8013531
+- Branch: cursor/clipping-lane-5-4-0-251d
+
+**Where we left off**
+- PR is ready for review with complete test results and dependency license verification
+- All 5 task requirements met:
+  1. ✅ Highlight JSON has score/hook/reason/start/end; clips are 9:16 and duration matches within 1 frame
+  2. ✅ Tracked subject center stays in crop window ≥95% of frames
+  3. ✅ Continuous segments keep single tracker_id
+  4. ✅ SRT shifting preserves cue count and moves last cue end by T
+  5. ✅ 48kHz audio passes without quality warning
+
+**Open**
+- None: all tasks complete, tests passing, ready for review
 
 ## 2026-11-18 (Reelsmith 5.2.2: auto motion audit during render)
 
