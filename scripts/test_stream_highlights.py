@@ -284,15 +284,15 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             self.assertEqual(width, "1080", f"Width should be 1080, got {width}")
             self.assertEqual(height, "1920", f"Height should be 1920, got {height}")
             
-            # Test 4: Verify duration is 30s ±0.5s
+            # Test 4: Verify duration is within requested range (25-35s)
             dur_result = subprocess.run([
                 "ffprobe", "-v", "error", "-show_entries", "format=duration",
                 "-of", "default=noprint_wrappers=1:nokey=1", str(clip_path)
             ], capture_output=True, text=True)
             
             duration = float(dur_result.stdout.strip())
-            self.assertGreater(duration, 29.5, f"Duration {duration}s < 29.5s")
-            self.assertLess(duration, 30.5, f"Duration {duration}s > 30.5s")
+            self.assertGreater(duration, 24.5, f"Duration {duration}s < 24.5s (min-clip=25)")
+            self.assertLess(duration, 35.5, f"Duration {duration}s > 35.5s (max-clip=35)")
             
             # Test 5: Verify clip timing (should start ~6s before peak at t=22s)
             # Expected start: 22 - 6 = 16s ±1s
