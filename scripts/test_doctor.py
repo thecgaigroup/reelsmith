@@ -63,30 +63,56 @@ def test_up_to_date_message():
     # Read current version
     current_version = VERSION_FILE.read_text().strip()
     
-    # Create a mock response that returns the same version
-    class MockResponse:
-        def __init__(self, content):
-            self.content = content
-        def read(self):
-            return self.content.encode('utf-8')
-        def __enter__(self):
-            return self
-        def __exit__(self, *args):
-            pass
+    # Create a test wrapper script that mocks the network call BEFORE importing doctor
+    wrapper_script = HERE / "test_doctor_wrapper.py"
+    wrapper_content = f'''#!/usr/bin/env python3
+import json, sys, unittest.mock as mock
+from pathlib import Path
+
+# Mock response class
+class MockResponse:
+    def __init__(self, content):
+        self.content = content
+    def read(self):
+        return self.content.encode('utf-8')
+    def __enter__(self):
+        return self
+    def __exit__(self, *args):
+        pass
+
+# Mock the GitHub API to return current version
+mock_data = {{"tag_name": "v{current_version}"}}
+
+# Apply mock BEFORE any imports
+import urllib.request
+original_urlopen = urllib.request.urlopen
+
+def mock_urlopen(req, timeout=None):
+    return MockResponse(json.dumps(mock_data))
+
+urllib.request.urlopen = mock_urlopen
+
+# Now import and run doctor
+sys.path.insert(0, str(Path(__file__).parent))
+import doctor
+doctor.main()
+'''
     
-    # Mock the GitHub API response to return current version
-    mock_data = {"tag_name": f"v{current_version}"}
-    
-    with mock.patch('urllib.request.urlopen') as mock_urlopen:
-        mock_urlopen.return_value = MockResponse(json.dumps(mock_data))
-        code, out = run_doctor()
+    try:
+        wrapper_script.write_text(wrapper_content)
+        r = subprocess.run([sys.executable, str(wrapper_script)], capture_output=True, text=True, encoding="utf-8", errors="replace")
+        out = r.stdout + r.stderr
         
         # Check that it prints the up-to-date message
         assert f"Reelsmith {current_version} is up to date" in out, \
-            f"Expected 'Reelsmith {current_version} is up to date' in output, got:\n{out}"
+            f"Expected 'Reelsmith {current_version} is up to date' in output, got:\\n{out}"
         
         # Should not print update instructions when up to date
         assert "A newer version" not in out, "Should not suggest update when up to date"
+    finally:
+        # Clean up wrapper script
+        if wrapper_script.exists():
+            wrapper_script.unlink()
 
 if __name__ == "__main__":
     tests = [f for f in dir() if f.startswith("test_")]
