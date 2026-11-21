@@ -1,5 +1,32 @@
 # Development Log
 
+## 2026-11-21 (Reelsmith 5.3.1: CI smoke test)
+
+**What changed**
+- Added comprehensive CI smoke test workflow (`.github/workflows/smoke.yml`) that validates skill pins, performs headless render dry run, and guards against paid API access
+- Tests HyperFrames 0.9.7 and OpenMotion commit 9e2f87798cacbe1dad5785e03c5dd57193da4c70 pins resolve correctly
+- Verifies all referenced scripts, templates, and reference files exist
+- Generates synthetic test input (ffmpeg lavfi testsrc + sine) and runs complete dry-run pipeline
+- Validates job.json structure and review.py checks
+- Guards against paid generation with env var guards and network monitoring
+- Uses pinned action versions (checkout@v4.2.2, setup-node@v4.1.0, setup-python@v5.3.0)
+- Bumped VERSION to 5.3.1 and updated CHANGELOG and README
+
+**State**
+- Working: smoke test passing on PR #29, all checks green
+- Runs on every PR and push to main
+- CPU-only, $0 cost, completes in <45 seconds
+- Demonstrated failure cases: broken pin and missing script both correctly fail the job
+
+**Where we left off**
+- Branch: cursor/ci-smoke-test-6d83
+- Head commit: 3636d56106107256c7c639d1ad7e85e48edc5ad0
+- PR #29 open and ready for codex review
+- All CI checks passing
+
+**Open**
+- None: implementation complete and tested
+
 ## 2026-11-18 (Reelsmith 5.2.2: auto motion audit during render)
 
 **What changed**
