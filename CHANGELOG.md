@@ -5,6 +5,21 @@ All notable changes to Reelsmith will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.4.4] - 2026-11-21
+
+### Added
+- **Clipping capability entry**: Added "Extract highlight clips from long-form video" to capabilities menu (`scripts/capabilities_menu.py`) with reference to `references/clipping.md`. This entry was missing after PR #28 added the clipping lane to the route table.
+- **Drift test**: New test in `scripts/test_capabilities_menu.py` that parses all routes from SKILL.md's route table and verifies each user-facing route has a matching CAPABILITIES entry. This prevents future drift between the route table and capabilities menu. Test includes intelligent matching for template-based routes and specific capability mappings.
+- **Up-to-date doctor message**: `scripts/doctor.py` now prints exactly one line "Reelsmith X.Y.Z is up to date" when the installed version matches the latest release, making the output cleaner when no update is needed.
+- **Test for up-to-date path**: Added `test_up_to_date_message()` in `scripts/test_doctor.py` that mocks the GitHub API response to verify the up-to-date message is printed correctly.
+
+### Changed
+- `scripts/doctor.py`: Added case for when current version equals latest version to print clean up-to-date message.
+- `scripts/test_capabilities_menu.py`: Added drift test as 10th test in the suite.
+- `scripts/test_doctor.py`: Added imports for `json` and `unittest.mock` to support mocked network tests.
+
+No new dependencies. All changes improve maintainability and user experience with clearer messaging.
+
 ## [5.4.2] - 2026-11-21
 
 ### Added

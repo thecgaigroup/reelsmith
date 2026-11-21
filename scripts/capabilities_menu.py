@@ -80,6 +80,13 @@ CAPABILITIES = [
         "reference": "references/client-sizzle.md",
     },
     {
+        "name": "Extract highlight clips from long-form video",
+        "description": "Talking-head content to vertical 9:16 clips with face tracking and captions",
+        "template": None,  # clipping.py workflow, not a template
+        "example": None,  # No single example file
+        "reference": "references/clipping.md",
+    },
+    {
         "name": "Update Reelsmith",
         "description": "Check for and install newer versions of Reelsmith",
         "template": None,  # Not a template, system command
