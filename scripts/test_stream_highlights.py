@@ -575,6 +575,15 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
                 "-f", "rawvideo", "-pix_fmt", "rgb24", "-"
             ], capture_output=True, check=True).stdout
             
+            # Debug: verify RGB data
+            print(f"DEBUG test: Frame dimensions: {frame_w}x{frame_h}", file=sys.stderr)
+            print(f"DEBUG test: RGB data lengths:", file=sys.stderr)
+            print(f"  With caption: {len(with_caption_rgb)} bytes (expected {frame_w*frame_h*3})", file=sys.stderr)
+            print(f"  Without caption: {len(without_caption_rgb)} bytes (expected {frame_w*frame_h*3})", file=sys.stderr)
+            
+            if len(with_caption_rgb) != len(without_caption_rgb):
+                print(f"ERROR: RGB data lengths don't match!", file=sys.stderr)
+            
             # Frame diff: lower third (caption region) should differ materially
             lower_third_start = int(frame_h * 0.7)
             lower_third_diff_sum = 0
