@@ -20,6 +20,86 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 
+def captions_burned(caption_stats, control_stats):
+    """Check if captions are burned into video frames.
+    
+    Returns True if caption_stats shows significantly more change than control_stats,
+    indicating captions are present. Uses both absolute floors and relative ratios
+    to handle encoding variations while rejecting noise and wrong-region cases.
+    
+    Args:
+        caption_stats: dict with 'changed_fraction' and 'mean_diff' for caption region
+        control_stats: dict with 'changed_fraction' and 'mean_diff' for control region
+    
+    Returns:
+        bool: True if captions detected, False otherwise
+    """
+    caption_changed = caption_stats['changed_fraction']
+    caption_mean = caption_stats['mean_diff']
+    control_changed = control_stats['changed_fraction']
+    control_mean = control_stats['mean_diff']
+    
+    # Absolute floors prevent tiny noise from passing via ratio tricks
+    # changed_fraction > 0.02 was never flaky (measured 0.042 and 0.053 passed)
+    # mean_diff > 2.0 is calibrated lower than the original 5.0 (measured 4.82 and 6.04)
+    if caption_changed <= 0.02:
+        return False
+    if caption_mean <= 2.0:
+        return False
+    
+    # Relative ratios catch real burns even with encoding variations
+    # Real burns show 10x+ ratios; no-burn and wrong-region show ~1.0x
+    changed_ratio = caption_changed / max(control_changed, 0.001)
+    mean_ratio = caption_mean / max(control_mean, 0.1)
+    
+    if changed_ratio <= 3.0:
+        return False
+    if mean_ratio <= 3.0:
+        return False
+    
+    return True
+
+
+class TestCaptionsBurned(unittest.TestCase):
+    """Unit tests for captions_burned helper (no ffmpeg required)."""
+    
+    def test_rejects_zero_diff(self):
+        """Reject identical frames (zero diff)."""
+        caption_stats = {'changed_fraction': 0.0, 'mean_diff': 0.0}
+        control_stats = {'changed_fraction': 0.0, 'mean_diff': 0.0}
+        self.assertFalse(captions_burned(caption_stats, control_stats))
+    
+    def test_rejects_small_noise(self):
+        """Reject small noise (changed 0.003 / mean 0.3 with control 0)."""
+        caption_stats = {'changed_fraction': 0.003, 'mean_diff': 0.3}
+        control_stats = {'changed_fraction': 0.0, 'mean_diff': 0.0}
+        # Fails absolute floor: 0.003 <= 0.02
+        self.assertFalse(captions_burned(caption_stats, control_stats))
+    
+    def test_rejects_equal_caption_and_control(self):
+        """Reject equal caption and control diffs (wrong region)."""
+        caption_stats = {'changed_fraction': 0.05, 'mean_diff': 5.0}
+        control_stats = {'changed_fraction': 0.05, 'mean_diff': 5.0}
+        # Fails ratio check: 1.0x <= 3.0x
+        self.assertFalse(captions_burned(caption_stats, control_stats))
+    
+    def test_accepts_measured_real_case_1(self):
+        """Accept measured real case: changed 0.042 / mean 4.82 with control 0."""
+        caption_stats = {'changed_fraction': 0.042, 'mean_diff': 4.82}
+        control_stats = {'changed_fraction': 0.0, 'mean_diff': 0.0}
+        # Passes absolute floors: 0.042 > 0.02, 4.82 > 2.0
+        # Passes ratios: 42x and 48x >> 3.0x
+        self.assertTrue(captions_burned(caption_stats, control_stats))
+    
+    def test_accepts_measured_real_case_2(self):
+        """Accept measured real case: changed 0.053 / mean 6.04 with control 0."""
+        caption_stats = {'changed_fraction': 0.053, 'mean_diff': 6.04}
+        control_stats = {'changed_fraction': 0.0, 'mean_diff': 0.0}
+        # Passes absolute floors: 0.053 > 0.02, 6.04 > 2.0
+        # Passes ratios: 53x and 60x >> 3.0x
+        self.assertTrue(captions_burned(caption_stats, control_stats))
+
+
 class TestChatScoring(unittest.TestCase):
     """Test chat burst analysis."""
     
@@ -606,13 +686,21 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             
             print(f"  Relative to control:     changed_ratio={changed_fraction_ratio:.2f}x, mean_diff_ratio={mean_diff_ratio:.2f}x", file=sys.stderr)
             
-            # Assert: caption region has material difference (captions present)
-            # Ratios must be significantly higher than control (at least 3x for robustness)
-            # This catches real burns (typically 10x+ ratios) while rejecting no-burn cases (ratio ~1.0)
-            self.assertGreater(changed_fraction_ratio, 3.0,
-                             f"Caption changed_fraction ratio {changed_fraction_ratio:.2f}x too low - captions not burned in")
-            self.assertGreater(mean_diff_ratio, 3.0,
-                             f"Caption mean_diff ratio {mean_diff_ratio:.2f}x too low - captions not burned in")
+            # Check using helper function
+            caption_stats = {
+                'changed_fraction': caption_changed_fraction,
+                'mean_diff': caption_mean_diff
+            }
+            control_stats = {
+                'changed_fraction': upper_half_changed_fraction,
+                'mean_diff': upper_half_mean_diff
+            }
+            
+            if not captions_burned(caption_stats, control_stats):
+                self.fail(f"Caption burn-in not detected: "
+                         f"changed={caption_changed_fraction:.4f} (vs control {upper_half_changed_fraction:.4f}), "
+                         f"mean_diff={caption_mean_diff:.2f} (vs control {upper_half_mean_diff:.2f}), "
+                         f"ratios: {changed_fraction_ratio:.2f}x / {mean_diff_ratio:.2f}x")
             
             # Assert: upper half near-identical (control - same video content)
             self.assertLess(upper_half_changed_fraction, 0.02,
@@ -734,22 +822,25 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             upper_half_mean_diff = upper_half_diff_sum / (upper_half_pixels * 3)
             upper_half_changed_fraction = upper_half_changed_pixels / upper_half_pixels
             
-            # Compute ratios
-            changed_fraction_ratio = caption_changed_fraction / max(upper_half_changed_fraction, 0.001)
-            mean_diff_ratio = caption_mean_diff / max(upper_half_mean_diff, 0.1)
-            
             # Print measured numbers
             print(f"\nNegative test (identical frames):", file=sys.stderr)
             print(f"  Caption region: changed={caption_changed_fraction:.4f}, mean_diff={caption_mean_diff:.2f}", file=sys.stderr)
             print(f"  Upper half:     changed={upper_half_changed_fraction:.4f}, mean_diff={upper_half_mean_diff:.2f}", file=sys.stderr)
-            print(f"  Ratios:         changed_ratio={changed_fraction_ratio:.2f}x, mean_diff_ratio={mean_diff_ratio:.2f}x", file=sys.stderr)
             
-            # Assert: These ratios should be LOW (near 1.0) for identical frames
-            # The positive test requires ratios > 3.0, so these should fail that threshold
-            self.assertLess(changed_fraction_ratio, 3.0,
-                          f"Negative test PASSED when it should FAIL: changed_ratio {changed_fraction_ratio:.2f}x >= 3.0")
-            self.assertLess(mean_diff_ratio, 3.0,
-                          f"Negative test PASSED when it should FAIL: mean_diff_ratio {mean_diff_ratio:.2f}x >= 3.0")
+            # Use same helper as positive test
+            caption_stats = {
+                'changed_fraction': caption_changed_fraction,
+                'mean_diff': caption_mean_diff
+            }
+            control_stats = {
+                'changed_fraction': upper_half_changed_fraction,
+                'mean_diff': upper_half_mean_diff
+            }
+            
+            # Assert: identical frames should be rejected by the helper
+            if captions_burned(caption_stats, control_stats):
+                self.fail(f"Negative test: captions_burned returned True for identical frames "
+                         f"(changed={caption_changed_fraction:.4f}, mean_diff={caption_mean_diff:.2f})")
             
             print("✓ Negative test correctly rejects identical frames (no burn)", file=sys.stderr)
 

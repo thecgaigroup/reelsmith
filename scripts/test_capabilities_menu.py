@@ -404,6 +404,100 @@ def test_skill_routes_have_capabilities_entries():
     print(f"✓ All {user_facing_count} user-facing routes have matching CAPABILITIES entries")
 
 
+def test_capabilities_entries_have_skill_routes():
+    """Reverse drift test: every CAPABILITIES entry must appear in SKILL.md route table.
+    
+    Ensures that capabilities_menu.py entries are documented in the route table,
+    except for system/helper entries that are intentionally menu-only.
+    """
+    # Load CAPABILITIES from capabilities_menu.py
+    result = subprocess.run(
+        [sys.executable, str(HERE / "capabilities_menu.py"), "--json"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    data = json.loads(result.stdout)
+    capabilities = data["capabilities"]
+    
+    # Read SKILL.md route table
+    skill_content = SKILL_MD.read_text()
+    route_table_match = re.search(
+        r"## Route the job\n\| Job \| Use \| Read \|\n\|---\|---\|---\|\n(.*?)(?=\n## |\Z)",
+        skill_content,
+        re.DOTALL
+    )
+    assert route_table_match, "Could not find route table in SKILL.md"
+    route_table = route_table_match.group(1)
+    
+    # Parse routes from table
+    routes = []
+    for line in route_table.strip().split('\n'):
+        if line.strip().startswith('|'):
+            parts = [p.strip() for p in line.split('|')]
+            if len(parts) >= 4:
+                job = parts[1]
+                use = parts[2]
+                read = parts[3]
+                routes.append({"job": job, "use": use, "read": read})
+    
+    # Build route index by template and reference
+    route_templates = set()
+    route_references = set()
+    for route_info in routes:
+        # Extract templates from Use column
+        template_matches = re.findall(r'`([a-z-]+)`', route_info["use"])
+        route_templates.update(template_matches)
+        
+        # Extract references from Read column
+        read_files = re.findall(r'(\w+(?:-\w+)*\.md)', route_info["read"])
+        route_references.update(read_files)
+    
+    # Capabilities that don't need route table entries (system/helper entries)
+    excluded_capabilities = {
+        "Update Reelsmith": "System command, not a video creation capability"
+    }
+    
+    # Check each capability
+    missing_capabilities = []
+    for cap in capabilities:
+        cap_name = cap["name"]
+        
+        # Skip excluded capabilities
+        if cap_name in excluded_capabilities:
+            continue
+        
+        # Check if capability appears in route table
+        found_in_routes = False
+        
+        # Check by template
+        if cap.get("template") and cap["template"] in route_templates:
+            found_in_routes = True
+        
+        # Check by reference
+        if cap.get("reference"):
+            ref = cap["reference"]
+            if ref.startswith("references/"):
+                ref = ref[len("references/"):]
+            if ref in route_references:
+                found_in_routes = True
+        
+        if not found_in_routes:
+            template_str = f"template={cap.get('template')}" if cap.get('template') else "no template"
+            ref_str = f"ref={cap.get('reference')}" if cap.get('reference') else "no ref"
+            missing_capabilities.append(f"{cap_name} ({template_str}, {ref_str})")
+    
+    assert not missing_capabilities, (
+        f"The following CAPABILITIES entries have no route in SKILL.md:\n"
+        + "\n".join(f"  - {cap}" for cap in missing_capabilities)
+        + "\n\nAdd these capabilities to the route table in SKILL.md"
+        + "\nor add them to excluded_capabilities if they are system/helper entries."
+    )
+    
+    user_facing_count = len([c for c in capabilities if c["name"] not in excluded_capabilities])
+    print(f"✓ All {user_facing_count} user-facing capabilities have route table entries")
+
+
 def main():
     """Run all tests."""
     tests = [
@@ -417,6 +511,7 @@ def main():
         ("SKILL and README stay in sync", test_skill_and_readme_stay_in_sync),
         ("Entry references correct", test_entry_references_are_correct),
         ("SKILL routes have CAPABILITIES entries", test_skill_routes_have_capabilities_entries),
+        ("CAPABILITIES entries have SKILL routes", test_capabilities_entries_have_skill_routes),
     ]
     
     failed = []
