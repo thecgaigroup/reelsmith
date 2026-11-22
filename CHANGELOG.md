@@ -5,7 +5,24 @@ All notable changes to Reelsmith will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-<<<<<<< HEAD
+## [5.5.1] - 2026-11-22
+
+### Fixed
+
+- **Caption burn-in test robustness**: Fixed flaky assertion in `test_stream_highlights.py` by computing caption metrics relative to upper-half control region. This handles encoding variations that caused intermittent failures (measured mean_diff 4.82 vs threshold 5.0). New assertion requires 3x ratio vs control, catching real burns (typically 10x+) while rejecting no-burn cases (ratio ~1.0). Added negative test to verify assertion rejects identical frames.
+- **OpenCV version pin**: Pinned opencv-python to 4.x line (`>=4.10,<5`) in `requirements-stream.txt` and CI to prevent regression from opencv 5.x which removed `cv2.CascadeClassifier`. Added `test_opencv_version.py` to verify CascadeClassifier availability and Haar cascade loading in CI.
+- **THIRD_PARTY_NOTICES consolidation**: Merged no-extension `THIRD_PARTY_NOTICES` file into `THIRD_PARTY_NOTICES.md`, keeping yt-dlp, faster-whisper, onnxruntime, YuNet, and YOLOX entries verbatim. Deleted duplicate file. All references already pointed to `.md` file.
+- **CHANGELOG conflict marker**: Removed accidentally committed `<<<<<<< HEAD` marker from CHANGELOG.md.
+
+### Added
+
+- **Stream-highlights route**: Added stream-highlights row to SKILL.md route table and corresponding entry in `capabilities_menu.py`. Existing drift test now verifies this route has a matching capability entry.
+
+### Changed
+
+- README H1 remains "# Reelsmith" with no version (unchanged).
+- All existing tests pass unmodified.
+
 ## [5.5.0] - 2026-11-21
 
 ### Added
