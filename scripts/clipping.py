@@ -511,10 +511,6 @@ def process_stream_highlights(video_source, output_dir, chat_json=None,
     
     # Process each clip with stream-pop captions
     print(f"\nProcessing {len(highlights)} clips with captions...", file=sys.stderr)
-    print(f"Global words loaded: {len(words) if words else 0}", file=sys.stderr)
-    if words:
-        print(f"  First word: {words[0]}", file=sys.stderr)
-        print(f"  Last word: {words[-1]}", file=sys.stderr)
     results = []
     
     for i, highlight in enumerate(highlights, 1):
@@ -533,12 +529,9 @@ def process_stream_highlights(video_source, output_dir, chat_json=None,
         apply_clip_crop(raw_clip, tracking_data, start, end, cropped_clip)
         
         # Generate and burn captions
-        print(f"\nClip {i}: words available: {len(words) if words else 0}", file=sys.stderr)
         if words:
             clip_words = [w for w in words if start <= w["start"] < end]
-            print(f"  Filtered clip_words (start={start}, end={end}): {len(clip_words)}", file=sys.stderr)
             shifted_words = shift_captions(clip_words, start)
-            print(f"  Shifted words: {len(shifted_words)}", file=sys.stderr)
             
             if shifted_words:
                 clip_words_json = clip_dir / "words.json"
@@ -561,7 +554,6 @@ def process_stream_highlights(video_source, output_dir, chat_json=None,
                 
                 # Burn captions
                 if (clip_dir / "captions.ass").exists():
-                    print(f"Burning captions from {clip_dir / 'captions.ass'} into {cropped_clip}", file=sys.stderr)
                     burned_clip = clip_dir / "burned.mp4"
                     burn_cmd = [
                         "python3", str(HERE / "captions.py"), "burn",
@@ -571,39 +563,18 @@ def process_stream_highlights(video_source, output_dir, chat_json=None,
                     ]
                     burn_result = run_cmd(burn_cmd)
                     
-                    # Print burn subprocess output for debugging
+                    # Print any warnings from burn process
                     if burn_result.stderr:
-                        print(f"Burn subprocess stderr:\n{burn_result.stderr}", file=sys.stderr)
-                    if burn_result.stdout:
-                        print(f"Burn subprocess stdout:\n{burn_result.stdout}", file=sys.stderr)
+                        print(burn_result.stderr, file=sys.stderr)
                     
                     # Verify burned clip exists
                     if not burned_clip.exists():
                         print(f"ERROR: Burned clip not created at {burned_clip}", file=sys.stderr)
-                        print(f"Burn command stdout: {burn_result.stdout}", file=sys.stderr)
-                        print(f"Burn command stderr: {burn_result.stderr}", file=sys.stderr)
+                        print(f"Burn stderr: {burn_result.stderr}", file=sys.stderr)
                         sys.exit(1)
-                    
-                    print(f"Replacing {cropped_clip} with burned version", file=sys.stderr)
-                    
-                    # Debug: check file sizes before replacement
-                    orig_size = cropped_clip.stat().st_size if cropped_clip.exists() else 0
-                    burned_size = burned_clip.stat().st_size
-                    print(f"DEBUG: Before replace - video.mp4: {orig_size} bytes, burned.mp4: {burned_size} bytes", file=sys.stderr)
                     
                     # Replace video.mp4 with burned version
                     burned_clip.replace(cropped_clip)
-                    
-                    # Debug: verify replacement
-                    final_size = cropped_clip.stat().st_size
-                    print(f"DEBUG: After replace - video.mp4: {final_size} bytes", file=sys.stderr)
-                    if final_size != burned_size:
-                        print(f"ERROR: File sizes don't match after replacement! Expected {burned_size}, got {final_size}", file=sys.stderr)
-                        sys.exit(1)
-                    
-                    print(f"Caption burn complete for clip {i}", file=sys.stderr)
-                else:
-                    print(f"No captions.ass found at {clip_dir / 'captions.ass'}, skipping burn", file=sys.stderr)
         
         results.append({
             "clip_dir": str(clip_dir),

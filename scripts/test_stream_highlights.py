@@ -461,11 +461,6 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             self.assertEqual(captioned_result.returncode, 0,
                            f"Captioned clip generation failed: {captioned_result.stderr}")
             
-            # Print subprocess stderr for debugging
-            print("\n=== Captioned clip generation stderr ===", file=sys.stderr)
-            print(captioned_result.stderr, file=sys.stderr)
-            print("=== End captioned stderr ===\n", file=sys.stderr)
-            
             captioned_clips = list(captioned_output.glob("clip_*/video.mp4"))
             self.assertGreater(len(captioned_clips), 0, "No captioned clips generated")
             captioned_clip = captioned_clips[0]
@@ -488,11 +483,6 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             
             self.assertEqual(no_caption_result.returncode, 0,
                            f"No-caption clip generation failed: {no_caption_result.stderr}")
-            
-            # Print subprocess stderr for debugging
-            print("\n=== No-caption clip generation stderr ===", file=sys.stderr)
-            print(no_caption_result.stderr, file=sys.stderr)
-            print("=== End no-caption stderr ===\n", file=sys.stderr)
             
             
             no_caption_clips = list(no_caption_output.glob("clip_*/video.mp4"))
@@ -527,18 +517,6 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             # Extract at t=3.0s when "the" and "stream" words are on screen
             frame_time = "3.0"
             
-            # Debug: print clip paths, sizes, and hashes to verify they're different
-            import hashlib
-            captioned_hash = hashlib.md5(captioned_clip.read_bytes()).hexdigest()
-            no_caption_hash = hashlib.md5(no_caption_clip.read_bytes()).hexdigest()
-            
-            print(f"\nDEBUG test: Comparing clips:", file=sys.stderr)
-            print(f"  Captioned: {captioned_clip} ({captioned_clip.stat().st_size} bytes) hash={captioned_hash}", file=sys.stderr)
-            print(f"  No-caption: {no_caption_clip} ({no_caption_clip.stat().st_size} bytes) hash={no_caption_hash}", file=sys.stderr)
-            
-            if captioned_hash == no_caption_hash:
-                print(f"ERROR: Video files are IDENTICAL!", file=sys.stderr)
-            
             with_caption_frame = tmpdir / "with_caption.png"
             without_caption_frame = tmpdir / "without_caption.png"
             
@@ -553,15 +531,6 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
                 "-frames:v", "1", "-f", "image2",
                 str(without_caption_frame)
             ], capture_output=True, check=True)
-            
-            # Debug: verify frames were extracted and are different files
-            with_hash = hashlib.md5(with_caption_frame.read_bytes()).hexdigest()
-            without_hash = hashlib.md5(without_caption_frame.read_bytes()).hexdigest()
-            print(f"DEBUG test: Frame hashes:", file=sys.stderr)
-            print(f"  With caption: {with_hash} ({with_caption_frame.stat().st_size} bytes)", file=sys.stderr)
-            print(f"  Without caption: {without_hash} ({without_caption_frame.stat().st_size} bytes)", file=sys.stderr)
-            if with_hash == without_hash:
-                print(f"WARNING: Frame hashes are IDENTICAL!", file=sys.stderr)
             
             # Read both frames as RGB
             frame_probe = subprocess.run([
@@ -580,15 +549,6 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
                 "ffmpeg", "-y", "-i", str(without_caption_frame),
                 "-f", "rawvideo", "-pix_fmt", "rgb24", "-"
             ], capture_output=True, check=True).stdout
-            
-            # Debug: verify RGB data
-            print(f"DEBUG test: Frame dimensions: {frame_w}x{frame_h}", file=sys.stderr)
-            print(f"DEBUG test: RGB data lengths:", file=sys.stderr)
-            print(f"  With caption: {len(with_caption_rgb)} bytes (expected {frame_w*frame_h*3})", file=sys.stderr)
-            print(f"  Without caption: {len(without_caption_rgb)} bytes (expected {frame_w*frame_h*3})", file=sys.stderr)
-            
-            if len(with_caption_rgb) != len(without_caption_rgb):
-                print(f"ERROR: RGB data lengths don't match!", file=sys.stderr)
             
             # Frame diff: check middle section where captions appear (50-80% down)
             # ASS MarginV=691 for 1920px height = ~64% down, so captions around y=1229
