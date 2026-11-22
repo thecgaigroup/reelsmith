@@ -527,6 +527,11 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             # Extract at t=3.0s when "the" and "stream" words are on screen
             frame_time = "3.0"
             
+            # Debug: print clip paths and sizes
+            print(f"\nDEBUG test: Comparing clips:", file=sys.stderr)
+            print(f"  Captioned: {captioned_clip} ({captioned_clip.stat().st_size} bytes)", file=sys.stderr)
+            print(f"  No-caption: {no_caption_clip} ({no_caption_clip.stat().st_size} bytes)", file=sys.stderr)
+            
             with_caption_frame = tmpdir / "with_caption.png"
             without_caption_frame = tmpdir / "without_caption.png"
             
