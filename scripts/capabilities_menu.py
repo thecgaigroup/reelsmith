@@ -94,6 +94,13 @@ CAPABILITIES = [
         "reference": "references/clipping.md",
     },
     {
+        "name": "Stream highlights from live streams and VODs",
+        "description": "Chat-burst scoring, URL input (yt-dlp), facecam-aware crop, profanity masking, optional models",
+        "template": None,  # clipping.py --mode stream-highlights workflow
+        "example": None,  # No single example file
+        "reference": "references/clipping.md",
+    },
+    {
         "name": "Update Reelsmith",
         "description": "Check for and install newer versions of Reelsmith",
         "template": None,  # Not a template, system command
