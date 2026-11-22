@@ -219,12 +219,86 @@ This harvest is **techniques only**, not wholesale adoption. Reelsmith's clippin
 - Review `tracking.json` to verify primary track was selected correctly
 - Check `review/review.json` for quality warnings before delivery
 
-**Future improvements** (not in 5.4.0):
-- Automatic transcription integration (parakeet/WhisperX one-liner)
-- Frame-by-frame crop panning with ffmpeg zoompan filter
-- Multi-track scene detection for speaker changes
-- DNN face detection option (heavier, more accurate)
-- Audio enhancement option (DeepFilterNet for dialogue, already reviewed in Scout notes)
+## Stream-Highlights Mode (v5.5.0)
+
+v5.5.0 adds stream-highlights mode for live streams and gaming VODs with chat-burst analysis.
+
+### Differences from default mode
+
+| Feature | Default mode (v5.4.0) | Stream-highlights mode (v5.5.0) |
+|---------|----------------------|----------------------------------|
+| **Input** | Local files only | Local files OR URLs (with `--rights-confirmed`) |
+| **Scoring** | Transcript + audio energy | Chat bursts > RMS loudness > speech-lexicon |
+| **Detection** | Haar cascade only | YuNet/YOLOX with Haar fallback |
+| **Captions** | Standard social profile | Stream-pop (3-word, profanity masked) |
+| **Chunking** | Full file | 90-second chunks for streams |
+| **Chat** | Not supported | Twitch IRC, YouTube API, chat.json |
+
+### Usage
+
+```bash
+# Local file with chat
+python3 scripts/clipping.py process video.mp4 \
+  --out output/clips \
+  --mode stream-highlights \
+  --chat chat.json \
+  --max-clip 30
+
+# URL with rights confirmation
+python3 scripts/clipping.py process "https://youtube.com/watch?v=ID" \
+  --out output/clips \
+  --mode stream-highlights \
+  --rights-confirmed \
+  --max-clip 30
+```
+
+### Chat burst scoring
+
+Stream-highlights mode prioritizes chat activity spikes:
+- Analyzes unique participants and excitement markers (wow, clip, pog, emojis)
+- Deweights spam: one user repeating messages doesn't inflate score
+- Uses Median Absolute Deviation (MAD) for outlier-robust scoring
+- Finds peak 5-second bucket within window for precise moment detection
+- 6-second lead-in from peak for context
+
+Falls back to RMS loudness when chat unavailable or insufficient.
+
+### Advanced detection
+
+**YuNet face detection (optional):**
+- MIT License, 233 KB model from OpenCV Zoo
+- More accurate than Haar cascade
+- Download: `python3 scripts/fetch_models.py --yunet`
+
+**YOLOX-S person tracking (optional):**
+- Apache-2.0 License, 35 MB model from OpenCV Zoo
+- Tracks player movement for dynamic crop panning
+- Download: `python3 scripts/fetch_models.py --yolox`
+
+Both fall back to Haar cascade if models unavailable.
+
+### Stream-pop captions
+
+3-word pop-in captions optimized for gaming streams:
+- Each word pops in yellow when spoken
+- Spoken words turn white
+- Next phrase replaces at same position (no stacking)
+- Profanity masking enabled by default (`--profanity-mask`)
+
+### Dependencies
+
+Core (included): `opencv-python`, `pysubs2`
+
+Stream mode (optional): `yt-dlp`, `faster-whisper`, `onnxruntime`
+
+Install: `pip install -r requirements-stream.txt`
+
+### Rights requirements
+
+URL input requires `--rights-confirmed` flag. You are responsible for:
+- Obtaining rights to record, edit, and publish content
+- Respecting platform terms of service
+- Complying with creator policies
 
 ## Test requirements (all met in CI)
 
@@ -233,12 +307,20 @@ This harvest is **techniques only**, not wholesale adoption. Reelsmith's clippin
 3. **Tracker ID stability:** Continuous segment keeps single tracker_id (no ID jumps within contiguous detections).
 4. **Caption shifting:** Shifting SRT by T seconds preserves cue count and moves last cue's end by exactly T.
 5. **Audio quality:** 48kHz sample rate check (existing review.py check) passes on clip outputs.
+6. **Stream-highlights tests:** Chat scoring, profanity masking, rights-flag enforcement, model fallback (all with mocks, no network in CI).
 
-All tests in `scripts/test_clipping.py`, run in CI with existing test suite.
+Tests in `scripts/test_clipping.py` and `scripts/test_stream_highlights.py`, run in CI.
 
-## Attribution
+## Dependencies
 
-- **Techniques harvested from:** Anil-matcha/AI-Youtube-Shorts-Generator (MIT, Copyright 2026 Anil Chandra Naidu Matcha)
-- **Dependencies:** opencv-python (Apache-2.0), pysubs2 (MIT, tkarabela)
-- **Tracker ID technique inspired by:** supervision pattern (IoU-based matching; supervision is not a dependency)
-- **Scout review:** `/workspace/scout/craft/clipping-22-repo-fit.md` (2026-11-21, 22-repo harvest, license verification, done_when conditions)
+- **opencv-python** (Apache-2.0): Face and person detection
+- **pysubs2** (MIT, tkarabela): Caption format manipulation
+- **yt-dlp** (Unlicense, optional): URL input for streams
+- **faster-whisper** (MIT, optional): Speech transcription
+- **onnxruntime** (MIT, optional): ONNX model inference
+
+**Models** (optional, separate download):
+- YuNet face detection (MIT License, OpenCV)
+- YOLOX-S person detection (Apache-2.0, OpenCV)
+
+See THIRD_PARTY_NOTICES for full license information.

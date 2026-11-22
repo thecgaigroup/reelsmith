@@ -100,6 +100,13 @@ CAPABILITIES = [
         "example": None,  # Not a video template
         "reference": "python3 scripts/doctor.py",
     },
+    {
+        "name": "Stream highlights and gaming clips",
+        "description": "Extract vertical 9:16 highlights from live streams or VODs with chat-burst analysis",
+        "template": None,  # stream-highlights mode in clipping.py
+        "example": None,  # No preview (user content)
+        "reference": "references/clipping.md",
+    },
 ]
 
 

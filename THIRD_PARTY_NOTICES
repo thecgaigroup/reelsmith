@@ -1,0 +1,46 @@
+# Third-Party Notices
+
+This project uses third-party dependencies and models. The original copyright notices and licenses are reproduced below.
+
+## Optional Dependencies for stream-highlights Mode
+
+### yt-dlp
+
+- **Package**: yt-dlp
+- **License**: Unlicense
+- **Source**: https://github.com/yt-dlp/yt-dlp
+- **Purpose**: URL input for live streams and VODs
+
+### faster-whisper
+
+- **Package**: faster-whisper
+- **License**: MIT License
+- **Source**: https://github.com/guillaumekln/faster-whisper
+- **Purpose**: Speech transcription for speech-lexicon fallback scoring
+
+### onnxruntime
+
+- **Package**: onnxruntime
+- **License**: MIT License
+- **Source**: https://github.com/microsoft/onnxruntime
+- **Purpose**: ONNX model inference for face and person detection
+
+## OpenCV Zoo Pre-trained Models
+
+The stream-highlights mode can optionally use pre-trained ONNX models from OpenCV Zoo. These models are downloaded separately via `python3 scripts/fetch_models.py` with SHA-256 verification and are not included in this repository.
+
+### YuNet Face Detection Model
+
+- **Model**: face_detection_yunet_2023mar.onnx
+- **Source**: https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet
+- **License**: MIT License
+- **Copyright**: Copyright (c) 2021 OpenCV
+- **Purpose**: Facecam detection for smart crop positioning
+
+### YOLOX-S Object Detection Model
+
+- **Model**: object_detection_yolox_2022nov.onnx
+- **Source**: https://github.com/opencv/opencv_zoo/tree/main/models/object_detection_yolox
+- **License**: Apache License 2.0
+- **Copyright**: Copyright (c) 2021 OpenCV
+- **Purpose**: Person tracking for player-follow panning crop

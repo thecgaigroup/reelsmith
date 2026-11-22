@@ -111,6 +111,137 @@ Could not check for Reelsmith updates (network unavailable)
 See `references/clipping.md` for the complete workflow, face tracking approach, highlight scoring (CPU-only, $0, no LLM), and limitations.
 
 
+## Stream-Highlights Mode (v5.5.0)
+
+Turn live streams or VODs into vertical 9:16 highlight clips. Finds high-engagement moments from chat activity bursts, audio energy, or speech patterns.
+
+### What it does
+
+- **Input**: Local video file OR stream URL (YouTube, Twitch) with `--rights-confirmed`
+- **Chat sources**: Twitch IRC, YouTube live chat (requires API keys), or chat.json file
+- **Moment detection**: Three-tier priority system:
+  1. **Chat bursts** (highest): Spikes in viewer reactions and engagement
+  2. **RMS loudness**: Dynamic audio moments when chat unavailable
+  3. **Speech-lexicon** (optional): Speech pattern analysis via faster-whisper
+- **Smart crop**: Facecam-aware 9:16 crop keeps the facecam OUT of frame
+  - YuNet face detection (MIT License, optional model download)
+  - YOLOX-S person tracking for player-follow pan (Apache-2.0, optional)
+  - Falls back to OpenCV Haar cascade (no models required)
+- **6-second lead-in**: Clips start 6s before peak moment for context
+- **Stream-pop captions**: 3-word pop-in captions (yellow new words, white spoken)
+- **Profanity masking**: Masks explicit words in burned-in captions (audio unchanged)
+
+### Install
+
+**Core dependencies** (already included):
+```bash
+pip install opencv-python pysubs2
+```
+
+**Stream-highlights dependencies** (optional, for URL input and advanced features):
+```bash
+pip install -r requirements-stream.txt
+```
+
+This installs:
+- `yt-dlp`: URL input for live streams and VODs
+- `faster-whisper`: Speech-lexicon fallback
+- `onnxruntime`: ONNX model inference for YuNet/YOLOX
+
+**Download models** (optional, for YuNet/YOLOX detection):
+```bash
+python3 scripts/fetch_models.py --all
+```
+
+Models (with SHA-256 verification):
+- **YuNet** (face detection, MIT License): 233 KB
+- **YOLOX-S** (person tracking, Apache-2.0): 35 MB
+
+Without models, stream-highlights mode falls back to OpenCV Haar cascade (no downloads).
+
+### Usage
+
+**Local file with chat.json:**
+```bash
+python3 scripts/clipping.py process video.mp4 \
+  --out output/clips \
+  --mode stream-highlights \
+  --chat chat.json \
+  --min-clip 10 \
+  --max-clip 30 \
+  --top-n 5
+```
+
+**Stream URL (requires `--rights-confirmed`):**
+```bash
+python3 scripts/clipping.py process "https://www.youtube.com/watch?v=VIDEO_ID" \
+  --out output/clips \
+  --mode stream-highlights \
+  --rights-confirmed \
+  --min-clip 10 \
+  --max-clip 30 \
+  --top-n 5
+```
+
+**With live chat collection** (requires `YOUTUBE_API_KEY` or Twitch credentials):
+```bash
+export YOUTUBE_API_KEY="your_key_here"
+
+python3 scripts/clipping.py process "https://www.youtube.com/watch?v=VIDEO_ID" \
+  --out output/clips \
+  --mode stream-highlights \
+  --rights-confirmed \
+  --chat live
+```
+
+### Chat.json format
+
+Supports Twitch IRC logs and YouTube chat exports:
+```json
+[
+  {"t": 10.5, "user": "username", "text": "amazing clip!"},
+  {"t": 11.0, "user": "viewer2", "text": "wow insane"}
+]
+```
+
+Alternate formats auto-normalized:
+- `time`/`timestamp` → `t`
+- `username`/`author` → `user`
+- `message`/`content` → `text`
+
+### How moments are picked
+
+**Priority 1: Chat bursts** (if chat available)
+- Analyzes message density, unique participants, excitement markers
+- Deweights spam: one user repeating a message doesn't inflate score
+- Uses Median Absolute Deviation (MAD) for outlier-robust scoring
+- Finds peak 5-second bucket for precise clip start
+
+**Priority 2: RMS loudness** (always available)
+- Analyzes audio energy in 2-second windows
+- Identifies dynamic/loud moments
+- CPU-only via ffmpeg volumedetect
+
+**Priority 3: Speech-lexicon** (optional, requires faster-whisper)
+- Transcribes speech and analyzes reaction patterns
+- Enabled with `--speech-fallback` flag
+- Falls back when chat unavailable and RMS insufficient
+
+### Rights and platform notes
+
+**You are responsible for:**
+- Obtaining rights and permissions to record, edit, and publish content
+- Respecting platform terms of service
+- Complying with content creator policies
+
+The `--rights-confirmed` flag is required for all URL inputs. It confirms you have verified you have the necessary rights before processing begins.
+
+### See also
+
+- [references/clipping.md](references/clipping.md) — Full clipping lane documentation
+- [SKILL.md](SKILL.md) — Main skill for template-driven videos
+- [examples/](examples/) — Gallery of template examples
+
 ## Roadmap
 Showreel kinetic type, transitions, and an open storyboard are in the skill. An optional SageCut measurement ladder and an optional `poster-grid` recipe are documented; Sage API spend stays parked. Motion grammar, the independent-critic loop, and optional product-hero notes from [motion-video-kit](https://github.com/echris6/motion-video-kit) (MIT) are in the skill. That fold adds no Three.js package. Pricing templates from that kit stay parked. Launch-film sound (sync taps, bed-relative levels, a role bank, a measured SFX check) and a six-station harness (reference, data, story, frames, a one-line timing fix, then the master) are in the skill as of 2026-10-27. That fold adds no sound bank and no Remotion skill tree. v5.1 is that craft-docs surface, already on main. Pack behavior is unchanged. Other parked fold-ins and skips (MotionVideo paid pack, FilmCraft, CapCut, snapcn Pro, 3D/extrude and glitch defaults) are in [ROADMAP.md](ROADMAP.md). No sidecar packages.
 
