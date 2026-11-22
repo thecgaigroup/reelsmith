@@ -527,10 +527,17 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             # Extract at t=3.0s when "the" and "stream" words are on screen
             frame_time = "3.0"
             
-            # Debug: print clip paths and sizes
+            # Debug: print clip paths, sizes, and hashes to verify they're different
+            import hashlib
+            captioned_hash = hashlib.md5(captioned_clip.read_bytes()).hexdigest()
+            no_caption_hash = hashlib.md5(no_caption_clip.read_bytes()).hexdigest()
+            
             print(f"\nDEBUG test: Comparing clips:", file=sys.stderr)
-            print(f"  Captioned: {captioned_clip} ({captioned_clip.stat().st_size} bytes)", file=sys.stderr)
-            print(f"  No-caption: {no_caption_clip} ({no_caption_clip.stat().st_size} bytes)", file=sys.stderr)
+            print(f"  Captioned: {captioned_clip} ({captioned_clip.stat().st_size} bytes) hash={captioned_hash}", file=sys.stderr)
+            print(f"  No-caption: {no_caption_clip} ({no_caption_clip.stat().st_size} bytes) hash={no_caption_hash}", file=sys.stderr)
+            
+            if captioned_hash == no_caption_hash:
+                print(f"ERROR: Video files are IDENTICAL!", file=sys.stderr)
             
             with_caption_frame = tmpdir / "with_caption.png"
             without_caption_frame = tmpdir / "without_caption.png"
@@ -548,7 +555,6 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
             ], capture_output=True, check=True)
             
             # Debug: verify frames were extracted and are different files
-            import hashlib
             with_hash = hashlib.md5(with_caption_frame.read_bytes()).hexdigest()
             without_hash = hashlib.md5(without_caption_frame.read_bytes()).hexdigest()
             print(f"DEBUG test: Frame hashes:", file=sys.stderr)
