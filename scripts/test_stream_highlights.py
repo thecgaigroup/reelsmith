@@ -547,6 +547,16 @@ class TestStreamHighlightsIntegration(unittest.TestCase):
                 str(without_caption_frame)
             ], capture_output=True, check=True)
             
+            # Debug: verify frames were extracted and are different files
+            import hashlib
+            with_hash = hashlib.md5(with_caption_frame.read_bytes()).hexdigest()
+            without_hash = hashlib.md5(without_caption_frame.read_bytes()).hexdigest()
+            print(f"DEBUG test: Frame hashes:", file=sys.stderr)
+            print(f"  With caption: {with_hash} ({with_caption_frame.stat().st_size} bytes)", file=sys.stderr)
+            print(f"  Without caption: {without_hash} ({without_caption_frame.stat().st_size} bytes)", file=sys.stderr)
+            if with_hash == without_hash:
+                print(f"WARNING: Frame hashes are IDENTICAL!", file=sys.stderr)
+            
             # Read both frames as RGB
             frame_probe = subprocess.run([
                 "ffprobe", "-v", "error", "-select_streams", "v:0",
