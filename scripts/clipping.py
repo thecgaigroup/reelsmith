@@ -585,8 +585,22 @@ def process_stream_highlights(video_source, output_dir, chat_json=None,
                         sys.exit(1)
                     
                     print(f"Replacing {cropped_clip} with burned version", file=sys.stderr)
+                    
+                    # Debug: check file sizes before replacement
+                    orig_size = cropped_clip.stat().st_size if cropped_clip.exists() else 0
+                    burned_size = burned_clip.stat().st_size
+                    print(f"DEBUG: Before replace - video.mp4: {orig_size} bytes, burned.mp4: {burned_size} bytes", file=sys.stderr)
+                    
                     # Replace video.mp4 with burned version
                     burned_clip.replace(cropped_clip)
+                    
+                    # Debug: verify replacement
+                    final_size = cropped_clip.stat().st_size
+                    print(f"DEBUG: After replace - video.mp4: {final_size} bytes", file=sys.stderr)
+                    if final_size != burned_size:
+                        print(f"ERROR: File sizes don't match after replacement! Expected {burned_size}, got {final_size}", file=sys.stderr)
+                        sys.exit(1)
+                    
                     print(f"Caption burn complete for clip {i}", file=sys.stderr)
                 else:
                     print(f"No captions.ass found at {clip_dir / 'captions.ass'}, skipping burn", file=sys.stderr)
