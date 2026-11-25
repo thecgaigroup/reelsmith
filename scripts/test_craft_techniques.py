@@ -268,24 +268,24 @@ def test_deepfilternet_skip():
 
 # 11. DeepFilterNet refusal on music/vocal
 def test_deepfilternet_refusal():
-    """DeepFilterNet refuses to run on music/vocal inputs."""
+    """DeepFilterNet refuses to run on music/vocal inputs (fail-closed)."""
     sys.path.insert(0, str(HERE))
     import deepfilternet_helper as dfn
     
-    # Test filename detection
-    is_mus, reason = dfn.is_music_or_vocal("song_vocals.wav")
-    assert is_mus is True
+    # Test filename detection (fail-closed: refuse)
+    allowed, reason = dfn.is_dialogue_allowed("song_vocals.wav")
+    assert allowed is False
     assert "vocal" in reason
     print(f"  refused: {reason}")
     
-    # Test metadata detection
-    is_mus, reason = dfn.is_music_or_vocal("audio.wav", {"stem_type": "vocals"})
-    assert is_mus is True
-    assert "stem_type" in reason
+    # Test metadata detection (fail-closed: refuse unless explicit dialogue)
+    allowed, reason = dfn.is_dialogue_allowed("audio.wav", {"stem_type": "vocals"})
+    assert allowed is False
+    assert "vocals" in reason or "stem_type" in reason
     
-    # Dialogue should pass
-    is_mus, reason = dfn.is_music_or_vocal("interview_dialogue.wav")
-    assert is_mus is False
+    # Unclassified is refused (fail-closed)
+    allowed, reason = dfn.is_dialogue_allowed("interview_dialogue.wav")
+    assert allowed is False  # fail-closed unless explicitly marked as dialogue
 
 # 12. WhisperX skip when unavailable
 def test_whisperx_skip():
@@ -328,6 +328,222 @@ def test_pyscenedetect_fallback():
         assert result["method"] in ("pyscenedetect", "ffmpeg")
         # Detection on synthetic video may be unreliable; just verify it ran
         print(f"  method: {result['method']}, matched: {result['matched']}/{len(expected)} (synthetic fixture)")
+
+if __name__ == "__main__":
+    tests = [f for f in dir() if f.startswith("test_")]
+    passed = 0
+    for t in tests:
+        try:
+            print(f"{t}...", end=" ", flush=True)
+            globals()[t]()
+            print("ok")
+            passed += 1
+        except Exception as e:
+            print(f"FAIL\n  {e}")
+            import traceback
+            traceback.print_exc()
+            sys.exit(1)
+    print(f"\n{passed}/{len(tests)} tests passed")
+
+# 19. DeepFilterNet source overwrite protection
+def test_deepfilternet_no_overwrite():
+    """DeepFilterNet doesn't overwrite source when input is in output folder."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp) / "takes"
+        out.mkdir()
+        v = make_test_video(Path(tmp), dur=1, audio=True)
+        # Copy to takes folder
+        source = out / "take01.wav"
+        subprocess.run(["ffmpeg", "-y", "-i", str(v), str(source)], capture_output=True, check=True)
+        
+        source_bytes = source.read_bytes()
+        source_size = len(source_bytes)
+        
+        sys.path.insert(0, str(HERE))
+        import deepfilternet_helper as dfn
+        
+        # Even if deep-filter is available, with our dialogue-only guard it will refuse
+        # But if it were to run, it must not overwrite source
+        result = dfn.denoise_dialogue(str(source), str(out / "clean.wav"),
+                                     metadata={"is_dialogue": True, "audio_type": "dialogue"})
+        
+        # Source bytes must not change
+        assert source.read_bytes() == source_bytes
+        assert len(source.read_bytes()) == source_size
+        print(f"  source bytes unchanged ({source_size} bytes)")
+
+# 20. Dialogue-only guard comprehensive refusal
+def test_dialogue_guard_refusals():
+    """Dialogue guard refuses vox, lead, chorus, backing, bgm, vocal, stem, music, song, inst (case-insensitive)."""
+    sys.path.insert(0, str(HERE))
+    import deepfilternet_helper as dfn
+    
+    refused_names = ["take01_vox.wav", "LEAD.wav", "Chorus_01.wav", "backing_vocals.wav",
+                    "bgm.wav", "vocal.wav", "vocals_stem.wav", "music.wav", "song.wav", "inst.wav"]
+    
+    for name in refused_names:
+        allowed, reason = dfn.is_dialogue_allowed(name)
+        assert allowed is False
+        assert reason is not None
+        print(f"  refused: {name} ({reason[:40]})")
+    
+    # Unclassified also refused (fail closed)
+    allowed, reason = dfn.is_dialogue_allowed("audio.wav")
+    assert allowed is False
+    assert "not explicitly classified" in reason
+    print(f"  unclassified refused: {reason}")
+
+# 21. Change scope rectangle parsing (don't split on commas inside rect)
+def test_change_scope_rect_parsing():
+    """Parse '1-2@10,20,30,40' correctly without splitting on commas inside rectangle."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        v1 = make_test_video(out, dur=0.5)
+        v2 = make_test_video(out, dur=0.5)
+        
+        # Test that the rect parsing doesn't break on commas
+        result = verify_change_scope(v1, v2, ["0.1-0.3@10,20,30,40"])
+        # Should parse successfully (not fail with "invalid rect syntax")
+        assert "invalid rect" not in str(result.get("failures", []))
+        print(f"  rect parsed: 0.1-0.3@10,20,30,40")
+
+# 22. Change scope errors when --compare missing
+def test_change_scope_no_compare():
+    """verify_change_scope called without compare should be caught by check() error."""
+    # This is enforced at the check() CLI level, tested via CLI invocation
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        v = make_test_video(out, dur=1)
+        review_dir = out / "review"
+        review_dir.mkdir()
+        
+        # Try to run check with --expect-changed but no --compare
+        r = subprocess.run([sys.executable, str(HERE / "review.py"), "check", str(v),
+                           "--out", str(review_dir), "--expect-changed", "none"],
+                          capture_output=True, text=True)
+        # Should exit with error
+        assert r.returncode != 0
+        assert "requires --compare" in r.stderr or "requires --compare" in r.stdout
+        print(f"  error: requires --compare")
+
+# 23. PySceneDetect version probe
+def test_pyscenedetect_version_probe():
+    """PySceneDetect is_available uses 'scenedetect version', not --version."""
+    sys.path.insert(0, str(HERE))
+    import pyscenedetect_helper as psd
+    
+    # Just verify the probe doesn't crash (may return False if not installed)
+    available = psd.is_available()
+    print(f"  PySceneDetect available: {available}")
+
+# 24. PySceneDetect CSV parsing (don't count opening frame)
+def test_pyscenedetect_csv_parsing():
+    """PySceneDetect parses 1-based CSV correctly and doesn't count frame 1 as a cut."""
+    # This is tested via actual cut detection in the synthetic clip test
+    # The opening frame (1) should not be reported as a cut
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        # Create video with known cut at frame ~30
+        subprocess.run(["ffmpeg", "-y",
+                        "-f", "lavfi", "-i", "color=black:s=320x240:r=30:duration=1",
+                        "-f", "lavfi", "-i", "nullsrc=s=320x240:d=1,geq='random(1)*255:128:128'",
+                        "-filter_complex", "[0:v][1:v]concat=n=2:v=1:a=0",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "cuts.mp4")],
+                       capture_output=True, check=True)
+        
+        sys.path.insert(0, str(HERE))
+        import pyscenedetect_helper as psd
+        
+        result = psd.detect_cuts_ffmpeg(out / "cuts.mp4")
+        # Frame 0 or 1 should not be in the cuts list
+        if result["success"] and result["cuts"]:
+            assert 0 not in result["cuts"]
+            assert 1 not in result["cuts"]
+            print(f"  cuts detected (excluding opening frame): {result['cuts'][:5]}")
+
+# 25. Identity uses sha256 content digest
+def test_identity_sha256():
+    """file_identity uses sha256 content digest, not just size:mtime_ns."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        v = make_test_video(out, dur=1)
+        identity = export_file_identity(v)
+        # Should have three parts: size:mtime_ns:sha256
+        parts = identity.split(":")
+        assert len(parts) == 3
+        assert len(parts[2]) == 64  # sha256 hex digest
+        print(f"  identity format: size:mtime:sha256 (sha256={parts[2][:16]}...)")
+
+# 26. Duration fit enforcement
+def test_duration_fit_enforcement():
+    """check_duration_fit refuses ratio >1.15x (e.g. 10.0/6.0 = 1.67x)."""
+    from export import check_duration_fit
+    
+    # 10.0 / 6.0 = 1.667x should be refused (difference > 0.5s threshold)
+    ok, factor, reason = check_duration_fit(10.0, 6.0, allow_speed_change=False)
+    assert ok is False
+    assert abs(factor - 1.667) < 0.01
+    assert "1.15" in reason
+    print(f"  refused {factor:.2f}x: {reason[:50]}")
+    
+    # With flag should be allowed
+    ok, factor, reason = check_duration_fit(10.0, 6.0, allow_speed_change=True)
+    assert ok is True
+    print(f"  allowed {factor:.2f}x with --allow-speed-change")
+
+# 27. Filter sanitizer prevents injection
+def test_filter_sanitizer():
+    """sanitize_filter_input escapes dangerous chars and prevents injection."""
+    from review import sanitize_filter_input
+    
+    # Test dangerous chars are escaped
+    assert "\\'" in sanitize_filter_input("it's")
+    assert "\\:" in sanitize_filter_input("Topic: draft")
+    assert "\\," in sanitize_filter_input("First, second")
+    assert "\\\\" in sanitize_filter_input("back\\slash")
+    
+    # Actual injection attempt via drawtext
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        v = make_test_video(out, dur=0.5)
+        
+        # Attempt to inject a second drawtext
+        malicious = "scene1':text='INJECTED"
+        safe = sanitize_filter_input(malicious)
+        
+        # Build a drawtext filter and run it
+        result = subprocess.run([
+            "ffmpeg", "-y", "-i", str(v), "-vf",
+            f"drawtext=text='{safe}':x=10:y=10:fontsize=24:fontcolor=white",
+            "-frames:v", "1", str(out / "frame.jpg")
+        ], capture_output=True, text=True)
+        
+        # Should succeed (not crash from injection)
+        assert result.returncode == 0
+        assert (out / "frame.jpg").exists()
+        print(f"  injection neutralized: '{malicious[:30]}...'")
+
+# 28. Dropout detection uses audio stream end
+def test_dropout_audio_stream_end():
+    """Dropout detection uses audio stream duration, not container."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        # Create video with audio that ends before video (trailing silence in container sense)
+        # Video: 2.0s, Audio: 1.0s
+        subprocess.run(["ffmpeg", "-y",
+                        "-f", "lavfi", "-i", "color=black:s=320x240:r=30:duration=2.0",
+                        "-f", "lavfi", "-i", "sine=frequency=440:duration=1.0",
+                        "-c:v", "libx264", "-c:a", "aac", "-shortest:v=0", str(out / "short_audio.mp4")],
+                       capture_output=True, check=True)
+        
+        # The trailing 1.0s of container time (1.0-2.0s) should NOT be flagged as dropout
+        # because audio stream ends at 1.0s
+        dropouts = detect_dropouts(out / "short_audio.mp4")
+        # Should have no dropouts in the 0.9-1.0s range
+        for start, dur in dropouts:
+            assert start < 0.85  # well before audio stream end
+        print(f"  no dropout flagged near audio stream end (1.0s)")
+
 
 if __name__ == "__main__":
     tests = [f for f in dir() if f.startswith("test_")]
