@@ -171,7 +171,8 @@ def export_one(video, preset, outdir, mode="pad-blur", thumb_at=None, srt=None, 
             shutil.copy(side, Path(outdir) / f"{Path(video).stem}-{preset}{Path(side).suffix}")
     rep = {"preset": preset, "file": str(out), "w": o["w"], "h": o["h"], "fps": o["fps"], "seconds": round(o["duration"], 3),
            "mb": round(o["bytes"] / 1e6, 2), "notes": notes}
-    print(f"  {preset:16} {o['w']}x{o['h']} {o['fps']:.0f}fps {o['duration']:.2f}s {rep['mb']} MB {'; '.join(notes)}")
+    if not mastered:
+        print(f"  {preset:16} {o['w']}x{o['h']} {o['fps']:.0f}fps {o['duration']:.2f}s {rep['mb']} MB {'; '.join(notes)}")
     return rep
 
 def run_exports(a, video, *, video_start=None):
@@ -214,15 +215,32 @@ def main():
     Path(a.out).mkdir(parents=True, exist_ok=True)
     if finish_enabled():
         import tempfile
-        from finish_pass import run as finish
+        from finish_pass import cover_passes, gray_frames, luma, run as finish
 
         with tempfile.TemporaryDirectory(prefix=".finish-export-", dir=a.out) as work:
-            video = Path(work) / (Path(a.video).stem + ".mp4")
+            work = Path(work)
+            video = work / (Path(a.video).stem + ".mp4")
+            delivery = work / "delivery"
+            delivery.mkdir()
+            destination = Path(a.out)
+            a.out = delivery
             try:
                 finish_report = finish(a.video, video)
+                reps = run_exports(a, video, video_start=finish_report["timing"]["output_video_start"])
+                source = finish_report["frame0"]["source"]
+                for rep in reps:
+                    opening = luma(gray_frames(rep["file"], rep["w"], rep["h"], 1)[0])
+                    if not cover_passes(opening, source):
+                        sys.exit(f"{rep['preset']}: delivered frame 0 failed finish-pass luma gate: "
+                                 f"{opening} (source mean {source['mean']:.2f})")
+                    rep["frame0"] = {"source": source, "output": opening, "pass": True}
             except (ValueError, OSError, ImportError) as error:
                 sys.exit(f"Export finish pass failed: {error}")
-            reps = run_exports(a, video, video_start=finish_report["timing"]["output_video_start"])
+            for product in delivery.iterdir():
+                product.replace(destination / product.name)
+            for rep in reps:
+                rep["file"] = str(destination / Path(rep["file"]).name)
+            a.out = destination
     else:
         reps = run_exports(a, a.video)
     (Path(a.out) / "export-report.json").write_text(json.dumps(reps, indent=2))
