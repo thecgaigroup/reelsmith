@@ -35,23 +35,31 @@ def create_test_clip(output_path, color_hex, duration=1):
 
 
 def test_dark_clip_fails():
-    """Clip that's too dark (mean < 25) must FAIL."""
+    """Clip that's too dark (mean < 16) must FAIL."""
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = Path(tmpdir)
         
-        # Very dark color: RGB(5, 5, 5) → Y ≈ 20 in limited range
-        # Note: Limited-range YUV clamps Y to 16-235, so RGB(0,0,0) → Y≈16-20
-        video = create_test_clip(tmpdir / "dark.mp4", "#050505", 1)
-        if not video:
+        # Very dark color: RGB(2, 2, 2) in full range → Y ≈ 10 in limited range
+        # Use colorspace filter to force full-range input that gets clipped lower
+        cmd = [
+            "ffmpeg", "-y", "-f", "lavfi",
+            "-i", f"color=c=#020202:s=1080x1920:d=1",
+            "-vf", "format=yuv420p",
+            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "18",
+            str(tmpdir / "dark.mp4")
+        ]
+        result = subprocess.run(cmd, capture_output=True, check=False)
+        if result.returncode != 0:
             raise AssertionError("Failed to create dark test clip")
         
-        result = check_frame0_cover(str(video), min_mean=25, min_stddev=12)
+        video = tmpdir / "dark.mp4"
+        result = check_frame0_cover(str(video), min_mean=16, min_stddev=12)
         
-        assert not result['passed'], "Dark clip should FAIL (mean < 25)"
-        assert result['mean'] is not None and result['mean'] < 25, \
-            f"Expected mean < 25, got {result['mean']}"
+        assert not result['passed'], "Dark clip should FAIL (mean < 16)"
+        assert result['mean'] is not None and result['mean'] < 16, \
+            f"Expected mean < 16, got {result['mean']}"
         
-        print(f"✓ Dark clip test passed: mean={result['mean']:.1f} < 25, correctly FAILED")
+        print(f"✓ Dark clip test passed: mean={result['mean']:.1f} < 16, correctly FAILED")
 
 
 def test_flat_clip_fails():
@@ -64,7 +72,8 @@ def test_flat_clip_fails():
         if not video:
             raise AssertionError("Failed to create flat test clip")
         
-        result = check_frame0_cover(str(video), min_mean=16, min_stddev=12)
+        # Use default thresholds (16, 12)
+        result = check_frame0_cover(str(video))
         
         assert not result['passed'], "Flat clip should FAIL (stddev < 12)"
         assert result['stddev'] is not None and result['stddev'] < 12, \
@@ -93,7 +102,8 @@ def test_good_clip_passes():
             raise AssertionError("Failed to create good test clip")
         
         video = tmpdir / "good.mp4"
-        result = check_frame0_cover(str(video), min_mean=16, min_stddev=12)
+        # Use default thresholds (16, 12)
+        result = check_frame0_cover(str(video))
         
         assert result['passed'], f"Good clip should PASS, but got errors: {result['errors']}"
         assert result['mean'] is not None and result['mean'] >= 16, \
@@ -123,8 +133,8 @@ def test_darker_than_source_fails():
         if not video:
             raise AssertionError("Failed to create darker test clip")
         
-        result = check_frame0_cover(str(video), str(tmpdir / "source.png"), 
-                                   min_mean=16, min_stddev=0, max_darkening=5)
+        # Use default thresholds (16, 12, 5)
+        result = check_frame0_cover(str(video), str(tmpdir / "source.png"))
         
         assert not result['passed'], "Clip >5% darker than source should FAIL"
         assert 'source_comparison' in result
@@ -135,15 +145,58 @@ def test_darker_than_source_fails():
         print(f"✓ Darker-than-source test passed: {sc['darkening_pct']:.1f}% > 5%, correctly FAILED")
 
 
+def test_noisy_clip_stddev():
+    """Clip with known gradient pattern to verify stddev calculation."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+        
+        # Create gradient from black to white: deterministic stddev
+        # For a linear gradient 0-255, theoretical stddev ≈ 73.9
+        cmd = [
+            "ffmpeg", "-y", "-f", "lavfi",
+            "-i", f"color=c=black:s=1080x1920:d=1",
+            "-vf", "geq=lum='255*X/W':cb=128:cr=128",
+            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "18",
+            str(tmpdir / "gradient.mp4")
+        ]
+        
+        result = subprocess.run(cmd, capture_output=True, check=False)
+        if result.returncode != 0:
+            raise AssertionError("Failed to create gradient test clip")
+        
+        video = tmpdir / "gradient.mp4"
+        # Use default thresholds
+        result = check_frame0_cover(str(video))
+        
+        # Gradient should pass (mean ≈ 127, stddev ≈ 60-80 depending on codec)
+        assert result['passed'], f"Gradient clip should PASS, but got errors: {result['errors']}"
+        assert result['mean'] is not None and 100 < result['mean'] < 150, \
+            f"Expected mean ≈ 127, got {result['mean']}"
+        assert result['stddev'] is not None and 50 < result['stddev'] < 90, \
+            f"Expected stddev ≈ 60-80, got {result['stddev']}"
+        
+        print(f"✓ Noisy/gradient clip test passed: mean={result['mean']:.1f}, stddev={result['stddev']:.1f} (expected ~60-80)")
+
+
 if __name__ == "__main__":
     import os
     os.chdir(Path(__file__).parent.parent)
     
     print("Running frame-0 quality tests with real clips...\n")
     
+    # Verify CLI defaults match spec
+    from test_frame0_cover import check_frame0_cover
+    import inspect
+    sig = inspect.signature(check_frame0_cover)
+    assert sig.parameters['min_mean'].default == 16, "Default min_mean must be 16"
+    assert sig.parameters['min_stddev'].default == 12, "Default min_stddev must be 12"
+    assert sig.parameters['max_darkening'].default == 5, "Default max_darkening must be 5"
+    print("✓ CLI defaults verified: min_mean=16, min_stddev=12, max_darkening=5\n")
+    
     test_dark_clip_fails()
     test_flat_clip_fails()
     test_good_clip_passes()
     test_darker_than_source_fails()
+    test_noisy_clip_stddev()
     
-    print("\n✅ All frame-0 real clip tests passed (0 skipped, 4 assertions)!")
+    print("\n✅ All frame-0 real clip tests passed (0 skipped, 5 assertions)!")

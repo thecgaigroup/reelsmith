@@ -7,7 +7,10 @@ from pathlib import Path
 
 
 def get_frame_luma_stats(video_path, frame_num=0):
-    """Extract luma mean and stddev for a specific frame using ffmpeg signalstats.
+    """Extract luma mean and stddev for a specific frame.
+    
+    Gets YAVG from signalstats metadata, then decodes frame as raw grayscale
+    and computes true population stddev from pixels.
     
     Args:
         video_path: Path to video file
@@ -16,42 +19,67 @@ def get_frame_luma_stats(video_path, frame_num=0):
     Returns:
         Tuple of (mean, stddev) or None if extraction fails
     """
-    # Use signalstats filter with metadata=print to output stats to stdout
-    # select='eq(n,{frame_num})' selects only the target frame
-    cmd = [
+    # Get YAVG from signalstats metadata
+    cmd_meta = [
         "ffmpeg", "-i", str(video_path),
         "-vf", f"select='eq(n,{frame_num})',signalstats,metadata=print:file=-",
         "-f", "null", "-"
     ]
     
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
-    
+    result = subprocess.run(cmd_meta, capture_output=True, text=True, check=False)
     if result.returncode != 0:
-        print(f"ffmpeg failed: {result.stderr}", file=sys.stderr)
+        print(f"ffmpeg signalstats failed: {result.stderr}", file=sys.stderr)
         return None
     
-    # Parse stdout for metadata output
-    # Example: lavfi.signalstats.YAVG=52.3
-    #          lavfi.signalstats.YMIN=20
-    #          lavfi.signalstats.YMAX=235
-    # Note: signalstats doesn't output YSTDEV, so we calculate it from range
-    yavg = ymin = ymax = None
+    yavg_signalstats = None
     for line in result.stdout.split('\n'):
         line = line.strip()
         if line.startswith('lavfi.signalstats.YAVG='):
-            yavg = float(line.split('=')[1])
-        elif line.startswith('lavfi.signalstats.YMIN='):
-            ymin = float(line.split('=')[1])
-        elif line.startswith('lavfi.signalstats.YMAX='):
-            ymax = float(line.split('=')[1])
+            yavg_signalstats = float(line.split('=')[1])
+            break
     
-    if yavg is not None and ymin is not None and ymax is not None:
-        # Approximate stddev from range: for uniform distribution, stddev ≈ range / 3.46
-        # For better approximation with typical image distributions: stddev ≈ range / 4
-        ystddev_approx = (ymax - ymin) / 4.0
-        return yavg, ystddev_approx
+    if yavg_signalstats is None:
+        return None
     
-    return None
+    # Decode frame as raw grayscale to compute real stddev
+    cmd_raw = [
+        "ffmpeg", "-i", str(video_path),
+        "-vf", f"select='eq(n,{frame_num})'",
+        "-frames:v", "1",
+        "-f", "rawvideo",
+        "-pix_fmt", "gray",
+        "-"
+    ]
+    
+    result = subprocess.run(cmd_raw, capture_output=True, check=False)
+    if result.returncode != 0:
+        print(f"ffmpeg rawvideo failed", file=sys.stderr)
+        return None
+    
+    raw_pixels = result.stdout
+    if not raw_pixels:
+        return None
+    
+    # Compute mean and stddev from raw pixels
+    try:
+        import numpy as np
+        pixels = np.frombuffer(raw_pixels, dtype=np.uint8)
+        pixel_mean = float(np.mean(pixels))
+        pixel_stddev = float(np.std(pixels, ddof=0))  # Population stddev
+    except ImportError:
+        # Fallback without numpy
+        import statistics
+        pixels = list(raw_pixels)
+        pixel_mean = statistics.mean(pixels)
+        pixel_stddev = statistics.pstdev(pixels)
+    
+    # Verify signalstats YAVG agrees with raw pixel mean within 1.0
+    if abs(yavg_signalstats - pixel_mean) > 1.0:
+        print(f"Warning: signalstats YAVG={yavg_signalstats:.1f} disagrees with "
+              f"raw pixel mean={pixel_mean:.1f} by {abs(yavg_signalstats - pixel_mean):.1f}",
+              file=sys.stderr)
+    
+    return pixel_mean, pixel_stddev
 
 
 def get_image_luma_mean(image_path):
