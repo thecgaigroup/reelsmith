@@ -62,9 +62,9 @@ def test_caption_flag_produces_different_output():
         assert ",86,86,691," in ass_legacy or ",86,86,692," in ass_legacy, \
             "Legacy should use ~86px horizontal, 691px vertical margins"
         
-        # Safe layout uses 120px left, 310px right, 540px vertical
-        assert ",120,310,540," in ass_safe, \
-            "Safe layout should use 120px left, 310px right, 540px vertical margins"
+        # Safe layout uses 120px left, 310px right, 672px vertical (keeps bottom 35% clear)
+        assert ",120,310,672," in ass_safe, \
+            "Safe layout should use 120px left, 310px right, 672px vertical margins"
         
         print("✓ Caption flag produces different output test passed")
 

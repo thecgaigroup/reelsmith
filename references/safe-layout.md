@@ -16,7 +16,7 @@ python3 scripts/captions.py build \
 ```
 
 The `--safe-layout` flag (9:16 only):
-- Positions captions at **540px from bottom** (instead of 691px)
+- Positions captions at **672px from bottom** (instead of 691px), keeping bottom 35% clear
 - Restricts horizontal caption band to **120–770px** (instead of 86–994px)
 - Text wraps inside this 650px-wide band, staying clear of TikTok's right rail
 
@@ -24,12 +24,12 @@ The `--safe-layout` flag (9:16 only):
 
 | Margin | Legacy (off) | Safe layout (on) |
 |---|---|---|
-| **Bottom (vertical)** | 691px (36%) | 540px (480 + 60 padding) |
+| **Bottom (vertical)** | 691px (36%) | 672px (35% keep-clear) |
 | **Left (horizontal)** | 86px (8%) | 120px (11.1%) |
 | **Right (horizontal)** | 86px (8%) | 310px (28.7%) |
 | **Caption band width** | 908px (86-994) | 650px (120-770) |
 
-**Rationale:** Strictest combination of Reels (14/35/6/6%), TikTok (12.5/34.5/11.1/11.1% + right rail), and Shorts (8/35/6/10%).
+**Rationale:** Keeps bottom 35% clear per platform-specs.md (Reels, TikTok, Shorts all require ~34-35% bottom margin). Horizontal margins use strictest combination (TikTok 11.1% + right rail).
 
 **TikTok right rail:** Buttons occupy roughly x=850–1080 from ~44% height down. The 770px cap keeps text clear.
 
@@ -42,16 +42,16 @@ from safe_zones import SafeZones, get_safe_margins, get_caption_vpos
 
 # Full API
 zones = SafeZones(1080, 1920, enabled=True)
-top, bottom, left, right = zones.get_margins()           # (220, 480, 120, 310) px
+top, bottom, left, right = zones.get_margins()           # (220, 672, 120, 310) px
 x_min, x_max = zones.get_caption_band()                  # (120, 770) px
-safe_height = zones.get_safe_height()                    # 1220 px
+safe_height = zones.get_safe_height()                    # 1028 px
 safe_width = zones.get_safe_width()                      # 650 px
 badge_x, badge_y = zones.get_badge_position()            # (144, 244) px
 pill_x, pill_y = zones.get_pill_position()               # (746, 244) px
 
 # Convenience functions
 top, bottom, left, right = get_safe_margins(1080, 1920, enabled=True)
-caption_margin_v = get_caption_vpos(1920, enabled=True)  # 540 px
+caption_margin_v = get_caption_vpos(1920, enabled=True)  # 672 px
 ```
 
 When `enabled=False`, all margins are zero (no effect).

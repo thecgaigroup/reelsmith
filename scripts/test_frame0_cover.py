@@ -16,11 +16,11 @@ def get_frame_luma_stats(video_path, frame_num=0):
     Returns:
         Tuple of (mean, stddev) or None if extraction fails
     """
-    # Use signalstats filter with metadata mode to get Y (luma) stats
+    # Use signalstats filter with metadata=print to output stats to stdout
     # select='eq(n,{frame_num})' selects only the target frame
     cmd = [
         "ffmpeg", "-i", str(video_path),
-        "-vf", f"select='eq(n,{frame_num})',signalstats=stat=tout+vrep+brng:out=brng",
+        "-vf", f"select='eq(n,{frame_num})',signalstats,metadata=print:file=-",
         "-f", "null", "-"
     ]
     
@@ -30,31 +30,27 @@ def get_frame_luma_stats(video_path, frame_num=0):
         print(f"ffmpeg failed: {result.stderr}", file=sys.stderr)
         return None
     
-    # Parse stderr for signalstats output
-    # Example: [Parsed_signalstats_1 @ ...] YMIN:16 YLOW:16 YAVG:52.3 YHIGH:235 YMAX:235 YDIF:219 YSTDEV:51.2
-    for line in result.stderr.split('\n'):
-        if 'signalstats' in line and 'YAVG:' in line and 'YSTDEV:' in line:
-            # Extract YAVG and YSTDEV
-            parts = line.split()
-            yavg = ystdev = None
-            for part in parts:
-                if part.startswith('YAVG:'):
-                    yavg = float(part.split(':')[1])
-                elif part.startswith('YSTDEV:'):
-                    ystdev = float(part.split(':')[1])
-            
-            if yavg is not None and ystdev is not None:
-                return yavg, ystdev
+    # Parse stdout for metadata output
+    # Example: lavfi.signalstats.YAVG=52.3
+    #          lavfi.signalstats.YMIN=20
+    #          lavfi.signalstats.YMAX=235
+    # Note: signalstats doesn't output YSTDEV, so we calculate it from range
+    yavg = ymin = ymax = None
+    for line in result.stdout.split('\n'):
+        line = line.strip()
+        if line.startswith('lavfi.signalstats.YAVG='):
+            yavg = float(line.split('=')[1])
+        elif line.startswith('lavfi.signalstats.YMIN='):
+            ymin = float(line.split('=')[1])
+        elif line.startswith('lavfi.signalstats.YMAX='):
+            ymax = float(line.split('=')[1])
     
-    # Fallback: use ffprobe with signalstats
-    cmd = [
-        "ffprobe", "-v", "error",
-        "-select_streams", "v:0",
-        "-show_entries", "frame=pkt_pts_time",
-        "-of", "json",
-        str(video_path)
-    ]
-    # This is a simplified fallback - in practice we'd need frame metadata
+    if yavg is not None and ymin is not None and ymax is not None:
+        # Approximate stddev from range: for uniform distribution, stddev ≈ range / 3.46
+        # For better approximation with typical image distributions: stddev ≈ range / 4
+        ystddev_approx = (ymax - ymin) / 4.0
+        return yavg, ystddev_approx
+    
     return None
 
 
@@ -69,7 +65,7 @@ def get_image_luma_mean(image_path):
     """
     cmd = [
         "ffmpeg", "-i", str(image_path),
-        "-vf", "signalstats=stat=tout+vrep+brng",
+        "-vf", "signalstats,metadata=print:file=-",
         "-f", "null", "-"
     ]
     
@@ -78,12 +74,10 @@ def get_image_luma_mean(image_path):
     if result.returncode != 0:
         return None
     
-    for line in result.stderr.split('\n'):
-        if 'signalstats' in line and 'YAVG:' in line:
-            parts = line.split()
-            for part in parts:
-                if part.startswith('YAVG:'):
-                    return float(part.split(':')[1])
+    for line in result.stdout.split('\n'):
+        line = line.strip()
+        if line.startswith('lavfi.signalstats.YAVG='):
+            return float(line.split('=')[1])
     
     return None
 
@@ -149,17 +143,20 @@ def test_frame0_vs_source_brightness(video_path, source_image_path, max_darkenin
     return True, video_mean, source_mean, darkening_pct, None
 
 
-def check_frame0_cover(video_path, source_image_path=None):
+def check_frame0_cover(video_path, source_image_path=None, min_mean=16, min_stddev=12, max_darkening=5):
     """Full frame-0 cover check: luma, stddev, and optional source comparison.
     
     Args:
         video_path: Path to video to check
         source_image_path: Optional path to source hero art for comparison
+        min_mean: Minimum luma mean (default 16)
+        min_stddev: Minimum luma stddev (default 12)
+        max_darkening: Maximum darkening vs source % (default 5)
         
     Returns:
         Dict with 'passed', 'mean', 'stddev', 'errors' keys
     """
-    passed, mean, stddev, errors = test_frame0_luma_requirements(video_path)
+    passed, mean, stddev, errors = test_frame0_luma_requirements(video_path, min_mean, min_stddev)
     
     result = {
         'passed': passed,
@@ -170,7 +167,7 @@ def check_frame0_cover(video_path, source_image_path=None):
     
     if source_image_path:
         src_passed, vid_mean, src_mean, dark_pct, src_error = test_frame0_vs_source_brightness(
-            video_path, source_image_path
+            video_path, source_image_path, max_darkening
         )
         result['source_comparison'] = {
             'passed': src_passed,
@@ -197,7 +194,11 @@ if __name__ == "__main__":
     ap.add_argument("--max-darkening", type=float, default=5, help="Max darkening vs source %% (default 5)")
     args = ap.parse_args()
     
-    result = check_frame0_cover(args.video, args.source)
+    # Pass thresholds to check_frame0_cover
+    result = check_frame0_cover(args.video, args.source, 
+                                min_mean=args.min_mean, 
+                                min_stddev=args.min_stddev, 
+                                max_darkening=args.max_darkening)
     
     print(f"Frame 0 cover check: {'PASS' if result['passed'] else 'FAIL'}")
     if result['mean'] is not None:

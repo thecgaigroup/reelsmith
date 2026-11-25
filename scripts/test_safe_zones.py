@@ -25,7 +25,7 @@ def test_safe_zones_enabled_standard():
     
     # Standard margins
     assert top == 220, f"Expected top margin 220px, got {top}"
-    assert bottom == 480, f"Expected bottom margin 480px, got {bottom}"
+    assert bottom == 672, f"Expected bottom margin 672px (35% keep-clear), got {bottom}"
     assert left == 120, f"Expected left margin 120px, got {left}"
     assert right == 310, f"Expected right margin 310px, got {right}"
     
@@ -54,16 +54,16 @@ def test_safe_zones_dimensions():
     zones = SafeZones(1080, 1920, enabled=True)
     
     safe_height = zones.get_safe_height()
-    assert safe_height == 1220, f"Safe height should be 1920 - 220 - 480 = 1220, got {safe_height}"
+    assert safe_height == 1028, f"Safe height should be 1920 - 220 - 672 = 1028, got {safe_height}"
     
     safe_width = zones.get_safe_width()
     assert safe_width == 650, f"Safe width should be 1080 - 120 - 310 = 650, got {safe_width}"
 
 
 def test_caption_vpos_enabled():
-    """When enabled, captions sit 60px above the safe zone."""
+    """When enabled, captions sit at the bottom safe zone boundary."""
     vpos = get_caption_vpos(1920, enabled=True)
-    assert vpos == 540, f"Caption vpos should be 480 + 60 = 540, got {vpos}"
+    assert vpos == 672, f"Caption vpos should be 672 (bottom margin), got {vpos}"
 
 
 def test_caption_vpos_disabled():
@@ -75,7 +75,7 @@ def test_caption_vpos_disabled():
 def test_get_safe_margins_function():
     """Convenience function should return same as SafeZones class."""
     top, bottom, left, right = get_safe_margins(1080, 1920, enabled=True)
-    assert (top, bottom, left, right) == (220, 480, 120, 310)
+    assert (top, bottom, left, right) == (220, 672, 120, 310)
     
     top, bottom, left, right = get_safe_margins(1080, 1920, enabled=False)
     assert (top, bottom, left, right) == (0, 0, 0, 0)

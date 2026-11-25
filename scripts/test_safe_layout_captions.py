@@ -23,8 +23,8 @@ def test_caption_safe_layout_flag():
     
     # With safe layout enabled
     ass_safe = to_ass(cues, "9:16", "boxed", brand=None, safe_layout=True)
-    # Safe layout uses 480 + 60 = 540px margin_v, and 120px left, 310px right (1080-770=310)
-    assert ",120,310,540," in ass_safe, "Safe layout should use 120px left, 310px right, 540px bottom margins"
+    # Safe layout uses 672px margin_v (bottom 35% keep-clear), and 120px left, 310px right (1080-770=310)
+    assert ",120,310,672," in ass_safe, "Safe layout should use 120px left, 310px right, 672px bottom margins"
     
     # Verify they're different
     assert ass_legacy != ass_safe, "Safe layout should produce different output than legacy"

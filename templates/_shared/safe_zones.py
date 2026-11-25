@@ -28,7 +28,7 @@ class SafeZones:
     
     # Safe zone margins in pixels for 1080x1920
     TOP_PX = 220
-    BOTTOM_PX = 480
+    BOTTOM_PX = 672  # Keeps bottom 35% clear (1920 * 0.35 = 672)
     LEFT_PX = 120
     RIGHT_PX = 310
     
@@ -107,7 +107,8 @@ def get_safe_margins(width=1080, height=1920, enabled=False):
 def get_caption_vpos(height=1920, enabled=False):
     """Get vertical position for captions (margin from bottom).
     
-    When safe layout is enabled, captions sit inside the safe zone.
+    When safe layout is enabled, captions sit at the bottom safe zone (672px from bottom
+    on 1920, keeping the bottom 35% clear per platform-specs.md).
     When disabled, uses legacy position (36% from bottom, 691px on 1920).
     
     Args:
@@ -119,8 +120,8 @@ def get_caption_vpos(height=1920, enabled=False):
     """
     if enabled:
         zones = SafeZones(1080, height, enabled=True)
-        # Captions sit 60px above the bottom safe zone
-        return zones.bottom + 60
+        # Captions sit at the bottom safe zone boundary
+        return zones.bottom
     else:
         # Legacy position: 36% from bottom
         return int(height * 0.36)
