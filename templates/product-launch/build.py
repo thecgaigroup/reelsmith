@@ -2,7 +2,6 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
 from kit import stage, t, cut_js, endcard, words_in  # noqa: E402
-from safe_zones import SafeZones  # noqa: E402
 
 def media(c):
     return [c["image"]] if c.get("image") else []
