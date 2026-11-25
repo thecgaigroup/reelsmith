@@ -108,6 +108,7 @@ def probe(path):
         "frames": int(frames),
         "fps": fps,
         "avg_fps": video["avg_frame_rate"],
+        "time_base": video["time_base"],
         "video_start": stream_start(video),
         "format_duration": duration if format_duration == "N/A" else float(format_duration),
         "audio": next((s for s in data["streams"] if s["codec_type"] == "audio"), None),
@@ -132,15 +133,30 @@ def require_supported_input(info, timestamps):
         raise UnsupportedInput("unknown frame rate")
     if fps != Fraction(info["avg_fps"]):
         raise UnsupportedInput("variable frame rate")
-    frame_duration = 1 / float(fps)
-    # Allow millisecond timestamp quantization without accepting duplicate frames.
-    tolerance = min(0.001, frame_duration / 2)
     if (not timestamps or len(timestamps) != info["frames"] or
             not all(math.isfinite(t) for t in timestamps)):
         raise UnsupportedInput("missing frame presentation timestamps")
-    if any(abs(b - a - frame_duration) > tolerance for a, b in zip(timestamps, timestamps[1:])):
+    time_base = Fraction(info["time_base"])
+    ticks = [round(t / float(time_base)) for t in timestamps]
+    frame_ticks = 1 / (fps * time_base)
+    if frame_ticks.denominator != 1 and fps in (Fraction(24000, 1001), Fraction(30000, 1001),
+                                                Fraction(60000, 1001)):
+        # A single rounding phase must explain every timestamp. In units of
+        # 1/denominator ticks, the residuals must fit in one tick of width.
+        numerator, denominator = frame_ticks.numerator, frame_ticks.denominator
+        residuals = [tick * denominator - index * numerator for index, tick in enumerate(ticks)]
+        low, high = min(residuals), max(residuals)
+        # Ties-to-even (possibly shifted by a stream offset) use one parity.
+        rounded_cfr = high - low < denominator or (
+            high - low == denominator and
+            len({tick % 2 for tick, residual in zip(ticks, residuals) if residual in (low, high)}) == 1)
+        constant_rate = rounded_cfr and all(a < b for a, b in zip(ticks, ticks[1:]))
+    else:
+        constant_rate = all(b - a == frame_ticks for a, b in zip(ticks, ticks[1:]))
+    if not constant_rate:
         raise UnsupportedInput("variable frame rate")
     if info["audio"]:
+        frame_duration = 1 / float(fps)
         video, audio = info["video_start"], stream_start(info["audio"])
         if video is None or audio is None or not all(map(math.isfinite, (video, audio))):
             raise UnsupportedInput("unknown audio or video start")
@@ -342,7 +358,7 @@ def measure(out, reference):
                and output_audio_length is not None
                and abs(output_audio_length - source["duration"]) <= AUDIO_DURATION_TOLERANCE)
     duration_ok = (abs(result["duration"] - source["duration"]) <= 0.000001 and
-                   result["format_duration"] <= source["format_duration"] + 0.000001)
+                   result["format_duration"] <= source["format_duration"] + AUDIO_DURATION_TOLERANCE)
 
     source_size, result_size = ([item["width"], item["height"]] for item in (source, result))
     timing = {

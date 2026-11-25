@@ -45,11 +45,27 @@ def test_late_cue_survives_short_programme(monkeypatch, tmp_path, programme):
 
 @pytest.mark.parametrize("timestamps", [[0, 1/30, 0.1], [0, 1/30, 1/30], [0, 1/30], [0, 1/30, float("nan")]])
 def test_guard_checks_timestamps_even_when_rate_metadata_agrees(timestamps):
-    info = {"fps": Fraction(30), "avg_fps": "30/1", "frames": 3, "audio": None}
+    info = {"fps": Fraction(30), "avg_fps": "30/1", "frames": 3,
+            "time_base": "1/30000", "audio": None}
     fp.require_supported_input(info, [0, 0.033333, 0.066667])
-    fp.require_supported_input(info, [0, 0.033, 0.067])
     with pytest.raises(fp.UnsupportedInput, match="variable frame rate|missing frame"):
         fp.require_supported_input(info, timestamps)
+
+
+@pytest.mark.parametrize("rate", [24000, 30000, 60000])
+def test_guard_allows_regular_ntsc_timestamp_rounding(rate):
+    fps = Fraction(rate, 1001)
+    info = {"fps": fps, "avg_fps": str(fps), "frames": 121,
+            "time_base": "1/1000", "audio": None}
+    ticks_per_frame = 1000 / fps
+    ticks = [round(i * ticks_per_frame) for i in range(info["frames"])]
+    fp.require_supported_input(info, [tick / 1000 for tick in ticks])
+    fp.require_supported_input(info, [(tick + 5) / 1000 for tick in ticks])
+    # Moving one timestamp by one tick can leave both adjacent deltas within
+    # floor/ceil but break the single rounding pattern across the clip.
+    ticks[1] = int(ticks_per_frame) if ticks[1] > int(ticks_per_frame) else ticks[1] + 1
+    with pytest.raises(fp.UnsupportedInput, match="variable frame rate"):
+        fp.require_supported_input(info, [tick / 1000 for tick in ticks])
 
 
 def assert_run_refused(src, tmp_path, reason):
@@ -63,11 +79,27 @@ def assert_run_refused(src, tmp_path, reason):
     assert set(tmp_path.rglob("*")) == before
 
 
-def test_vfr_is_refused_without_output(monkeypatch, tmp_path):
+@pytest.mark.parametrize("selection", ["not(eq(n,15))", "gte(n,30)+not(mod(n,15))"])
+def test_vfr_is_refused_without_output(monkeypatch, tmp_path, selection):
     monkeypatch.setenv("REELSMITH_FINISH_PASS", "1")
     src = tmp_path / "vfr.mp4"
     fp.ffmpeg("-v", "error", "-f", "lavfi", "-i", "testsrc2=s=96x96:r=30:d=1.5",
-              "-vf", "select='not(eq(n,15))'", "-fps_mode", "passthrough", "-c:v", "libx264", src)
+              "-vf", f"select='{selection}'", "-fps_mode", "passthrough", "-c:v", "libx264", src)
+    assert_run_refused(src, tmp_path, "variable frame rate")
+
+
+def test_submillisecond_vfr_is_refused_without_output(monkeypatch, tmp_path):
+    monkeypatch.setenv("REELSMITH_FINISH_PASS", "1")
+    src = tmp_path / "jitter.mp4"
+    fp.ffmpeg("-v", "error", "-f", "lavfi", "-i", "testsrc2=s=96x96:r=30:d=3",
+              "-f", "lavfi", "-i", "sine=f=440:r=44100:d=3",
+              "-vf", r"settb=1/30000,setpts=N*1000+15*eq(mod(N\,3)\,1)",
+              "-fps_mode", "passthrough", "-enc_time_base", "1:30000",
+              "-video_track_timescale", "30000", "-bf", "0", "-c:v", "libx264", "-c:a", "aac", src)
+    info = fp.probe(src)
+    assert info["fps"] == 30 and Fraction(info["avg_fps"]) == 30
+    ticks = [round(t * 30000) for t in sfx_cues.frame_times(src)]
+    assert {b - a for a, b in zip(ticks, ticks[1:])} == {985, 1000, 1015}
     assert_run_refused(src, tmp_path, "variable frame rate")
 
 
@@ -104,7 +136,25 @@ def test_cfr_timebases_and_cue_only_mix(monkeypatch, tmp_path, fps, timescale):
     report = fp.run(src, out)
     assert report["cue_counts"]["impact"] == 1
     assert report["loudness"]["source"] is None
+    assert report["timing"]["source_frames"] == report["timing"]["output_frames"] == 39
     assert len(fp.probe(out)["audio_tracks"]) == 1
+    assert fp.check(out, src)["pass"]
+
+
+def test_33_frame_ntsc_cue_only_mix_allows_aac_container_padding(monkeypatch, tmp_path):
+    monkeypatch.setenv("REELSMITH_FINISH_PASS", "1")
+    src, out = (tmp_path / name for name in ("src.mp4", "out.mp4"))
+    fp.ffmpeg("-v", "error", "-f", "lavfi", "-i", "color=s=96x96:r=30000/1001:d=1.1",
+              "-c:v", "libx264", src)
+    source = fp.probe(src)
+    assert source["frames"] == 33
+    fp.run(src, out)
+    result = fp.probe(out)
+    assert result["frames"] == 33
+    assert result["duration"] == source["duration"]
+    assert [track["codec_name"] for track in result["audio_tracks"]] == ["aac"]
+    assert result["format_duration"] <= source["format_duration"] + 0.025
+    assert fp.audio_passes(loudness(out))
     assert fp.check(out, src)["pass"]
 
 
