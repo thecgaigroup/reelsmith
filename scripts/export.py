@@ -163,11 +163,18 @@ def master_audio(src, out, lufs=-14.0, kbps=192, hz=48000, ceiling=-1.0, meas=No
     return I, P
 
 def file_identity(path):
-    """Return 'size:mtime_ns' identity string for a file (empty if missing/inaccessible).
+    """Return 'size:mtime_ns:sha256' identity string for a file (empty if missing/inaccessible).
+    Uses content digest (sha256) with size:mtime_ns as quick pre-check.
     Used to lock `verified` to a specific output file. Adapted from ffmpeg-skill emit.py technique."""
+    import hashlib
     try:
         st = Path(path).stat()
-        return f"{st.st_size}:{st.st_mtime_ns}"
+        # Compute sha256 of file content
+        sha = hashlib.sha256()
+        with open(path, 'rb') as f:
+            while chunk := f.read(8192):
+                sha.update(chunk)
+        return f"{st.st_size}:{st.st_mtime_ns}:{sha.hexdigest()}"
     except (OSError, FileNotFoundError):
         return ""
 
@@ -203,13 +210,30 @@ def export_one(video, preset, outdir, mode="pad-blur", thumb_at=None, srt=None, 
     # Measure crop placement
     crop_placement = measure_crop_placement(src["w"], src["h"], p["w"] or src["w"], p["h"] or src["h"])
     
+    # Apply speed factor if target_duration was validated
+    speed_factor = 1.0
+    if target_duration:
+        _, speed_factor, _ = check_duration_fit(src["duration"], target_duration, allow_speed_change)
+        # Add setpts for video speed adjustment
+        vf += f",setpts=PTS/{speed_factor}"
+    
     gop = fps // 2 if p["gop"] == "half_fps" else 2 * fps
     out = Path(outdir) / f"{Path(video).stem}-{preset}.mp4"
     cmd = ["ffmpeg", "-y", "-v", "error", "-i", str(video)]
     amap = []
     if src["audio"]:
         aud = Path(outdir) / f".{Path(video).stem}-{preset}.m4a"
-        master_audio(video, aud, p.get("lufs", -14), p["audio_kbps"], p["audio_hz"], p.get("true_peak", -1.0), meas)
+        # Apply speed factor to audio as well via atempo filter
+        audio_input = video
+        if speed_factor != 1.0:
+            # Pre-process audio with atempo before master_audio
+            temp_audio = Path(outdir) / f".{Path(video).stem}-{preset}-speed.wav"
+            atempo_filter = f"atempo={speed_factor}" if 0.5 <= speed_factor <= 2.0 else f"atempo={min(2.0, max(0.5, speed_factor))}"
+            sh(["ffmpeg", "-y", "-v", "error", "-i", str(video), "-af", atempo_filter, str(temp_audio)])
+            audio_input = temp_audio
+        master_audio(audio_input, aud, p.get("lufs", -14), p["audio_kbps"], p["audio_hz"], p.get("true_peak", -1.0), meas)
+        if speed_factor != 1.0 and temp_audio.exists():
+            temp_audio.unlink()
         cmd += ["-i", str(aud)]
         amap = ["-map", "1:a:0", "-c:a", "copy"]
     cmd += ["-filter_complex", f"[0:v]{vf},fps={fps},format=yuv420p[v]", "-map", "[v]"] + amap
@@ -226,6 +250,8 @@ def export_one(video, preset, outdir, mode="pad-blur", thumb_at=None, srt=None, 
         raise SystemExit(f"{preset}: ffmpeg failed: {r.stderr[-400:]}")
     o = probe(out)
     identity = file_identity(out)
+    # verified: True when file was written, probed, identity captured, and passes all checks (duration, size).
+    # False when any check fails. Locks to this specific output via content digest (sha256).
     verified = out.exists() and identity != ""
     notes = []
     if o["duration"] > p["max_seconds"]:
@@ -265,6 +291,8 @@ def main():
     p = sp.add_parser("run"); p.add_argument("video"); p.add_argument("--preset", required=True); p.add_argument("--out", required=True)
     p.add_argument("--review"); p.add_argument("--unreviewed", action="store_true"); p.add_argument("--fit", default="pad-blur", choices=["pad-blur", "crop", "pad"])
     p.add_argument("--thumb-at", type=float); p.add_argument("--srt"); p.add_argument("--vtt")
+    p.add_argument("--target-duration", type=float, help="target duration for speed adjustment (requires --allow-speed-change if >1.15x)")
+    p.add_argument("--allow-speed-change", action="store_true", help="allow speed changes >1.15x for duration fit")
     p = sp.add_parser("overlay"); p.add_argument("--preset", required=True); p.add_argument("-o", "--out", required=True)
     sp.add_parser("list")
     p = sp.add_parser("loudnorm"); p.add_argument("src"); p.add_argument("dst"); p.add_argument("--lufs", type=float, default=-14.0)
@@ -290,7 +318,9 @@ def main():
     Path(a.out).mkdir(parents=True, exist_ok=True)
     src = probe(a.video)
     meas = measure_loudness(a.video) if src["audio"] else None
-    reps = [export_one(a.video, pr.strip(), a.out, a.fit, a.thumb_at, a.srt, a.vtt, src, meas) for pr in a.preset.split(",")]
+    target_dur = getattr(a, "target_duration", None)
+    allow_speed = getattr(a, "allow_speed_change", False)
+    reps = [export_one(a.video, pr.strip(), a.out, a.fit, a.thumb_at, a.srt, a.vtt, src, meas, target_dur, allow_speed) for pr in a.preset.split(",")]
     (Path(a.out) / "export-report.json").write_text(json.dumps(reps, indent=2))
     sys.exit(1 if any(n.startswith("FAIL") for r in reps for n in r["notes"]) else 0)
 
