@@ -115,47 +115,73 @@ def test_good_clip_passes():
 
 
 def test_darker_than_source_fails():
-    """Clip >5% darker than source must FAIL."""
+    """Clip >5% darker than source must FAIL (darkening only)."""
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = Path(tmpdir)
         
-        # Create bright source image: RGB(200, 200, 200) → Y ≈ 200
+        # Create textured source: white text on gray background
+        # Ensures stddev >= 12 and mean >= 16
         source_cmd = [
             "ffmpeg", "-y", "-f", "lavfi",
-            "-i", f"color=c=#C8C8C8:s=1080x1920:d=1",
+            "-i", f"color=c=#808080:s=1080x1920:d=1",
+            "-vf", "drawtext=text='Source':fontsize=200:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2",
             "-frames:v", "1",
             str(tmpdir / "source.png")
         ]
         subprocess.run(source_cmd, capture_output=True, check=True)
         
-        # Create much darker video: RGB(100, 100, 100) → Y ≈ 100 (50% darker)
-        video = create_test_clip(tmpdir / "darker.mp4", "#646464", 1)
-        if not video:
+        # Create darker video: same text pattern but dimmed ~15%
+        # RGB(70, 70, 70) background → Y ≈ 70 (vs source Y ≈ 128) = ~45% darker
+        # But we want to target ~10% darker, so use RGB(115, 115, 115) → Y ≈ 115
+        cmd = [
+            "ffmpeg", "-y", "-f", "lavfi",
+            "-i", f"color=c=#737373:s=1080x1920:d=1",
+            "-vf", "drawtext=text='Source':fontsize=200:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2",
+            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "18",
+            str(tmpdir / "darker.mp4")
+        ]
+        result = subprocess.run(cmd, capture_output=True, check=False)
+        if result.returncode != 0:
             raise AssertionError("Failed to create darker test clip")
         
-        # Use default thresholds (16, 12, 5)
+        video = tmpdir / "darker.mp4"
+        # Use default thresholds
         result = check_frame0_cover(str(video), str(tmpdir / "source.png"))
         
+        # Should fail ONLY on darkening (mean and stddev should pass)
         assert not result['passed'], "Clip >5% darker than source should FAIL"
+        assert result['mean'] >= 16, f"Mean should pass (>= 16), got {result['mean']}"
+        assert result['stddev'] >= 12, f"Stddev should pass (>= 12), got {result['stddev']}"
+        
         assert 'source_comparison' in result
         sc = result['source_comparison']
         assert sc['darkening_pct'] is not None and sc['darkening_pct'] > 5, \
             f"Expected darkening > 5%, got {sc['darkening_pct']:.1f}%"
         
-        print(f"✓ Darker-than-source test passed: {sc['darkening_pct']:.1f}% > 5%, correctly FAILED")
+        # Verify darkening is the ONLY error
+        darkening_errors = [e for e in result['errors'] if 'darker than source' in e]
+        assert len(darkening_errors) == 1, f"Should have exactly 1 darkening error, got {len(result['errors'])} total errors"
+        
+        print(f"✓ Darker-than-source test passed: {sc['darkening_pct']:.1f}% > 5%, "
+              f"fails ONLY on darkening (mean={result['mean']:.1f}, stddev={result['stddev']:.1f})")
 
 
 def test_noisy_clip_stddev():
-    """Clip with known gradient pattern to verify stddev calculation."""
+    """Clip with exact gradient pattern to verify stddev calculation.
+    
+    Creates uniform ramp spanning limited Y 16-235, which after full-range decode
+    becomes 0-255. Expected population stddev: 255/sqrt(12) = 73.61
+    """
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = Path(tmpdir)
         
-        # Create gradient from black to white: deterministic stddev
-        # For a linear gradient 0-255, theoretical stddev ≈ 73.9
+        # Create gradient spanning limited-range Y 16-235 across width
+        # After full-range decode: uniform 0-255 ramp
+        # Population stddev for uniform distribution [0, 255]: 255/sqrt(12) = 73.61
         cmd = [
             "ffmpeg", "-y", "-f", "lavfi",
             "-i", f"color=c=black:s=1080x1920:d=1",
-            "-vf", "geq=lum='255*X/W':cb=128:cr=128",
+            "-vf", "geq=lum='16+219*X/(W-1)':cb=128:cr=128",
             "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "18",
             str(tmpdir / "gradient.mp4")
         ]
@@ -168,14 +194,66 @@ def test_noisy_clip_stddev():
         # Use default thresholds
         result = check_frame0_cover(str(video))
         
-        # Gradient should pass (mean ≈ 127, stddev ≈ 60-80 depending on codec)
-        assert result['passed'], f"Gradient clip should PASS, but got errors: {result['errors']}"
-        assert result['mean'] is not None and 100 < result['mean'] < 150, \
-            f"Expected mean ≈ 127, got {result['mean']}"
-        assert result['stddev'] is not None and 50 < result['stddev'] < 90, \
-            f"Expected stddev ≈ 60-80, got {result['stddev']}"
+        # Exact expectations for uniform 0-255 ramp
+        expected_mean = 127.5
+        expected_stddev = 255 / (12 ** 0.5)  # 73.61
         
-        print(f"✓ Noisy/gradient clip test passed: mean={result['mean']:.1f}, stddev={result['stddev']:.1f} (expected ~60-80)")
+        assert result['passed'], f"Gradient clip should PASS, but got errors: {result['errors']}"
+        assert result['mean'] is not None, "Mean should not be None"
+        assert abs(result['mean'] - expected_mean) <= 1.0, \
+            f"Expected mean={expected_mean:.1f} ±1.0, got {result['mean']:.1f}"
+        assert result['stddev'] is not None, "Stddev should not be None"
+        assert abs(result['stddev'] - expected_stddev) <= 1.0, \
+            f"Expected stddev={expected_stddev:.2f} ±1.0, got {result['stddev']:.1f}"
+        
+        print(f"✓ Gradient clip test passed: mean={result['mean']:.1f} (expected 127.5±1), "
+              f"stddev={result['stddev']:.1f} (expected 73.61±1)")
+
+
+def test_slightly_darker_passes():
+    """Clip ~3% darker than source must PASS."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+        
+        # Create textured source: white text on gray background
+        source_cmd = [
+            "ffmpeg", "-y", "-f", "lavfi",
+            "-i", f"color=c=#808080:s=1080x1920:d=1",
+            "-vf", "drawtext=text='Source':fontsize=200:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2",
+            "-frames:v", "1",
+            str(tmpdir / "source.png")
+        ]
+        subprocess.run(source_cmd, capture_output=True, check=True)
+        
+        # Create slightly darker video: same text pattern but dimmed ~3%
+        # Use RGB(124, 124, 124) → Y ≈ 124 (source Y ≈ 128) = ~3% darker
+        cmd = [
+            "ffmpeg", "-y", "-f", "lavfi",
+            "-i", f"color=c=#7C7C7C:s=1080x1920:d=1",
+            "-vf", "drawtext=text='Source':fontsize=200:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2",
+            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "18",
+            str(tmpdir / "slightly_darker.mp4")
+        ]
+        result = subprocess.run(cmd, capture_output=True, check=False)
+        if result.returncode != 0:
+            raise AssertionError("Failed to create slightly darker test clip")
+        
+        video = tmpdir / "slightly_darker.mp4"
+        # Use default thresholds
+        result = check_frame0_cover(str(video), str(tmpdir / "source.png"))
+        
+        # Should pass all checks
+        assert result['passed'], f"Clip ~3% darker than source should PASS, but got errors: {result['errors']}"
+        assert result['mean'] >= 16, f"Mean should pass, got {result['mean']}"
+        assert result['stddev'] >= 12, f"Stddev should pass, got {result['stddev']}"
+        
+        assert 'source_comparison' in result
+        sc = result['source_comparison']
+        assert sc['darkening_pct'] is not None and sc['darkening_pct'] <= 5, \
+            f"Expected darkening <= 5%, got {sc['darkening_pct']:.1f}%"
+        
+        print(f"✓ Slightly-darker test passed: {sc['darkening_pct']:.1f}% <= 5%, correctly PASSED "
+              f"(mean={result['mean']:.1f}, stddev={result['stddev']:.1f})")
 
 
 if __name__ == "__main__":
@@ -197,6 +275,7 @@ if __name__ == "__main__":
     test_flat_clip_fails()
     test_good_clip_passes()
     test_darker_than_source_fails()
+    test_slightly_darker_passes()
     test_noisy_clip_stddev()
     
-    print("\n✅ All frame-0 real clip tests passed (0 skipped, 5 assertions)!")
+    print("\n✅ All frame-0 real clip tests passed (0 skipped, 6 assertions)!")

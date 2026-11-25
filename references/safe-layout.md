@@ -63,6 +63,8 @@ When `enabled=False`, all margins are zero (no effect).
 - Luma stddev ≥ 12 (sufficient contrast)
 - No more than 5% darker than source hero art
 
+**Thresholds:** The 16/12/5% values are **full-range 0-255 luma**. The checker decodes frames as full-range grayscale and computes population stddev from raw pixels. It cross-checks against signalstats YAVG (limited-range 16-235) after converting to full-range: `(YAVG - 16) * 255 / 219`.
+
 ```bash
 python3 scripts/test_frame0_cover.py video.mp4 \
   --source hero.jpg \

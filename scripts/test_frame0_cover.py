@@ -9,8 +9,16 @@ from pathlib import Path
 def get_frame_luma_stats(video_path, frame_num=0):
     """Extract luma mean and stddev for a specific frame.
     
-    Gets YAVG from signalstats metadata, then decodes frame as raw grayscale
-    and computes true population stddev from pixels.
+    Gets YAVG from signalstats metadata (limited-range 16-235), then decodes 
+    frame as raw grayscale (full-range 0-255) and computes true population stddev.
+    
+    Cross-checks that converted YAVG matches raw pixel mean within 1.0, raising
+    AssertionError if disagreement exceeds tolerance.
+    
+    **Range conversion:** signalstats reports limited-range Y (16-235), while raw
+    grayscale pixels are full-range (0-255). Conversion: `(Y_limited - 16) * 255 / 219`.
+    
+    **Thresholds:** The 16/12/5% thresholds are full-range 0-255 luma values.
     
     Args:
         video_path: Path to video file
@@ -18,8 +26,11 @@ def get_frame_luma_stats(video_path, frame_num=0):
         
     Returns:
         Tuple of (mean, stddev) or None if extraction fails
+        
+    Raises:
+        AssertionError: If YAVG (converted) disagrees with raw mean by > 1.0
     """
-    # Get YAVG from signalstats metadata
+    # Get YAVG from signalstats metadata (limited-range)
     cmd_meta = [
         "ffmpeg", "-i", str(video_path),
         "-vf", f"select='eq(n,{frame_num})',signalstats,metadata=print:file=-",
@@ -31,17 +42,17 @@ def get_frame_luma_stats(video_path, frame_num=0):
         print(f"ffmpeg signalstats failed: {result.stderr}", file=sys.stderr)
         return None
     
-    yavg_signalstats = None
+    yavg_limited = None
     for line in result.stdout.split('\n'):
         line = line.strip()
         if line.startswith('lavfi.signalstats.YAVG='):
-            yavg_signalstats = float(line.split('=')[1])
+            yavg_limited = float(line.split('=')[1])
             break
     
-    if yavg_signalstats is None:
+    if yavg_limited is None:
         return None
     
-    # Decode frame as raw grayscale to compute real stddev
+    # Decode frame as raw grayscale (full-range) to compute real stddev
     cmd_raw = [
         "ffmpeg", "-i", str(video_path),
         "-vf", f"select='eq(n,{frame_num})'",
@@ -73,11 +84,14 @@ def get_frame_luma_stats(video_path, frame_num=0):
         pixel_mean = statistics.mean(pixels)
         pixel_stddev = statistics.pstdev(pixels)
     
-    # Verify signalstats YAVG agrees with raw pixel mean within 1.0
-    if abs(yavg_signalstats - pixel_mean) > 1.0:
-        print(f"Warning: signalstats YAVG={yavg_signalstats:.1f} disagrees with "
-              f"raw pixel mean={pixel_mean:.1f} by {abs(yavg_signalstats - pixel_mean):.1f}",
-              file=sys.stderr)
+    # Convert signalstats YAVG from limited-range (16-235) to full-range (0-255)
+    yavg_full = (yavg_limited - 16) * 255 / 219
+    
+    # Assert YAVG (converted) agrees with raw pixel mean within 1.0
+    disagreement = abs(yavg_full - pixel_mean)
+    assert disagreement <= 1.0, \
+        f"signalstats YAVG={yavg_limited:.1f} (full={yavg_full:.1f}) disagrees with " \
+        f"raw pixel mean={pixel_mean:.1f} by {disagreement:.1f} (max 1.0)"
     
     return pixel_mean, pixel_stddev
 
