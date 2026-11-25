@@ -1,5 +1,9 @@
 # Development Log
 
+## 2026-11-25 (Reelsmith 5.7.0)
+
+- Rebased the finish-pass branch onto main after #47 took 5.6.0. This release is 5.7.0. The finish-pass CHANGELOG entry sits above the 5.6.0 safe-layout notes, and CI runs both test lists.
+
 ## 2026-11-25 (Reelsmith 5.6.0 round 4)
 
 **What changed**
