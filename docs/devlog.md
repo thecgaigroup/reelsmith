@@ -1,5 +1,20 @@
 # Development Log
 
+## 2026-11-25 (Finish pass review round 5)
+
+**What changed**
+- Ranked caption candidates by backing and position before choosing a baseline. The checker measures source strokes separately and verifies their contrast at the destination.
+- Replaced region-wide reveal checks with connected-component measurements and sampled every frame from 0.4 to 0.8 seconds.
+
+**State**
+- The round 5 patch is uncommitted in the assigned worktree for PR #46.
+
+**Where we left off**
+- The local build report records the encoded regressions, Signal crop inspection, and repeated flag-off comparison.
+
+**Open**
+- Independent review is pending. The local stream-highlights integration requires FFmpeg with libass.
+
 ## 2026-11-25 (Finish pass review round 4)
 
 **What changed**
