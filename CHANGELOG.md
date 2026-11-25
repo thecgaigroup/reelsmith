@@ -5,6 +5,16 @@ All notable changes to Reelsmith will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.7.0] - 2026-11-25
+
+### Added
+
+- Optional offline finish pass for ducked CC0 sound cues through the end of the picture, encoded AAC loudness verification, and title depth of field and bloom. The bundled 9:16 layout keeps the top and bottom strips sharp. Enable it per run with `REELSMITH_FINISH_PASS=1`. See [Offline finish pass](references/finish-pass.md).
+
+### Fixed
+
+- Reject variable frame rate and A/V starts more than one frame apart before writing any output. Deliver one AAC mix bounded by the picture, trim cue tails, and verify planned, rendered and skipped cue lists. Retain sparse-mix mastering and diagnostics for short or silent inputs.
+
 ## [5.6.0] - 2026-11-25
 
 ### Added

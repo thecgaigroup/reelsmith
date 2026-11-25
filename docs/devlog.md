@@ -1,5 +1,69 @@
 # Development Log
 
+## 2026-11-25 (Reelsmith 5.7.0)
+
+- Rebased the finish-pass branch onto main after #47 took 5.6.0. This release is 5.7.0. The finish-pass CHANGELOG entry sits above the 5.6.0 safe-layout notes, and CI runs both test lists.
+
+## 2026-11-25 (Reelsmith 5.6.0 round 4)
+
+**What changed**
+- Added a CFR and A/V alignment preflight, bounded the single AAC mix to the picture, and verified cue accounting in `check`.
+
+**State**
+- Local, uncommitted changes for PR #48 on `feat/finish-pass-slim-r4`.
+
+**Where we left off**
+- Signal rendered 23 cues, matched the round 3 MP4 SHA-256, and passed `check`. Local evidence is in `.finish-slim/FIX4_REPORT.md`.
+
+**Open**
+- Local FFmpeg lacks libass for the stream-highlights end-to-end test. Independent review and hosted CI are pending.
+
+## 2026-11-25 (Reelsmith 5.6.0 round 3)
+
+**What changed**
+- Planned cues from frame timestamps, retained full early cues in the default mix, and reported rendered and skipped cues.
+- Extended encoded mastering retries and added explicit diagnostics for short pictures and silent mixes.
+
+**State**
+- Local fixes for PR #48 on `feat/finish-pass-slim-r3`.
+
+**Where we left off**
+- Regression, CI-list and Signal render evidence is in `.finish-slim/FIX3_REPORT.md`.
+
+**Open**
+- Independent review and hosted CI are pending.
+
+## 2026-11-25 (Reelsmith 5.6.0 review fixes)
+
+**What changed**
+- Suppressed bytecode writes on disabled runs and extended short programme tracks so late sound cues survive mastering.
+- Preserved the static top and bottom strips in the bundled 9:16 layout with feathered edges around the central blur and title bloom.
+- Added a clean error for scene CSVs with a missing or blank first row and regression coverage for all four findings.
+
+**State**
+- Local fix round for PR #48 on `feat/finish-pass-slim`.
+
+**Where we left off**
+- Local verification results and the Signal checks are recorded in `.finish-slim/FIX_REPORT.md`.
+
+**Open**
+- Independent review and hosted CI remain pending.
+
+## 2026-11-25 (Reelsmith 5.6.0)
+
+**What changed**
+- Added an opt-in offline pass for ducked CC0 sound cues, encoded AAC loudness verification, and title depth of field and bloom.
+- Added synthetic tests to CI and documented the finish command.
+
+**State**
+- Local author patch on `feat/finish-pass-slim`, uncommitted until the orchestrator commits it.
+
+**Where we left off**
+- The local build report records the synthetic tests and Signal Short verification.
+
+**Open**
+- Orchestrator review and hosted CI are pending.
+
 ## 2026-11-21 (Reelsmith 5.4.1: CI smoke test)
 
 **What changed**
