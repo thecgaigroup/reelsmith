@@ -1,0 +1,220 @@
+{
+  "video": "anthropic-short-signal-logo.mp4",
+  "cuts": [
+    4.667,
+    9.133,
+    20.233,
+    24.5,
+    39.367,
+    44.167
+  ],
+  "cues": [
+    {
+      "time": 0.833,
+      "anchor": 0.833,
+      "event": "motion beat (diff 0.40)",
+      "sound": "click",
+      "gain_db": -11.0,
+      "file": "assets/sfx/cgai_click_v1.wav",
+      "license": "CC0-1.0"
+    },
+    {
+      "time": 2.5,
+      "anchor": 2.5,
+      "event": "motion beat (diff 0.84)",
+      "sound": "click",
+      "gain_db": -11.0,
+      "file": "assets/sfx/cgai_click_v1.wav",
+      "license": "CC0-1.0"
+    },
+    {
+      "time": 4.1,
+      "anchor": 4.1,
+      "event": "motion beat (diff 0.53)",
+      "sound": "click",
+      "gain_db": -11.0,
+      "file": "assets/sfx/cgai_click_v1.wav",
+      "license": "CC0-1.0"
+    },
+    {
+      "time": 4.326,
+      "anchor": 4.667,
+      "event": "cut at 4.67s",
+      "sound": "whoosh",
+      "gain_db": -4.0,
+      "file": "assets/sfx/cgai_whoosh_v1.wav",
+      "license": "CC0-1.0"
+    },
+    {
+      "time": 8.792,
+      "anchor": 9.133,
+      "event": "cut at 9.13s",
+      "sound": "whoosh",
+      "gain_db": -4.0,
+      "file": "assets/sfx/cgai_whoosh_v1.wav",
+      "license": "CC0-1.0"
+    },
+    {
+      "time": 10.7,
+      "anchor": 10.7,
+      "event": "motion beat (diff 0.32)",
+      "sound": "click",
+      "gain_db": -11.0,
+      "file": "assets/sfx/cgai_click_v1.wav",
+      "license": "CC0-1.0"
+    },
+    {
+      "time": 13.267,
+      "anchor": 13.267,
+      "event": "motion beat (diff 2.88)",
+      "sound": "latch",
+      "gain_db": -10.0,
+      "file": "assets/sfx/cgai_latch_v1.wav",
+      "license": "CC0-1.0"
+    },
+    {
+      "time": 17.267,
+      "anchor": 17.267,
+      "event": "motion beat (diff 3.03)",
+      "sound": "latch",
+      "gain_db": -10.0,
+      "file": "assets/sfx/cgai_latch_v1.wav",
+      "license": "CC0-1.0"
+    },
+    {
+      "time": 19.892,
+      "anchor": 20.233,
+      "event": "cut at 20.23s",
+      "sound": "whoosh",
+      "gain_db": -4.0,
+      "file": "assets/sfx/cgai_whoosh_v1.wav",
+      "license": "CC0-1.0"
+    },
+    {
+      "time": 21.333,
+      "anchor": 21.333,
+      "event": "motion beat (diff 0.27)",
+      "sound": "click",
+      "gain_db": -11.0,
+      "file": "assets/sfx/cgai_click_v1.wav",
+      "license": "CC0-1.0"
+    },
+    {
+      "time": 22.5,
+      "anchor": 22.5,
+      "event": "motion beat (diff 0.66)",
+      "sound": "click",
+      "gain_db": -11.0,
+      "file": "assets/sfx/cgai_click_v1.wav",
+      "license": "CC0-1.0"
+    },
+    {
+      "time": 24.159,
+      "anchor": 24.5,
+      "event": "cut at 24.50s",
+      "sound": "whoosh",
+      "gain_db": -4.0,
+      "file": "assets/sfx/cgai_whoosh_v1.wav",
+      "license": "CC0-1.0"
+    },
+    {
+      "time": 25.0,
+      "anchor": 25.0,
+      "event": "motion beat (diff 0.35)",
+      "sound": "click",
+      "gain_db": -11.0,
+      "file": "assets/sfx/cgai_click_v1.wav",
+      "license": "CC0-1.0"
+    },
+    {
+      "time": 30.033,
+      "anchor": 30.033,
+      "event": "motion beat (diff 3.12)",
+      "sound": "latch",
+      "gain_db": -10.0,
+      "file": "assets/sfx/cgai_latch_v1.wav",
+      "license": "CC0-1.0"
+    },
+    {
+      "time": 31.567,
+      "anchor": 31.567,
+      "event": "motion beat (diff 0.31)",
+      "sound": "click",
+      "gain_db": -11.0,
+      "file": "assets/sfx/cgai_click_v1.wav",
+      "license": "CC0-1.0"
+    },
+    {
+      "time": 33.867,
+      "anchor": 33.867,
+      "event": "motion beat (diff 0.31)",
+      "sound": "click",
+      "gain_db": -11.0,
+      "file": "assets/sfx/cgai_click_v1.wav",
+      "license": "CC0-1.0"
+    },
+    {
+      "time": 38.191,
+      "anchor": 39.367,
+      "event": "cut at 39.37s",
+      "sound": "riser",
+      "gain_db": -6.0,
+      "file": "assets/sfx/cgai_riser_v1.wav",
+      "license": "CC0-1.0"
+    },
+    {
+      "time": 41.3,
+      "anchor": 41.3,
+      "event": "motion beat (diff 0.54)",
+      "sound": "click",
+      "gain_db": -11.0,
+      "file": "assets/sfx/cgai_click_v1.wav",
+      "license": "CC0-1.0"
+    },
+    {
+      "time": 42.4,
+      "anchor": 42.4,
+      "event": "motion beat (diff 1.03)",
+      "sound": "latch",
+      "gain_db": -10.0,
+      "file": "assets/sfx/cgai_latch_v1.wav",
+      "license": "CC0-1.0"
+    },
+    {
+      "time": 42.991,
+      "anchor": 44.167,
+      "event": "cut at 44.17s",
+      "sound": "riser",
+      "gain_db": -6.0,
+      "file": "assets/sfx/cgai_riser_v1.wav",
+      "license": "CC0-1.0"
+    },
+    {
+      "time": 43.7,
+      "anchor": 43.7,
+      "event": "motion beat (diff 0.46)",
+      "sound": "click",
+      "gain_db": -11.0,
+      "file": "assets/sfx/cgai_click_v1.wav",
+      "license": "CC0-1.0"
+    },
+    {
+      "time": 50.167,
+      "anchor": 50.167,
+      "event": "closing CTA reveal",
+      "sound": "impact",
+      "gain_db": -7.0,
+      "file": "assets/sfx/cgai_impact_v1.wav",
+      "license": "CC0-1.0"
+    },
+    {
+      "time": 53.4,
+      "anchor": 53.4,
+      "event": "motion beat (diff 0.29)",
+      "sound": "click",
+      "gain_db": -11.0,
+      "file": "assets/sfx/cgai_click_v1.wav",
+      "license": "CC0-1.0"
+    }
+  ]
+}

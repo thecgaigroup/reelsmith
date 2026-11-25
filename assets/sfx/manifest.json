@@ -1,0 +1,34 @@
+{
+  "sounds": [
+    {
+      "file": "cgai_click_v1.wav",
+      "sha256": "b03d8b3eb0c4f6daf8c0eab11f4492db58487ed13e3e28deb1c673a2102155bd",
+      "license": "CC0-1.0",
+      "source": "Reelsmith finish-pass prototype, self-synthesized (NumPy seed 20261125): 35 ms, noise high-passed at 2.5 kHz, 0.5 ms attack and 12 ms decay plus a 3.2 kHz sine ping"
+    },
+    {
+      "file": "cgai_latch_v1.wav",
+      "sha256": "02902d3953a9d6105910e4a3739c046ab81979cfc6e33083079566b8b75c24a7",
+      "license": "CC0-1.0",
+      "source": "Reelsmith finish-pass prototype, self-synthesized (NumPy seed 20261125): 125 ms, two clicks 55 ms apart, second at 0.7 amplitude, with a decaying 180 Hz sine"
+    },
+    {
+      "file": "cgai_whoosh_v1.wav",
+      "sha256": "57cb1f6f2d114403f50642a3b613ace9a5d1ec95c0e8913207036042fec9b803",
+      "license": "CC0-1.0",
+      "source": "Reelsmith finish-pass prototype, self-synthesized (NumPy seed 20261125): 550 ms, filtered noise swept from 300 Hz to 5.5 kHz and back, 120 Hz high-pass, sine-squared swell"
+    },
+    {
+      "file": "cgai_riser_v1.wav",
+      "sha256": "c30bdcb16968fac271a9101973056724126ae719125e58207cc11ef5417faf96",
+      "license": "CC0-1.0",
+      "source": "Reelsmith finish-pass prototype, self-synthesized (NumPy seed 20261125): 1.2 s, 220\u2013880 Hz exponential sweep plus its second harmonic and 3 kHz high-passed noise, power envelope 2.2"
+    },
+    {
+      "file": "cgai_impact_v1.wav",
+      "sha256": "754dedf2cbb9bee702164a69a565fdca7c806b05573c4a60e5b8b80ffa52939c",
+      "license": "CC0-1.0",
+      "source": "Reelsmith finish-pass prototype, self-synthesized (NumPy seed 20261125): 1.6 s, pitch falls from 108 Hz toward 38 Hz, low-passed crack at 1.8 kHz and tail at 900 Hz, peak -1 dBFS"
+    }
+  ]
+}
