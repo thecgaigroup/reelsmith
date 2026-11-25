@@ -37,6 +37,8 @@ def test_title_focus_and_cyan_glow(monkeypatch, tmp_path):
     background = np.s_[50:90, 30:150]
     assert 0.9 <= edge_energy(after[title]) / edge_energy(before[title]) <= 1.12
     assert edge_energy(after[background]) < 0.55 * edge_energy(before[background])
+    for strip in (np.s_[0:36, :], np.s_[256:320, :]):
+        assert edge_energy(after[strip]) / edge_energy(before[strip]) >= 0.97
     halo = np.s_[144:156, 86:90]
     glow = (after[halo] - before[halo]).mean(axis=(0, 1))
     assert glow @ [0.2126, 0.7152, 0.0722] > 2
@@ -46,8 +48,8 @@ def test_title_focus_and_cyan_glow(monkeypatch, tmp_path):
 
 def test_graph_uses_only_expected_filters(tmp_path):
     info = {"width": 180, "height": 320, "sar": "1:1"}
-    title = fp.title_region(fp.layout_path(info), 180, 320)
-    graph, _ = fp.video_graph(180, 320, title, tmp_path, "bt709")
+    title, keep_sharp = fp.layout_regions(fp.layout_path(info), 180, 320)
+    graph, _ = fp.video_graph(180, 320, title, tmp_path, "bt709", keep_sharp)
     filters = set(re.findall(r"(?:^|[,;\]])([a-z0-9_]+)(?:[=\[;,]|$)", graph))
     assert filters - {"sws_flags"} == {"setpts", "format", "split", "gblur", "crop", "scale", "lut3d",
                        "blend", "alphamerge", "overlay"}
@@ -63,7 +65,11 @@ def test_nonvertical_layout_requires_opt_in(tmp_path):
     assert inputs == []
     custom = tmp_path / "title.json"
     custom.write_text('{"regions": {"title": [0.25, 0.4, 0.75, 0.6]}}')
-    assert fp.title_region(fp.layout_path(info, custom), 160, 90) == fp.Rect(40, 36, 120, 54)
+    title, keep_sharp = fp.layout_regions(fp.layout_path(info, custom), 160, 90)
+    assert title == fp.Rect(40, 36, 120, 54)
+    assert keep_sharp == []
+    _, inputs = fp.video_graph(160, 90, title, tmp_path, "bt709", keep_sharp)
+    assert inputs == ["-i", tmp_path / "focus.pgm"]
 
 
 def test_source_stays_in_scope():

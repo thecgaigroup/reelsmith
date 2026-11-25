@@ -1,3 +1,4 @@
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -29,6 +30,20 @@ def test_disabled_run_does_not_write(monkeypatch, tmp_path):
     assert result.returncode == 0
     assert "finish pass disabled (REELSMITH_FINISH_PASS not set)" in result.stderr
     assert not target.parent.exists()
+
+
+def test_unset_flag_leaves_fresh_checkout_untouched(monkeypatch, tmp_path):
+    monkeypatch.delenv("REELSMITH_FINISH_PASS", raising=False)
+    monkeypatch.delenv("PYTHONDONTWRITEBYTECODE", raising=False)
+    monkeypatch.delenv("PYTHONPYCACHEPREFIX", raising=False)
+    scripts = tmp_path / "scripts"
+    shutil.copytree(SCRIPTS, scripts, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+    before = set(tmp_path.rglob("*"))
+    result = subprocess.run([sys.executable, str(scripts / "finish_pass.py"), "run",
+                             "missing.mp4", "--out", "out.mp4"],
+                            cwd=tmp_path, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert set(tmp_path.rglob("*")) == before
 
 
 @pytest.mark.parametrize("url", ["http://example.invalid/x", "https://example.invalid/x",

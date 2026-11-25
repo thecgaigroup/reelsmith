@@ -3,9 +3,17 @@ from pathlib import Path
 
 import pytest
 
-from sfx_cues import ASSET_DIR, load_sounds, plan_cues
+from sfx_cues import ASSET_DIR, cut_times, load_sounds, plan_cues
 
 FIXTURES = Path(__file__).parent / "fixtures" / "finish_pass"
+
+
+@pytest.mark.parametrize("contents", ["", "\nStart Time (seconds)\n", "  \n"])
+def test_scene_csv_requires_first_row(tmp_path, contents):
+    scenes = tmp_path / "scenes.csv"
+    scenes.write_text(contents)
+    with pytest.raises(ValueError, match="scene CSV needs a non-blank first row"):
+        cut_times(None, scenes)
 
 
 def test_bundled_audio_is_verified():

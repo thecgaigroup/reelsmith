@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 """Finish a flat master offline, or recheck the rendered file against its source."""
+import sys
+
+sys.dont_write_bytecode = True
+
 import argparse
 import hashlib
 import json
@@ -7,7 +11,6 @@ import math
 import os
 import re
 import subprocess
-import sys
 import tempfile
 from collections import Counter
 from dataclasses import asdict, dataclass
@@ -20,6 +23,7 @@ SCRIPTS = Path(__file__).resolve().parent
 DEFAULT_LAYOUT = SCRIPTS.parent / "references" / "finish-pass-layouts" / "signal-9x16.json"
 SWS = "accurate_rnd+full_chroma_int"
 DISABLED = "finish pass disabled (REELSMITH_FINISH_PASS not set)"
+AUDIO_DURATION_TOLERANCE = 1024 / 48000 + 0.002
 
 
 @dataclass(frozen=True)
@@ -42,15 +46,22 @@ class Rect:
         return f"crop={self.width}:{self.height}:{self.x0}:{self.y0}:exact=1"
 
 
-def title_region(path, width, height):
-    bounds = json.loads(path.read_text())["regions"]["title"]
+def layout_rect(bounds, width, height, name):
     if len(bounds) != 4 or any(type(n) not in (int, float) or not 0 <= n <= 1 for n in bounds):
-        raise ValueError("title region needs four fractions between zero and one")
+        raise ValueError(f"{name} region needs four fractions between zero and one")
     x0, y0, x1, y1 = bounds
     if x0 >= x1 or y0 >= y1:
-        raise ValueError("title region needs positive width and height")
+        raise ValueError(f"{name} region needs positive width and height")
     return Rect(math.floor(x0 * width), math.floor(y0 * height),
                 math.ceil(x1 * width), math.ceil(y1 * height))
+
+
+def layout_regions(path, width, height):
+    regions = json.loads(path.read_text())["regions"]
+    title = layout_rect(regions["title"], width, height, "title")
+    keep_sharp = [layout_rect(bounds, width, height, "keep_sharp")
+                  for bounds in regions.get("keep_sharp", [])]
+    return title, keep_sharp
 
 
 def ffmpeg(*args, **kwargs):
@@ -115,6 +126,18 @@ def stream_offsets(info):
     return video - origin, audio - origin
 
 
+def mix_duration(info, starts):
+    length = info["duration"]
+    video_start, audio_start = starts
+    audio_length = (info["audio"] or {}).get("duration")
+    # A full-length staggered programme can include one AAC priming frame.
+    if video_start != audio_start and audio_length not in (None, "N/A"):
+        if abs(float(audio_length) - length) <= AUDIO_DURATION_TOLERANCE:
+            return float(audio_length)
+    picture_end = video_start + length
+    return picture_end - audio_start if picture_end > audio_start else length
+
+
 def write_mask(path, outer, inner):
     import numpy as np
 
@@ -149,7 +172,7 @@ def bloom_key(path):
         np.savetxt(handle, colors, fmt="%.6f")
 
 
-def video_graph(width, height, title, work, matrix):
+def video_graph(width, height, title, work, matrix, keep_sharp=()):
     start = "[0:v:0]setpts=PTS-STARTPTS"
     if title is None:
         return start + ",format=yuv420p[v]", []
@@ -158,19 +181,39 @@ def video_graph(width, height, title, work, matrix):
         return f"scale={w}:{h}:flags={method}+{SWS}"
 
     amount = max(6, math.ceil(width * 0.02))
-    outer = Rect(max(0, title.x0 - amount), max(0, title.y0 - amount),
-                 min(width, title.x1 + amount), min(height, title.y1 + amount))
+
+    def padded(rect):
+        return Rect(max(0, rect.x0 - amount), max(0, rect.y0 - amount),
+                    min(width, rect.x1 + amount), min(height, rect.y1 + amount))
+
+    outer = padded(title)
     mask = work / "focus.pgm"
     write_mask(mask, outer, title)
     bloom_key(work / "bloom-key.cube")
     soft = max(1.4, width * 0.006)
     tight = max(1, width * 0.0045)
     wide = max(1, width * 0.018 / 4)
-    # Work in 4:4:4 for the title crop and composite.
+    # Work in 4:4:4 for the crops and composites.
+    inputs = ["-i", mask]
+    sharp_streams = "".join(f"[keep{i}]" for i in range(len(keep_sharp)))
     graph = [
         f"sws_flags={SWS}",
-        start + ",format=yuv444p,split[bg][title]",
+        start + f",format=yuv444p,split={2 + len(keep_sharp)}[bg][title]{sharp_streams}",
         f"[bg]gblur=sigma={soft:.2f}:steps=2[blurred]",
+    ]
+    background = "blurred"
+    for i, rect in enumerate(keep_sharp):
+        keep_outer = padded(rect)
+        mask = work / f"keep-{i}.pgm"
+        write_mask(mask, keep_outer, rect)
+        inputs.extend(["-i", mask])
+        graph.extend([
+            f"[keep{i}]{keep_outer.filter()}[crop{i}]",
+            f"[crop{i}][{i + 2}:v:0]alphamerge[sharp{i}]",
+            f"[{background}][sharp{i}]overlay={keep_outer.x0}:{keep_outer.y0}:format=yuv444[restored{i}]",
+        ])
+        background = f"restored{i}"
+    graph.extend([
         f"[title]{outer.filter()},scale=in_color_matrix={matrix}:flags={SWS},format=gbrp,split[sharp][highlights]",
         "[highlights]lut3d=file=bloom-key.cube:interp=tetrahedral,split[tight][wide]",
         f"[tight]gblur=sigma={tight:.2f}:steps=2[inner]",
@@ -180,9 +223,9 @@ def video_graph(width, height, title, work, matrix):
         f"[glow][halo]blend=all_mode=screen:all_opacity=0.15,scale=out_color_matrix={matrix}:"
         f"out_range=tv:flags={SWS},format=yuv444p[bloom]",
         "[bloom][1:v:0]alphamerge[focus]",
-        f"[blurred][focus]overlay={outer.x0}:{outer.y0}:format=yuv444,format=yuv420p[v]",
-    ]
-    return ";".join(graph), ["-i", mask]
+        f"[{background}][focus]overlay={outer.x0}:{outer.y0}:format=yuv444,format=yuv420p[v]",
+    ])
+    return ";".join(graph), inputs
 
 
 def layout_path(info, custom=None):
@@ -266,15 +309,17 @@ def measure(out, reference):
                     and result["audio"]["sample_rate"] == "48000")
     # MP4 edits and AAC framing can quantize the normalized starts and audio length.
     start_tolerance = 0.002
-    duration_tolerance = 1024 / 48000 + start_tolerance
+    duration_tolerance = AUDIO_DURATION_TOLERANCE
+    expected_audio_length = mix_duration(source, source_starts)
+    expected_end = max(source_starts[0] + source["duration"], source_starts[1] + expected_audio_length)
     sync_ok = bool(result["audio"]) and abs(source_starts[0] - result_starts[0]) <= start_tolerance
     if source["audio"] and result["audio"]:
         sync_ok = (sync_ok and abs(source_offset - result_offset) <= start_tolerance and
                    abs(source_starts[1] - result_starts[1]) <= start_tolerance)
-        source_audio_length = source["audio"].get("duration")
+    if result["audio"]:
         result_audio_length = result["audio"].get("duration")
-        if source_audio_length not in (None, "N/A") and result_audio_length not in (None, "N/A"):
-            sync_ok = sync_ok and abs(float(source_audio_length) - float(result_audio_length)) <= duration_tolerance
+        if result_audio_length not in (None, "N/A"):
+            sync_ok = sync_ok and abs(expected_audio_length - float(result_audio_length)) <= duration_tolerance
 
     source_size, result_size = ([item["width"], item["height"]] for item in (source, result))
     timing = {
@@ -289,7 +334,7 @@ def measure(out, reference):
         "source_size": source_size, "output_size": result_size,
         "pass": (sync_ok and source_size == result_size and source["fps"] == result["fps"] and
                  source["frames"] == result["frames"] and abs(source["duration"] - result["duration"]) < 0.001 and
-                 abs(source["format_duration"] - result["format_duration"]) <= duration_tolerance),
+                 abs(expected_end - result["format_duration"]) <= duration_tolerance),
     }
     return {"loudness": {"after": stats, "pass": audio_ok}, "timing": timing,
             "pass": audio_ok and timing["pass"]}
@@ -308,8 +353,8 @@ def check(out, reference):
     return {"artifact": artifact, **measure(out, reference)}
 
 
-def render_picture(video, work, info, title):
-    graph, masks = video_graph(info["width"], info["height"], title, work, info["matrix"])
+def render_picture(video, work, info, title, keep_sharp):
+    graph, masks = video_graph(info["width"], info["height"], title, work, info["matrix"], keep_sharp)
     color_flags = {"color_space": "-colorspace", "color_transfer": "-color_trc", "color_primaries": "-color_primaries"}
     tags = [arg for name, tag in info["color_tags"].items() for arg in (color_flags[name], tag)]
     if title:
@@ -342,7 +387,7 @@ def run(video, out, *, layout=None, scenes=None):
     layout = layout_path(info, layout)
     if layout is None:
         print("finish pass: no layout for this aspect, skipping title effects", file=sys.stderr)
-    title = title_region(layout, width, height) if layout else None
+    title, keep_sharp = layout_regions(layout, width, height) if layout else (None, [])
     sounds = load_sounds()
     cues = plan_cues(**cue_events(video, info["duration"], float(info["fps"]), scenes))
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -353,11 +398,11 @@ def run(video, out, *, layout=None, scenes=None):
         cue_path.write_text(json.dumps({"cues": [asdict(cue) for cue in cues]}))
         cue_offset = starts[0] - starts[1]
         render_stem(stem, info["duration"] + max(0, cue_offset), cue_path, sounds, offset=cue_offset)
-        premix(video, stem, mix, bool(info["audio"]))
+        premix(video, stem, mix, bool(info["audio"]), mix_duration(info, starts))
         before = loudness(mix)
         if before["TP_dBTP"] is None:
             raise ValueError("cannot master a silent mix")
-        picture, filters = render_picture(video, work, info, title)
+        picture, filters = render_picture(video, work, info, title, keep_sharp)
         mastering = master(picture, mix, candidate, before, starts)
         report = measure(candidate, video)
         counts = Counter(cue.sound for cue in cues)

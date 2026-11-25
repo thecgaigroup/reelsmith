@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Optional offline finish pass for ducked CC0 sound cues, encoded AAC loudness verification, and title depth of field and bloom. Enable it per run with `REELSMITH_FINISH_PASS=1`. See [Offline finish pass](references/finish-pass.md).
+- Optional offline finish pass for ducked CC0 sound cues through the end of the picture, encoded AAC loudness verification, and title depth of field and bloom. The bundled 9:16 layout keeps the top and bottom strips sharp. Enable it per run with `REELSMITH_FINISH_PASS=1`. See [Offline finish pass](references/finish-pass.md).
 
 ## [5.6.0] - 2026-11-25
 

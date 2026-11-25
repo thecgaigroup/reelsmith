@@ -115,7 +115,9 @@ def cut_times(video, scenes=None):
     if scenes:
         with local_file(scenes).open(newline="", encoding="utf-8-sig") as handle:
             rows = list(csv.reader(handle))
-        if rows and rows[0][0] == "Timecode List:":
+        if not rows or not any(field.strip() for field in rows[0]):
+            raise ValueError(f"{scenes}: scene CSV needs a non-blank first row")
+        if rows[0][0] == "Timecode List:":
             return [sum(float(x) * unit for x, unit in zip(t.split(":"), (3600, 60, 1)))
                     for t in rows[0][1:] if t]
         header = rows[0].index("Start Time (seconds)")
@@ -181,17 +183,17 @@ def render_stem(path, duration, cue_path, sounds, *, offset=0):
 
 
 DUCK_GRAPH = (
-    "[0:a:0]asetpts=PTS-STARTPTS,aresample=48000:first_pts=0,aformat=channel_layouts=stereo,asplit[prog][key];"
+    "[0:a:0]asetpts=PTS-STARTPTS,aresample=48000:first_pts=0,aformat=channel_layouts=stereo,apad,asplit[prog][key];"
     "[1:a:0]pan=stereo|c0=c0|c1=c0[sfx];"
     "[sfx][key]sidechaincompress=threshold=0.125:ratio=2:attack=10:release=250:makeup=1[duck];"
     "[prog][duck]amix=inputs=2:normalize=0:duration=first[mix]"
 )
 
 
-def premix(video, stem, out, has_audio):
+def premix(video, stem, out, has_audio, duration):
     raw = ["-f", "f32le", "-ar", SR, "-ac", 1, "-i", local_file(stem)]
     args = ["-i", local_file(video), *raw, "-filter_complex", DUCK_GRAPH, "-map", "[mix]"] if has_audio else raw
-    ffmpeg("-v", "error", "-y", *args, "-ac", 2, "-c:a", "pcm_f32le", out)
+    ffmpeg("-v", "error", "-y", *args, "-t", f"{duration:.9f}", "-ac", 2, "-c:a", "pcm_f32le", out)
 
 
 def loudness(path):

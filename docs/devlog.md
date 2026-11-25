@@ -1,5 +1,21 @@
 # Development Log
 
+## 2026-11-25 (Reelsmith 5.6.0 review fixes)
+
+**What changed**
+- Suppressed bytecode writes on disabled runs and extended short programme tracks so late sound cues survive mastering.
+- Preserved the static top and bottom strips in the bundled 9:16 layout with feathered edges around the central blur and title bloom.
+- Added a clean error for scene CSVs with a missing or blank first row and regression coverage for all four findings.
+
+**State**
+- Local fix round for PR #48 on `feat/finish-pass-slim`.
+
+**Where we left off**
+- Local verification results and the Signal checks are recorded in `.finish-slim/FIX_REPORT.md`.
+
+**Open**
+- Independent review and hosted CI remain pending.
+
 ## 2026-11-25 (Reelsmith 5.6.0)
 
 **What changed**
