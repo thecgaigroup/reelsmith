@@ -28,7 +28,10 @@ def probe(v):
             "bytes": int(js["format"]["size"]), "audio": has_a}
 
 def overlay_png(preset, out, w=None, h=None):
-    from PIL import Image, ImageDraw
+    try:
+        from PIL import Image, ImageDraw
+    except ImportError:
+        return None  # PIL not available, skip overlay generation
     p = PRESETS[preset]
     W, H = w or p["w"], h or p["h"]
     s = p["safe"]
@@ -55,7 +58,11 @@ def overlay_png(preset, out, w=None, h=None):
 def safe_overlay_frame(video, preset, out, t=1.0):
     p = probe(video)
     png = Path(out).with_suffix(".overlay.png")
-    overlay_png(preset, png, p["w"], p["h"])
+    result = overlay_png(preset, png, p["w"], p["h"])
+    if result is None:
+        # PIL not available, just extract frame without overlay
+        sh(["ffmpeg", "-y", "-v", "error", "-ss", f"{t:.2f}", "-i", str(video), "-frames:v", "1", "-q:v", "3", str(out)])
+        return out
     sh(["ffmpeg", "-y", "-v", "error", "-ss", f"{t:.2f}", "-i", str(video), "-i", str(png), "-filter_complex", "[0:v][1:v]overlay=0:0", "-frames:v", "1", "-q:v", "3", str(out)])
     png.unlink(missing_ok=True)
     return out
