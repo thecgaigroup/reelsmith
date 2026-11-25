@@ -23,6 +23,15 @@ HERE = Path(__file__).resolve().parent
 def sh(cmd, **kw):
     return subprocess.run(cmd, capture_output=True, text=True, **kw)
 
+def sanitize_filter_input(text):
+    """Sanitize text for use in ffmpeg filter graphs. Escapes dangerous chars for drawtext context.
+    Prevents filter-graph injection via user/prompt text. Escapes: backslash, single quote, colon, comma, semicolon, brackets."""
+    # For drawtext, text is single-quoted, so escape ' and \ first
+    text = text.replace("\\", "\\\\").replace("'", "\\'")
+    # Escape other filter-graph special chars
+    text = text.replace(":", "\\:").replace(",", "\\,").replace(";", "\\;").replace("[", "\\[").replace("]", "\\]")
+    return text
+
 def probe(v):
     r = sh(["ffprobe", "-v", "error", "-show_entries", "stream=codec_type,codec_name,width,height,r_frame_rate,pix_fmt,profile:format=duration,size",
             "-of", "json", str(v)])
@@ -54,19 +63,25 @@ def detect_dropouts(v, floor_db=-80, min_dur=0.02, max_dur=1.0, edge_s=0.05):
     durs = [float(m) for m in re.findall(r"silence_duration: ([\d.]+)", r.stderr)]
     if not starts:
         return []
-    # Get file duration
-    p_r = sh(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "json", str(v)])
+    # Get audio stream duration (not container duration)
+    p_r = sh(["ffprobe", "-v", "error", "-select_streams", "a:0",
+              "-show_entries", "stream=duration", "-of", "json", str(v)])
     try:
-        file_dur = float(json.loads(p_r.stdout)["format"]["duration"])
-    except (json.JSONDecodeError, KeyError, ValueError):
-        file_dur = 999999  # fall back if duration can't be read
+        audio_dur = float(json.loads(p_r.stdout)["streams"][0]["duration"])
+    except (json.JSONDecodeError, KeyError, ValueError, IndexError):
+        # Fall back to container duration if audio stream duration unavailable
+        p_r2 = sh(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "json", str(v)])
+        try:
+            audio_dur = float(json.loads(p_r2.stdout)["format"]["duration"])
+        except (json.JSONDecodeError, KeyError, ValueError):
+            audio_dur = 999999  # fall back if duration can't be read
     
     dropouts = []
     for start, dur in zip(starts, durs):
         if dur > max_dur:
             continue  # too long, not a dropout
-        if start < edge_s or start + dur > file_dur - edge_s:
-            continue  # too close to file edge
+        if start < edge_s or start + dur > audio_dur - edge_s:
+            continue  # too close to audio stream edge
         dropouts.append((round(start, 2), round(dur, 3)))
     return dropouts
 
@@ -510,7 +525,8 @@ def scene_frames(video, job, out, font, vertical):
     for k, sc in enumerate(job.get("scenes", [])):
         t = sc["start"] + sc["dur"] * 0.7
         f = tmp / f"{k:02d}.jpg"
-        lab = f",drawtext=fontfile='{font}':text='{k+1} {sc['id']}':x=8:y=h-th-8:fontsize=20:fontcolor=white:box=1:boxcolor=black@0.7" if font else ""
+        scene_id_safe = sanitize_filter_input(sc['id'])
+        lab = f",drawtext=fontfile='{font}':text='{k+1} {scene_id_safe}':x=8:y=h-th-8:fontsize=20:fontcolor=white:box=1:boxcolor=black@0.7" if font else ""
         sh(["ffmpeg", "-y", "-v", "error", "-ss", f"{t:.3f}", "-i", str(video), "-frames:v", "1", "-vf", f"scale={'270' if vertical else '480'}:-2{lab}", str(f)])
         if f.exists(): files.append(f)
     if files:

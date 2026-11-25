@@ -281,7 +281,8 @@ def export_one(video, preset, outdir, mode="pad-blur", thumb_at=None, srt=None, 
            "mb": round(o["bytes"] / 1e6, 2), "output_identity": identity, "verified": verified, "notes": notes,
            "crop_placement": crop_placement}
     print(f"  {preset:16} {o['w']}x{o['h']} {o['fps']:.0f}fps {o['duration']:.2f}s {rep['mb']} MB {'; '.join(notes)}")
-    if crop_placement["discarded_fraction"] > 0.1:
+    # Only show crop percentage when mode is crop and significant cropping happened
+    if mode in ("crop", "pad-blur") and crop_placement["discarded_fraction"] > 0.1:
         print(f"    crop: {crop_placement['discarded_fraction']*100:.1f}% discarded")
     return rep
 

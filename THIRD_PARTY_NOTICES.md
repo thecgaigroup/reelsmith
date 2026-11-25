@@ -1289,11 +1289,11 @@ Apache License 2.0 text: (same as HyperFrames Apache 2.0 in this file)
 #### auto-editor
 
 - **Package**: auto-editor
-- **Source**: https://github.com/WyattBlue/auto-editor (v31.9.0, official binary)
+- **Source**: https://github.com/WyattBlue/auto-editor (v31.9.0, official binary release)
 - **License**: Unlicense (public domain dedication)
 - **Purpose**: Silence removal from spoken / raw takes
 - **Usage**: Documented in `references/helpers.md` for interview and talking-head content
-- **Note**: Binary artifacts may include open source assets under various licenses; the CLI tool used is under Unlicense
+- **Note**: The auto-editor binary release bundles third-party libraries including x264, ffmpeg, and other open source components, each under their respective licenses. The auto-editor CLI tool itself is under Unlicense.
 
 ```
 This is free and unencumbered software released into the public domain.
