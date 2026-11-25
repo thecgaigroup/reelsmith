@@ -150,7 +150,11 @@ def ffmpeg(*args, **kwargs):
 
 
 def probe(path):
-    result = subprocess.run(["ffprobe", "-v", "error", "-show_streams", "-show_format",
+    from sfx_cues import LOCAL_PROTOCOLS, local_file
+
+    path = local_file(path)
+    command = ["ffprobe", "-v", "error", *LOCAL_PROTOCOLS]
+    result = subprocess.run([*command, "-show_streams", "-show_format",
                              "-of", "json", str(path)], capture_output=True, text=True)
     if result.returncode:
         raise ValueError(result.stderr.strip())
@@ -160,7 +164,7 @@ def probe(path):
         raise ValueError(f"{path}: no video stream")
     frames = video.get("nb_frames", "")
     if not frames.isdigit():
-        counted = subprocess.run(["ffprobe", "-v", "error", "-count_frames", "-select_streams", "v:0",
+        counted = subprocess.run([*command, "-count_frames", "-select_streams", "v:0",
                                   "-show_entries", "stream=nb_read_frames", "-of", "csv=p=0", str(path)],
                                  capture_output=True, text=True)
         frames = counted.stdout.strip()
@@ -171,6 +175,8 @@ def probe(path):
         "duration": float(video.get("duration", data["format"].get("duration", 0))),
         "frames": int(frames),
         "fps": Fraction(video["r_frame_rate"]),
+        "video_start": stream_start(video),
+        "format_start": stream_start(data["format"]),
         "audio": next((s for s in data["streams"] if s["codec_type"] == "audio"), None),
         "matrix": {"bt709": "bt709", "bt470bg": "bt601", "smpte170m": "bt601",
                    "smpte240m": "smpte240m", "bt2020nc": "bt2020"}.get(
@@ -181,10 +187,28 @@ def probe(path):
     }
 
 
+def stream_start(stream):
+    start = (stream or {}).get("start_time", "N/A")
+    return None if start == "N/A" else float(start)
+
+
+def stream_offsets(info):
+    """Place the first presentation of either stream at zero."""
+    video = info["video_start"]
+    audio = stream_start(info["audio"])
+    if video is None or (info["audio"] and audio is None):
+        raise ValueError("finish pass needs known stream start timestamps")
+    if audio is None:
+        return 0.0, 0.0
+    origin = min(video, audio)
+    return video - origin, audio - origin
+
+
 def gray_frames(path, width, height, count, start=0):
     import numpy as np
+    from sfx_cues import local_file
 
-    raw = ffmpeg("-v", "error", "-i", path, "-map", "0:v:0",
+    raw = ffmpeg("-v", "error", "-i", local_file(path), "-map", "0:v:0",
                  "-vf", f"trim=start_frame={start},scale={width}:{height}:flags=area+{SWS},format=gray",
                  "-frames:v", count, "-fps_mode", "passthrough", "-f", "rawvideo", "-").stdout
     if not raw:
@@ -250,39 +274,73 @@ def write_mask(path, outer, inner):
 
 
 def text_alpha(gray, name, width):
-    """Key bright lettering against the darker band and retain its rounded backing."""
+    """Retain the backing around a horizontal run of nearby, aligned glyphs."""
+    import cv2
     import numpy as np
 
     scale = width / 1080
-    # Sample the crop perimeter so the pill's own dark backing does not
-    # lower the threshold enough to key the scenery beside it.
     edge = np.concatenate((gray[0], gray[-1], gray[:, 0], gray[:, -1]))
     hist = np.bincount(edge, minlength=256)
     background = np.searchsorted(hist.cumsum(), edge.size * 0.75)
     ink = gray >= max(112, background + 45)
-    y, x = np.nonzero(ink)
-    if x.size < max(6, round(24 * scale ** 2)):
+    if not ink.any():
+        return np.zeros_like(gray)
+    _, _, components, _ = cv2.connectedComponentsWithStats(ink.astype(np.uint8), connectivity=8)
+    glyphs = sorted((int(x), int(y), int(w), int(h)) for x, y, w, h, area in components[1:]
+                    if max(3, 9 * scale) <= h <= max(7, 35 * scale)
+                    and w <= 1.65 * h and area >= max(4, 12 * scale ** 2))
+    if len(glyphs) < 3:
         return np.zeros_like(gray)
 
-    # The pill's bright outline already traces its perimeter. Captions have
-    # an unlit backing, so the lettering box needs additional padding.
-    pad_x, pad_y = (2, 2) if name == "pill" else (20, 18)
-    x0, x1 = x.min() - pad_x * scale, x.max() + 1 + pad_x * scale
-    y0, y1 = y.min() - pad_y * scale, y.max() + 1 + pad_y * scale
-    half_w, half_h = (x1 - x0) / 2, (y1 - y0) / 2
-    radius = min(half_w, half_h, 12 * scale if name == "captions" else half_h)
-    dx = np.abs(np.arange(gray.shape[1]) + 0.5 - (x0 + x1) / 2) - half_w + radius
-    dy = np.abs(np.arange(gray.shape[0]) + 0.5 - (y0 + y1) / 2) - half_h + radius
-    distance = (np.hypot(np.maximum(dx, 0), np.maximum(dy[:, None], 0)) +
-                np.minimum(np.maximum(dx, dy[:, None]), 0) - radius)
-    feather = max(1, 5 * scale)
-    alpha = np.clip(0.5 - distance / feather, 0, 1)
+    # Use the densest baseline band. Glyphs with descenders may extend a
+    # little below the line. Separate runs never borrow each other's backing.
+    tolerance = max(2, round(7 * scale))
+    bottoms = np.array([y + h for _, y, _, h in glyphs])
+    histogram = np.bincount(bottoms, minlength=gray.shape[0] + 1)
+    votes = np.convolve(histogram, np.ones(2 * tolerance + 1, dtype=int), mode="same")
+    baseline = bottoms[votes[bottoms].argmax()]
+    line = [glyph for glyph, bottom in zip(glyphs, bottoms) if abs(bottom - baseline) <= tolerance]
+    height = float(np.median([h for _, _, _, h in line]))
+    bounds = []
+    run = [line[0]]
+    for glyph in line[1:]:
+        if glyph[0] - (run[-1][0] + run[-1][2]) > 1.8 * height:
+            bounds.append(run)
+            run = []
+        run.append(glyph)
+    bounds.append(run)
+
+    alpha = np.zeros(gray.shape, dtype=np.float32)
+    for run in bounds:
+        if len(run) < 3:
+            continue
+        x0, y0 = min(x for x, _, _, _ in run), min(y for _, y, _, _ in run)
+        x1, y1 = max(x + w for x, _, w, _ in run), max(y + h for _, y, _, h in run)
+        pad_x, pad_y = min(20 * scale, 0.7 * height), 18 * scale
+        if name == "pill":
+            for x, y, w, h, area in components[1:]:
+                if (0 < x0 - x <= 1.8 * height and 0 < x + w - x1 <= 1.8 * height
+                        and y < y0 < y1 < y + h and h <= 3.5 * height and area < 0.25 * w * h):
+                    x0, y0, x1, y1 = x, y, x + w, y + h
+                    pad_x = pad_y = 2 * scale
+                    break
+        x0, x1 = x0 - pad_x, x1 + pad_x
+        y0, y1 = y0 - pad_y, y1 + pad_y
+        half_w, half_h = (x1 - x0) / 2, (y1 - y0) / 2
+        radius = min(half_w, half_h, 12 * scale if name == "captions" else half_h)
+        dx = np.abs(np.arange(gray.shape[1]) + 0.5 - (x0 + x1) / 2) - half_w + radius
+        dy = np.abs(np.arange(gray.shape[0]) + 0.5 - (y0 + y1) / 2) - half_h + radius
+        distance = (np.hypot(np.maximum(dx, 0), np.maximum(dy[:, None], 0)) +
+                    np.minimum(np.maximum(dx, dy[:, None]), 0) - radius)
+        feather = max(1, 5 * scale)
+        np.maximum(alpha, np.clip(0.5 - distance / feather, 0, 1), out=alpha)
     return np.rint(255 * alpha ** 2 * (3 - 2 * alpha)).astype(np.uint8)
 
 
 def write_text_masks(video, work, info, plan, cover, hold):
     """Decode both luma strips in one pass and write one gray alpha stream per anchor."""
     import numpy as np
+    from sfx_cues import ffmpeg_command, local_file
 
     pill, captions = (plan["sources"][name] for name in TEXT_ANCHORS)
     width = max(pill.width, captions.width)
@@ -291,8 +349,9 @@ def write_text_masks(video, work, info, plan, cover, hold):
              f"[p]{pill.filter()},format=gray,pad={width}:{pill.height}:0:0[pill];"
              f"[c]{captions.filter()},format=gray,pad={width}:{captions.height}:0:0[captions];"
              "[pill][captions]vstack=inputs=2[v]")
-    command = ["ffmpeg", "-nostdin", "-v", "error", "-i", str(video), "-filter_complex_threads", "2",
-               "-filter_complex", graph, "-map", "[v]", "-fps_mode", "passthrough", "-f", "rawvideo", "-"]
+    command = ffmpeg_command("-v", "error", "-i", local_file(video), "-filter_complex_threads", 2,
+                             "-filter_complex", graph, "-map", "[v]", "-fps_mode", "passthrough",
+                             "-f", "rawvideo", "-")
     with (work / "pill.gray").open("w+b") as pill_mask, (work / "captions.gray").open("w+b") as caption_mask:
         masks = ((pill_mask, pill, 0), (caption_mask, captions, pill.height))
         count = 0
@@ -337,8 +396,9 @@ def bloom_key(path):
 
 def video_graph(width, height, plan, cover, hold, work, matrix, fps):
     # Framesync repeats the selected source frame on the opening frames only.
-    graph = [f"[1:v:0]trim=start_frame={cover}:end_frame={cover+1},setpts=0[cover]",
-             f"[0:v:0][cover]overlay=enable='lt(n,{hold})':format=auto[picture]"]
+    graph = ["[0:v:0]setpts=PTS-STARTPTS[base]",
+             f"[1:v:0]trim=start_frame={cover}:end_frame={cover+1},setpts=0[cover]",
+             f"[base][cover]overlay=enable='lt(n,{hold})':format=auto[picture]"]
     inputs = []
     if not plan:
         return ";".join([*graph, "[picture]format=yuv420p[v]"]), inputs
@@ -435,7 +495,9 @@ def video_graph(width, height, plan, cover, hold, work, matrix, fps):
 
 def layout_path(info, custom=None):
     if custom:
-        return Path(custom).resolve()
+        from sfx_cues import local_file
+
+        return local_file(custom)
     display_ratio = Fraction(info["width"], info["height"])
     if ":" in info["sar"]:
         display_ratio *= Fraction(info["sar"].replace(":", "/"))
@@ -466,19 +528,35 @@ def anchor_checks(plan, reference, delivered):
                        source.width - 1).astype(int)
         expected = patch[np.ix_(y, x)].astype(np.float32)
         actual = target.crop(delivered).astype(np.float32)
-        solid = (text_alpha(patch, name, reference.shape[1])[np.ix_(y, x)] >= 230
-                 if name in TEXT_ANCHORS else np.ones(expected.shape, dtype=bool))
+        solid = np.ones(expected.shape, dtype=bool)
+        if name in TEXT_ANCHORS:
+            # Independently look for bright strokes across individual scanlines.
+            # Exclude the crop ends and outer rows where a pill border can sit.
+            ink = expected >= max(120, float(np.median(expected)) + 55)
+            solid.fill(False)
+            left, right = target.width // 18, target.width - target.width // 18
+            top, bottom = target.height // 4, target.height - target.height // 4
+            gap = max(3, target.height // 2)
+            for row in range(top, bottom):
+                edges = np.flatnonzero(np.diff(ink[row, left:right], prepend=False, append=False))
+                runs = edges.reshape(-1, 2) + left
+                for first, second, third in zip(runs, runs[1:], runs[2:]):
+                    if second[0] - first[1] <= gap and third[0] - second[1] <= gap:
+                        solid[row, first[0]:third[1]] = ink[row, first[0]:third[1]]
         if not solid.any():
             checks[name] = {"present": False, "mean_abs_error": None, "bright_pixel_retention": None, "pass": True}
             continue
-        mae = float(np.abs(expected[solid] - actual[solid]).mean())
+        error = np.abs(expected[solid] - actual[solid])
+        mae = float(error.mean())
         # Bright anchor pixels must still be bright even when the rest of the crop
         # is mostly dark. A minor scaling and codec error is expected.
         standout = solid & (expected > max(105, float(expected[solid].mean()) + 35))
+        if name in TEXT_ANCHORS:
+            standout = solid
         visible = float((actual[standout] >= expected[standout] - 50).mean()) if standout.any() else None
         checks[name] = {"present": True, "mean_abs_error": round(mae, 3),
                         "bright_pixel_retention": None if visible is None else round(visible, 3),
-                        "pass": mae <= 12 and (visible is None or visible >= 0.72)}
+                        "pass": (name in TEXT_ANCHORS or mae <= 12) and (visible is None or visible >= 0.72)}
     return checks
 
 
@@ -488,8 +566,9 @@ def audio_passes(stats):
 
 
 def check(out, reference, layout=None, cover_frame=None):
-    from sfx_cues import loudness
+    from sfx_cues import local_file, loudness
 
+    out, reference = local_file(out), local_file(reference)
     metadata = sidecar(out)
     if metadata.is_file() and cover_frame is None:
         recorded = json.loads(metadata.read_text())
@@ -516,10 +595,21 @@ def check(out, reference, layout=None, cover_frame=None):
     audio_ok = bool(stats and audio_passes(stats) and result["audio"]["codec_name"] == "aac"
                     and result["audio"]["sample_rate"] == "48000")
     frame_counts = (source["frames"], result["frames"])
-    timing = {"source_frames": frame_counts[0], "output_frames": frame_counts[1],
+    source_starts, result_starts = stream_offsets(source), stream_offsets(result)
+    source_offset, result_offset = (video - audio for video, audio in (source_starts, result_starts))
+    one_frame = float(1 / source["fps"])
+    sync_ok = not source["audio"] or (
+        bool(result["audio"]) and abs(source_offset - result_offset) <= one_frame and
+        all(abs(a - b) <= one_frame for a, b in zip(source_starts, result_starts))
+    )
+    timing = {"source_video_start": source["video_start"], "output_video_start": result["video_start"],
+              "source_audio_start": stream_start(source["audio"]), "output_audio_start": stream_start(result["audio"]),
+              "source_av_offset": source_offset if source["audio"] else None,
+              "output_av_offset": result_offset if result["audio"] else None,
+              "source_frames": frame_counts[0], "output_frames": frame_counts[1],
               "source_seconds": source["duration"], "output_seconds": result["duration"],
               "source_fps": str(source["fps"]), "output_fps": str(result["fps"]),
-              "pass": (same_size and source["fps"] == result["fps"] and
+              "pass": (sync_ok and same_size and source["fps"] == result["fps"] and
                        frame_counts[0] == frame_counts[1] and
                        abs(source["duration"] - result["duration"]) < 0.001)}
     return {"frame0": frame0, "safe_zone": safe, "loudness": {"after": stats, "pass": audio_ok},
@@ -531,7 +621,8 @@ def render_picture(video, work, info, plan, cover, hold):
     if plan:
         write_text_masks(video, work, info, plan, cover, hold)
     graph, masks = video_graph(width, height, plan, cover, hold, work, info["matrix"], info["fps"])
-    cmd = ["-v", "error", "-y", "-i", video, "-t", f"{(cover+2)/info['fps']:.9f}", "-i", video]
+    cover_limit = (cover + 2) / info["fps"] + max(0, info["video_start"] - (info["format_start"] or 0))
+    cmd = ["-v", "error", "-y", "-i", video, "-t", f"{cover_limit:.9f}", "-i", video]
     for mask_args in masks:
         cmd += mask_args
     color_flags = {"color_space": "-colorspace", "color_transfer": "-color_trc", "color_primaries": "-color_primaries"}
@@ -545,16 +636,30 @@ def render_picture(video, work, info, plan, cover, hold):
     return picture
 
 
-def master(picture, premix_path, output, before):
+def master(picture, premix_path, output, before, starts):
     from sfx_cues import loudness, mastering_filter
 
     gain = -14 - before["I_LUFS"]
     ceiling = -1.45
+    video_start, audio_start = starts
     # Each attempt starts from the unmastered mix. The video is stream-copied.
     for attempt in range(1, 5):
-        ffmpeg("-v", "error", "-y", "-i", picture, "-i", premix_path, "-map", "0:v:0", "-map", "1:a:0",
-               "-c:v", "copy", "-af", mastering_filter(gain, ceiling), "-c:a", "aac",
-               "-b:a", "256k", "-ar", "48000", "-movflags", "+faststart", output)
+        encode = ["-af", mastering_filter(gain, ceiling), "-c:a", "aac",
+                  "-b:a", "256k", "-ar", "48000"]
+        audio_input = premix_path
+        if audio_start:
+            # MP4 skips the encoded priming packet with a zero-based edit.
+            # Remove that packet before moving this track away from zero,
+            # where it would otherwise be presented as early audio.
+            encoded = premix_path.with_name("encoded.m4a")
+            audio_input = premix_path.with_name("without-priming.m4a")
+            ffmpeg("-v", "error", "-y", "-i", premix_path, *encode, encoded)
+            ffmpeg("-v", "error", "-y", "-i", encoded, "-ss", 0, "-c:a", "copy", audio_input)
+            encode = ["-c:a", "copy"]
+        ffmpeg("-v", "error", "-y", "-copyts",
+               "-itsoffset", f"{video_start:.9f}", "-i", picture,
+               "-itsoffset", f"{audio_start:.9f}", "-i", audio_input, "-map", "0:v:0", "-map", "1:a:0",
+               "-c:v", "copy", *encode, "-movflags", "+faststart", output)
         measured = loudness(output)
         if audio_passes(measured) or attempt == 4:
             break
@@ -572,9 +677,10 @@ def run(video, out, *, layout=None, cover_hold=None, scenes=None):
         return None
     from collections import Counter
 
-    from sfx_cues import cue_events, load_sounds, loudness, plan_cues, premix, render_stem
+    from sfx_cues import cue_events, load_sounds, local_file, loudness, plan_cues, premix, render_stem
 
-    video, out = Path(video).resolve(), Path(out).resolve()
+    video, out = local_file(video), Path(out).resolve()
+    scenes = local_file(scenes) if scenes else None
     if video == out:
         raise ValueError("output path must differ from input")
     if cover_hold is not None and (not math.isfinite(cover_hold) or cover_hold <= 0):
@@ -583,6 +689,7 @@ def run(video, out, *, layout=None, cover_hold=None, scenes=None):
     width, height = info["width"], info["height"]
     if min(width, height) < 8 or width % 2 or height % 2 or not info["fps"] or not info["duration"] > 0:
         raise ValueError("finish pass needs even video dimensions and a valid frame rate and duration")
+    starts = stream_offsets(info)
     layout = layout_path(info, layout)
     if layout is None:
         print("finish pass: no layout for this aspect, skipping anchor relocation and title effects",
@@ -600,13 +707,14 @@ def run(video, out, *, layout=None, cover_hold=None, scenes=None):
     with tempfile.TemporaryDirectory(prefix=".finish-pass-", dir=out.parent) as temporary:
         work = Path(temporary)
         stem, mix, candidate = (work / name for name in ("stem.f32", "premix.wav", "finished.mp4"))
-        render_stem(stem, info["duration"], cues, sounds)
+        cue_offset = starts[0] - starts[1]
+        render_stem(stem, info["duration"] + max(0, cue_offset), cues, sounds, offset=cue_offset)
         premix(video, stem, mix, bool(info["audio"]))
         before = loudness(mix)
         if before["TP_dBTP"] is None:
             raise ValueError("cannot master a silent mix")
         picture = render_picture(video, work, info, plan, cover, hold)
-        mastering = master(picture, mix, candidate, before)
+        mastering = master(picture, mix, candidate, before, starts)
         report = check(candidate, video, layout=layout, cover_frame=cover)
         counts = Counter(cue.sound for cue in cues)
         report.update({
@@ -626,8 +734,19 @@ def run(video, out, *, layout=None, cover_hold=None, scenes=None):
             if not out.exists():
                 prepared.replace(report_path)
             raise ValueError("finish pass gates failed: " + json.dumps(report))
-        candidate.replace(out)
+        previous_report = work / "previous-report.json"
+        if report_path.is_file():
+            # Keep the previous report available if publishing the MP4 fails.
+            os.link(report_path, previous_report, follow_symlinks=False)
         prepared.replace(report_path)
+        try:
+            candidate.replace(out)
+        except OSError:
+            if previous_report.exists():
+                previous_report.replace(report_path)
+            else:
+                report_path.unlink()
+            raise
     return report
 
 

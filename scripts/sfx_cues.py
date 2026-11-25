@@ -16,6 +16,7 @@ ASSET_DIR = Path(__file__).resolve().parent.parent / "assets" / "sfx"
 SR = 48000
 DURATIONS = {"click": 0.035, "latch": 0.125, "whoosh": 0.55, "riser": 1.2, "impact": 1.6}
 LICENSE = "CC0-1.0"
+LOCAL_PROTOCOLS = ("-protocol_whitelist", "file,pipe")
 
 
 @dataclass(frozen=True)
@@ -86,8 +87,25 @@ def plan_cues(duration, cuts, motion):
     return sorted(cues, key=lambda cue: cue.time)
 
 
+def local_file(path):
+    raw = str(path)
+    resolved = Path(path).expanduser().resolve()
+    if re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*:", raw) or not resolved.is_file():
+        raise ValueError(f"{raw}: expected an existing local regular file")
+    return resolved
+
+
+def ffmpeg_command(*args):
+    command = ["ffmpeg", "-nostdin"]
+    for arg in args:
+        if arg == "-i":
+            command.extend(LOCAL_PROTOCOLS)
+        command.append(str(arg))
+    return command
+
+
 def ffmpeg(*args, cwd=None):
-    result = subprocess.run(["ffmpeg", "-nostdin", *map(str, args)], capture_output=True, cwd=cwd)
+    result = subprocess.run(ffmpeg_command(*args), capture_output=True, cwd=cwd)
     if result.returncode:
         raise ValueError(result.stderr.decode(errors="replace").strip())
     return result
@@ -95,22 +113,23 @@ def ffmpeg(*args, cwd=None):
 
 def cut_times(video, scenes=None):
     if scenes:
-        with Path(scenes).open(newline="", encoding="utf-8-sig") as handle:
+        with local_file(scenes).open(newline="", encoding="utf-8-sig") as handle:
             rows = list(csv.reader(handle))
         if rows and rows[0][0] == "Timecode List:":
             return [sum(float(x) * unit for x, unit in zip(t.split(":"), (3600, 60, 1)))
                     for t in rows[0][1:] if t]
         header = rows[0].index("Start Time (seconds)")
         return [float(row[header]) for row in rows[2:] if row]
-    result = ffmpeg("-hide_banner", "-nostats", "-i", video,
-                    "-vf", "scdet=threshold=10:sc_pass=1,metadata=print", "-an", "-f", "null", "-")
+    result = ffmpeg("-hide_banner", "-nostats", "-i", local_file(video),
+                    "-vf", "setpts=PTS-STARTPTS,scdet=threshold=10:sc_pass=1,metadata=print", "-an", "-f", "null", "-")
     return [float(t) for t in re.findall(rb"lavfi\.scd\.time=([\d.]+)", result.stderr)]
 
 
 def motion_deltas(video):
     size = 136 * 240
-    command = ["ffmpeg", "-nostdin", "-v", "error", "-i", str(video), "-map", "0:v:0",
-               "-vf", "scale=136:240:flags=area,format=gray", "-fps_mode", "passthrough", "-f", "rawvideo", "-"]
+    command = ffmpeg_command("-v", "error", "-i", local_file(video), "-map", "0:v:0",
+                             "-vf", "scale=136:240:flags=area,format=gray",
+                             "-fps_mode", "passthrough", "-f", "rawvideo", "-")
     deltas = [0.0]
     with subprocess.Popen(command, stdout=subprocess.PIPE) as decoder:
         previous = decoder.stdout.read(size)
@@ -148,19 +167,20 @@ def cue_events(video, duration, fps, scenes=None):
             "motion": motion}
 
 
-def render_stem(path, duration, cues, sounds):
+def render_stem(path, duration, cues, sounds, *, offset=0):
     stem = np.zeros(round(duration * SR), dtype=np.float32)
     for cue in cues:
-        start = max(0, int(cue.time * SR))
-        end = min(len(stem), start + len(sounds[cue.sound].samples))
+        cue_start = round((cue.time + offset) * SR)
+        samples = sounds[cue.sound].samples
+        start, end = max(0, cue_start), min(len(stem), cue_start + len(samples))
         if end > start:
-            stem[start:end] += sounds[cue.sound].samples[:end - start] * 10 ** (cue.gain_db / 20)
+            stem[start:end] += samples[start - cue_start:end - cue_start] * 10 ** (cue.gain_db / 20)
     # Float PCM keeps overlapping hits intact before the single mastering stage.
     stem.astype("<f4").tofile(path)
 
 
 DUCK_GRAPH = (
-    "[0:a:0]aresample=48000:first_pts=0,aformat=channel_layouts=stereo,asplit[prog][key];"
+    "[0:a:0]asetpts=PTS-STARTPTS,aresample=48000:first_pts=0,aformat=channel_layouts=stereo,asplit[prog][key];"
     "[1:a:0]pan=stereo|c0=c0|c1=c0[sfx];"
     "[sfx][key]sidechaincompress=threshold=0.125:ratio=2:attack=10:release=250:makeup=1[duck];"
     "[prog][duck]amix=inputs=2:normalize=0:duration=first[mix]"
@@ -168,13 +188,13 @@ DUCK_GRAPH = (
 
 
 def premix(video, stem, out, has_audio):
-    raw = ["-f", "f32le", "-ar", SR, "-ac", 1, "-i", stem]
-    args = ["-i", video, *raw, "-filter_complex", DUCK_GRAPH, "-map", "[mix]"] if has_audio else raw
+    raw = ["-f", "f32le", "-ar", SR, "-ac", 1, "-i", local_file(stem)]
+    args = ["-i", local_file(video), *raw, "-filter_complex", DUCK_GRAPH, "-map", "[mix]"] if has_audio else raw
     ffmpeg("-v", "error", "-y", *args, "-ac", 2, "-c:a", "pcm_f32le", out)
 
 
 def loudness(path):
-    result = ffmpeg("-hide_banner", "-nostats", "-i", path, "-map", "0:a:0",
+    result = ffmpeg("-hide_banner", "-nostats", "-i", local_file(path), "-map", "0:a:0",
                     "-af", "ebur128=peak=true", "-f", "null", "-")
     summary = result.stderr.decode().rsplit("Summary:", 1)[-1]
     stats = {}

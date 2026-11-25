@@ -1,3 +1,5 @@
+import pytest
+
 import finish_pass as fp
 from sfx_cues import loudness
 
@@ -14,3 +16,31 @@ def test_encoded_mp4_meets_loudness_and_peak(monkeypatch, tmp_path):
     assert -14.5 <= measured["I_LUFS"] <= -13.5
     assert measured["TP_dBTP"] <= -1.0
     assert fp.probe(out)["audio"]["sample_rate"] == "48000"
+
+
+@pytest.mark.parametrize("delayed_stream", ["video", "audio"])
+def test_staggered_stream_start_is_preserved_and_checked(monkeypatch, tmp_path, delayed_stream):
+    monkeypatch.setenv("REELSMITH_FINISH_PASS", "1")
+    src, out, shifted = (tmp_path / name for name in ("src.mp4", "out.mp4", "shifted.mp4"))
+    delay = ["-itsoffset", "0.375"]
+    fp.ffmpeg("-v", "error", *(delay if delayed_stream == "video" else []),
+              "-f", "lavfi", "-i", "testsrc2=s=96x96:r=120:d=1",
+              *(delay if delayed_stream == "audio" else []),
+              "-f", "lavfi", "-i", "sine=f=440:r=48000:d=1",
+              "-fps_mode", "passthrough", "-c:v", "libx264", "-c:a", "aac", src)
+    report = fp.run(src, out)
+    timing = report["timing"]
+    assert abs(timing["source_av_offset"]) > 0.3
+    assert timing["output_av_offset"] == pytest.approx(timing["source_av_offset"], abs=1/120)
+    assert fp.check(out, src)["timing"]["pass"]
+    source_audio = fp.probe(src)["audio"]
+    finished_audio = fp.probe(out)["audio"]
+    assert float(finished_audio["duration"]) == pytest.approx(float(source_audio["duration"]), abs=1/120)
+
+    # Add a delay to the stream that already starts last, leaving the
+    # picture rate, frame count and coded duration untouched.
+    stream = delayed_stream[0]
+    fp.ffmpeg("-v", "error", "-i", out, *delay, "-i", out,
+              "-map", f"{int(stream == 'v')}:v:0", "-map", f"{int(stream == 'a')}:a:0",
+              "-c", "copy", shifted)
+    assert not fp.check(shifted, src, cover_frame=report["cover"]["frame"])["timing"]["pass"]

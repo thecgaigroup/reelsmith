@@ -19,8 +19,13 @@ def test_relocates_pixels_and_erases_edges(monkeypatch, tmp_path):
     plan = fp.plan_layout(fp.DEFAULT_LAYOUT, 360, 640)
     boxes = [
         f"drawbox=x={r.x0+3}:y={r.y0+3}:w={r.width-6}:h={r.height-6}:color=white:t=fill"
-        for name, r in plan["sources"].items() if name in ("badge", "captions")
+        for name, r in plan["sources"].items() if name == "badge"
     ]
+    captions = plan["sources"]["captions"]
+    # Include distinct bright glyphs and a dark backing around the lettering.
+    boxes.extend(f"drawbox=x={captions.x0+100+x}:y={captions.y0+8}:w=6:h=8:c=white:t=fill"
+                 for x in range(0, 45, 9))
+    boxes.append("drawbox=x=0:y=200:w=360:h=150:c=0xb8b8b8:t=fill")
     base = "color=c=0x383838:s=360x640:r=12:d=1.5"
     fp.ffmpeg("-v", "error", "-f", "lavfi", "-i", ",".join([base, *boxes]),
               "-f", "lavfi", "-i", "sine=f=360:r=48000:d=1.5",
@@ -66,6 +71,10 @@ def test_caption_and_pill_mask_follow_ink_instead_of_background(monkeypatch, tmp
         box(area.x0, area.y0, area.width, area.height, "0x858585")
         for x in range(area.x0 + 2, area.x1 - 3, 6):
             box(x, area.y0, 2, area.height, "0xa0a0a0")
+        if name == "captions":
+            # Two bright highlights at opposite ends of a caption-free strip.
+            for x in (area.x0 + 5, area.x1 - 10):
+                filters.append(f"drawbox=x={x}:y={area.y0+8}:w=5:h=6:c=white:t=fill:enable='lt(t,1)'")
         cx, cy = area.x0 + area.width // 2, area.y0 + area.height // 2
         box(cx - 28, cy - 8, 56, 16, "0x111111", active=True)
         for x in range(cx - 20, cx + 20, 8):
@@ -89,3 +98,19 @@ def test_caption_and_pill_mask_follow_ink_instead_of_background(monkeypatch, tmp
         assert np.count_nonzero(with_ink[:, centre - 24:centre + 24] > 200) > 25, name
         # The scenery at both ends of the crop should still be the destination scenery.
         assert np.abs(with_ink[:, :12].astype(float) - area.crop(baseline[ink])[:, :12]).mean() < 3, name
+
+
+
+def test_checker_detects_missing_caption_independently_of_compositing_mask(monkeypatch):
+    import numpy as np
+
+    plan = fp.plan_layout(fp.DEFAULT_LAYOUT, 360, 640)
+    source = np.full((640, 360), 40, dtype=np.uint8)
+    delivered = source.copy()
+    caption = plan["sources"]["captions"].crop(source)
+    for x in (125, 133, 141, 149):
+        caption[8:16, x:x+4] = 240
+    monkeypatch.setattr(fp, "text_alpha", lambda gray, *args: np.zeros_like(gray))
+    check = fp.anchor_checks(plan, source, delivered)["captions"]
+    assert check["present"]
+    assert not check["pass"]
