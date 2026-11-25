@@ -457,31 +457,59 @@ def verify_change_scope(ref, test, regions):
     if n_frames < 2:
         return {"pass": False, "failures": [(0, 0, 0, 0, 0, "too few frames")], "brightness_lift": None}
     
-    # Extract Y channel only for tile comparison (luma)
-    # Keep all frames in memory but only the Y channel at reduced resolution
-    y1 = np.frombuffer(r1.stdout, dtype=np.uint8).reshape(-1, frame_size)[:, :frame_size_y].reshape(-1, scale_h, scale_w).astype(np.float32)
-    y2 = np.frombuffer(r2.stdout, dtype=np.uint8).reshape(-1, frame_size)[:, :frame_size_y].reshape(-1, scale_h, scale_w).astype(np.float32)
+    # Extract YUV planes for comparison (luma + chroma)
+    # Parse YUV420p data into separate planes
+    frames_data_1 = np.frombuffer(r1.stdout, dtype=np.uint8).reshape(-1, frame_size)
+    frames_data_2 = np.frombuffer(r2.stdout, dtype=np.uint8).reshape(-1, frame_size)
+    
+    # Y plane (luma)
+    y1 = frames_data_1[:, :frame_size_y].reshape(-1, scale_h, scale_w).astype(np.float32)
+    y2 = frames_data_2[:, :frame_size_y].reshape(-1, scale_h, scale_w).astype(np.float32)
+    
+    # U and V planes (chroma) - downsampled 2x2
+    uv_h, uv_w = scale_h // 2, scale_w // 2
+    u1 = frames_data_1[:, frame_size_y:frame_size_y+frame_size_uv].reshape(-1, uv_h, uv_w).astype(np.float32)
+    u2 = frames_data_2[:, frame_size_y:frame_size_y+frame_size_uv].reshape(-1, uv_h, uv_w).astype(np.float32)
+    v1 = frames_data_1[:, frame_size_y+frame_size_uv:].reshape(-1, uv_h, uv_w).astype(np.float32)
+    v2 = frames_data_2[:, frame_size_y+frame_size_uv:].reshape(-1, uv_h, uv_w).astype(np.float32)
     
     # Detect global brightness lift (mean luma difference across all frames)
     global_luma_diff = float(np.mean(y2 - y1))
     brightness_lift = global_luma_diff if abs(global_luma_diff) > 15 else None
     
-    # Tile-based diff (32x18 grid)
+    # Tile-based diff (32x18 grid) - compare Y, U, V
     tile_px_h, tile_px_w = scale_h // tile_h, scale_w // tile_w
+    tile_uv_h, tile_uv_w = uv_h // tile_h, uv_w // tile_w
     failures = []
     CHANGE_FLOOR = 24  # channel difference 0-255 (adjusted for downscale)
+    CHROMA_CHANGE_FLOOR = 12  # chroma is half-resolution, so lower threshold
     
     for i in range(n_frames):
         t = i / fps
-        diff = np.abs(y1[i] - y2[i])
+        diff_y = np.abs(y1[i] - y2[i])
+        diff_u = np.abs(u1[i] - u2[i])
+        diff_v = np.abs(v1[i] - v2[i])
         
         for ty in range(tile_h):
             for tx in range(tile_w):
-                tile_diff = diff[ty*tile_px_h:(ty+1)*tile_px_h, tx*tile_px_w:(tx+1)*tile_px_w]
-                mean_diff = float(np.mean(tile_diff))
+                # Check Y (luma) change
+                tile_diff_y = diff_y[ty*tile_px_h:(ty+1)*tile_px_h, tx*tile_px_w:(tx+1)*tile_px_w]
+                mean_diff_y = float(np.mean(tile_diff_y))
                 
-                if mean_diff < CHANGE_FLOOR:
+                # Check U and V (chroma) change
+                tile_diff_u = diff_u[ty*tile_uv_h:(ty+1)*tile_uv_h, tx*tile_uv_w:(tx+1)*tile_uv_w]
+                tile_diff_v = diff_v[ty*tile_uv_h:(ty+1)*tile_uv_h, tx*tile_uv_w:(tx+1)*tile_uv_w]
+                mean_diff_u = float(np.mean(tile_diff_u))
+                mean_diff_v = float(np.mean(tile_diff_v))
+                
+                # Tile has changed if luma OR chroma exceeds threshold
+                has_luma_change = mean_diff_y >= CHANGE_FLOOR
+                has_chroma_change = mean_diff_u >= CHROMA_CHANGE_FLOOR or mean_diff_v >= CHROMA_CHANGE_FLOOR
+                
+                if not (has_luma_change or has_chroma_change):
                     continue  # no change in this tile
+                
+                mean_diff = max(mean_diff_y, mean_diff_u, mean_diff_v)  # report worst
                 
                 # Tile changed; check if it's in an allowed region
                 tile_x = int(tx * W / tile_w)

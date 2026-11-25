@@ -560,3 +560,296 @@ if __name__ == "__main__":
             traceback.print_exc()
             sys.exit(1)
     print(f"\n{passed}/{len(tests)} tests passed")
+
+# (a) Test chroma comparison catches hue shift
+def test_chroma_hue_shift():
+    """verify_change_scope catches hue shift with same luma."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        # Create two videos: one neutral, one with hue shift (same luma)
+        # Use HSV shift: shift hue by 60 degrees (green -> cyan)
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "color=green:s=320x240:r=30:duration=0.5",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "ref.mp4")],
+                       capture_output=True, check=True)
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "color=cyan:s=320x240:r=30:duration=0.5",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "test.mp4")],
+                       capture_output=True, check=True)
+        
+        # Verify hue shift is detected (chroma change)
+        result = verify_change_scope(out / "ref.mp4", out / "test.mp4", ["none"])
+        assert result["pass"] is False
+        assert len(result["failures"]) > 0
+        print(f"  hue shift detected: {len(result['failures'])} tiles changed")
+
+# (b) Test brightness lift detection
+def test_brightness_lift_detection():
+    """verify_change_scope detects +20 brightness lift."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        # Create two videos: darker and brighter (use RGB values for consistent luma)
+        # RGB 128,128,128 vs 178,178,178 gives ~+20 luma lift
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi",
+                        "-i", "color=0x808080:s=320x240:r=30:duration=0.5",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "ref.mp4")],
+                       capture_output=True, check=True)
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi",
+                        "-i", "color=0xb2b2b2:s=320x240:r=30:duration=0.5",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "test.mp4")],
+                       capture_output=True, check=True)
+        
+        result = verify_change_scope(out / "ref.mp4", out / "test.mp4", ["none"])
+        assert result["pass"] is False
+        assert result["brightness_lift"] is not None
+        assert result["brightness_lift"] > 15
+        print(f"  brightness lift detected: {result['brightness_lift']:+.1f} levels")
+
+# (b) Test appended tail frames fail
+def test_appended_tail_frames_fail():
+    """verify_change_scope fails on frame count mismatch (appended frames)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        # Create ref video (15 frames at 30fps = 0.5s)
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "color=black:s=320x240:r=30:duration=0.5",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "ref.mp4")],
+                       capture_output=True, check=True)
+        # Create test video with extra frames (20 frames = 0.667s)
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "color=black:s=320x240:r=30:duration=0.667",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "test.mp4")],
+                       capture_output=True, check=True)
+        
+        result = verify_change_scope(out / "ref.mp4", out / "test.mp4", ["none"])
+        assert result["pass"] is False
+        assert any("frame count mismatch" in str(f) for f in result["failures"])
+        print(f"  tail frames detected: frame count mismatch")
+
+# (b) Test black + white appended frames fail none
+def test_black_white_appended_fails_none():
+    """Black clip with white frames appended fails 'none' scope."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        # Create black reference
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "color=black:s=320x240:r=30:duration=0.5",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "ref.mp4")],
+                       capture_output=True, check=True)
+        # Create black + white appended
+        subprocess.run(["ffmpeg", "-y",
+                        "-f", "lavfi", "-i", "color=black:s=320x240:r=30:duration=0.5",
+                        "-f", "lavfi", "-i", "color=white:s=320x240:r=30:duration=0.167",
+                        "-filter_complex", "[0:v][1:v]concat=n=2:v=1:a=0",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "test.mp4")],
+                       capture_output=True, check=True)
+        
+        result = verify_change_scope(out / "ref.mp4", out / "test.mp4", ["none"])
+        assert result["pass"] is False
+        print(f"  appended white frames caught")
+
+# (c) Test memory bounds
+def test_change_scope_memory_bounded():
+    """verify_change_scope stays <500MB on 10s 1080x1920 video."""
+    import tracemalloc
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        # Create 10s 1080x1920 portrait video
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "color=black:s=1080x1920:r=30:duration=10",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "ref.mp4")],
+                       capture_output=True, check=True, timeout=60)
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "color=black:s=1080x1920:r=30:duration=10",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "test.mp4")],
+                       capture_output=True, check=True, timeout=60)
+        
+        # Measure peak memory during comparison using tracemalloc
+        tracemalloc.start()
+        result = verify_change_scope(out / "ref.mp4", out / "test.mp4", ["none"])
+        current, peak = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+        
+        # Peak memory in MB
+        peak_mb = peak / (1024 * 1024)
+        assert peak_mb < 500, f"Peak memory {peak_mb:.1f} MB exceeds 500 MB"
+        print(f"  peak memory: {peak_mb:.1f} MB (< 500 MB)")
+
+# (d) Test PySceneDetect actual cut lists
+def test_pyscenedetect_actual_cuts():
+    """PySceneDetect fallback returns [6] for synthetic clip with cut at frame 6."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        # Create video with known cut: 6 black frames, then 6 white frames at 30fps
+        subprocess.run(["ffmpeg", "-y",
+                        "-f", "lavfi", "-i", "color=black:s=320x240:r=30:duration=0.2",
+                        "-f", "lavfi", "-i", "color=white:s=320x240:r=30:duration=0.2",
+                        "-filter_complex", "[0:v][1:v]concat=n=2:v=1:a=0",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "cuts.mp4")],
+                       capture_output=True, check=True)
+        
+        sys.path.insert(0, str(HERE))
+        import pyscenedetect_helper as psd
+        
+        result = psd.detect_cuts_ffmpeg(out / "cuts.mp4", threshold=0.3)
+        assert result["success"] is True
+        # Cut at frame 6 (0.2s * 30fps = 6 frames)
+        assert 6 in result["cuts"], f"expected [6] in cuts, got {result['cuts']}"
+        print(f"  cuts detected: {result['cuts']} (expected frame 6)")
+
+# (e) Test whisperX alignment failure
+def test_whisperx_alignment_failure():
+    """WhisperX returns error when alignment fails."""
+    # Create a stub module that simulates whisperx with failing alignment
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        v = make_test_video(out, dur=1, audio=True)
+        
+        # Create stub whisperx module
+        stub_code = '''
+class StubModel:
+    def transcribe(self, audio, language=None):
+        return {"segments": [{"text": "test"}]}
+
+def load_model(name, device="cpu", compute_type="int8", language="en"):
+    return StubModel()
+
+def load_audio(path):
+    import numpy as np
+    return np.zeros(16000)
+
+def load_align_model(language_code="en", device="cpu"):
+    raise RuntimeError("Alignment failed")
+
+def align(segments, model, metadata, audio, device):
+    raise RuntimeError("Alignment failed")
+'''
+        (out / "whisperx_stub.py").write_text(stub_code)
+        
+        # Inject stub
+        old_path = sys.path.copy()
+        sys.path.insert(0, str(out))
+        sys.modules.pop('whisperx', None)  # clear cache
+        
+        try:
+            import whisperx_helper
+            # Reload with stub
+            import importlib
+            importlib.reload(whisperx_helper)
+            
+            result = whisperx_helper.cross_check_lyrics(str(v), ["test", "words"])
+            assert result["success"] is False
+            assert "alignment failed" in result["error"].lower()
+            print(f"  alignment failure caught: {result['error'][:50]}")
+        finally:
+            sys.path = old_path
+            sys.modules.pop('whisperx', None)
+
+# (e) Test whisperX wrong order detection
+def test_whisperx_wrong_order():
+    """WhisperX detects words in wrong order."""
+    # Create stub with words out of order
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        v = make_test_video(out, dur=1, audio=True)
+        
+        stub_code = '''
+class StubModel:
+    def transcribe(self, audio, language=None):
+        return {"segments": [{"text": "world hello", "words": []}]}
+
+def load_model(name, device="cpu", compute_type="int8", language="en"):
+    return StubModel()
+
+def load_audio(path):
+    import numpy as np
+    return np.zeros(16000)
+
+class StubAlignModel:
+    pass
+
+def load_align_model(language_code="en", device="cpu"):
+    return StubAlignModel(), {}
+
+def align(segments, model, metadata, audio, device):
+    # Return words in wrong order
+    return {"segments": [{"words": [
+        {"word": "world", "start": 0.0, "end": 0.5},
+        {"word": "hello", "start": 0.5, "end": 1.0}
+    ]}]}
+'''
+        (out / "whisperx_stub.py").write_text(stub_code)
+        
+        old_path = sys.path.copy()
+        sys.path.insert(0, str(out))
+        sys.modules.pop('whisperx', None)
+        
+        try:
+            import whisperx_helper
+            import importlib
+            importlib.reload(whisperx_helper)
+            
+            # Official order: hello, world
+            result = whisperx_helper.cross_check_lyrics(str(v), ["hello", "world"])
+            # Should detect order mismatch
+            assert len(result.get("details", {}).get("order_mismatches", [])) > 0
+            print(f"  order mismatch detected: {result['details']['order_mismatches'][0][:50]}")
+        finally:
+            sys.path = old_path
+            sys.modules.pop('whisperx', None)
+
+# (f) Test filter sanitizer renders correctly
+def test_filter_sanitizer_renders_correctly():
+    """Sanitized text renders literally, no extra filter applied."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        v = make_test_video(out, dur=0.5)
+        
+        from review import sanitize_filter_input
+        
+        # Test cases that must render literally
+        test_cases = ["Topic: draft", "First, second"]
+        
+        for text in test_cases:
+            safe = sanitize_filter_input(text)
+            result = subprocess.run([
+                "ffmpeg", "-y", "-i", str(v), "-vf",
+                f"drawtext=text='{safe}':x=10:y=10:fontsize=24:fontcolor=white",
+                "-frames:v", "1", str(out / f"frame_{text[:5]}.jpg")
+            ], capture_output=True, text=True)
+            
+            assert result.returncode == 0
+            frame = out / f"frame_{text[:5]}.jpg"
+            assert frame.exists()
+            # Check output is a single frame
+            stat = frame.stat()
+            assert stat.st_size > 1000  # reasonable JPEG size
+            print(f"  '{text}' rendered: {stat.st_size} bytes")
+        
+        # Verify no extra filter in graph (single drawtext)
+        # Test injection attempt doesn't create multiple filters
+        malicious = "text':text='INJECTED"
+        safe = sanitize_filter_input(malicious)
+        result = subprocess.run([
+            "ffmpeg", "-y", "-i", str(v), "-vf",
+            f"drawtext=text='{safe}':x=10:y=10:fontsize=24:fontcolor=white",
+            "-frames:v", "1", str(out / "injection.jpg")
+        ], capture_output=True, text=True, timeout=5)
+        
+        # Should produce exactly 1 frame, not crash or produce multiple
+        assert result.returncode == 0
+        assert (out / "injection.jpg").exists()
+        # Verify stderr doesn't show filter graph errors
+        assert "Invalid" not in result.stderr
+        assert "Error" not in result.stderr
+        print(f"  injection neutralized: single frame output, no filter errors")
+
+
+if __name__ == "__main__":
+    tests = [f for f in dir() if f.startswith("test_")]
+    passed = 0
+    for t in tests:
+        try:
+            print(f"{t}...", end=" ", flush=True)
+            globals()[t]()
+            print("ok")
+            passed += 1
+        except Exception as e:
+            print(f"FAIL\n  {e}")
+            import traceback
+            traceback.print_exc()
+            sys.exit(1)
+    print(f"\n{passed}/{len(tests)} tests passed")
