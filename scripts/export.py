@@ -28,7 +28,10 @@ def probe(v):
             "bytes": int(js["format"]["size"]), "audio": has_a}
 
 def overlay_png(preset, out, w=None, h=None):
-    from PIL import Image, ImageDraw
+    try:
+        from PIL import Image, ImageDraw
+    except ImportError:
+        return None  # PIL not available, skip overlay generation
     p = PRESETS[preset]
     W, H = w or p["w"], h or p["h"]
     s = p["safe"]
@@ -55,7 +58,11 @@ def overlay_png(preset, out, w=None, h=None):
 def safe_overlay_frame(video, preset, out, t=1.0):
     p = probe(video)
     png = Path(out).with_suffix(".overlay.png")
-    overlay_png(preset, png, p["w"], p["h"])
+    result = overlay_png(preset, png, p["w"], p["h"])
+    if result is None:
+        # PIL not available, just extract frame without overlay
+        sh(["ffmpeg", "-y", "-v", "error", "-ss", f"{t:.2f}", "-i", str(video), "-frames:v", "1", "-q:v", "3", str(out)])
+        return out
     sh(["ffmpeg", "-y", "-v", "error", "-ss", f"{t:.2f}", "-i", str(video), "-i", str(png), "-filter_complex", "[0:v][1:v]overlay=0:0", "-frames:v", "1", "-q:v", "3", str(out)])
     png.unlink(missing_ok=True)
     return out
@@ -64,12 +71,23 @@ def fit_filter(src, p, mode):
     W, H = p["w"] or src["w"], p["h"] or src["h"]
     W, H = W - W % 2, H - H % 2
     same = abs(src["w"] / src["h"] - W / H) < 0.01
+    crop_pct = 0.0
+    if not same and mode == "crop":
+        # Calculate how much we're cropping
+        src_ratio = src["w"] / src["h"]
+        target_ratio = W / H
+        if src_ratio > target_ratio:
+            # Width-limited: crop sides
+            crop_pct = 1.0 - (target_ratio / src_ratio)
+        else:
+            # Height-limited: crop top/bottom
+            crop_pct = 1.0 - (src_ratio / target_ratio)
     if same or mode == "crop":
-        return f"scale={W}:{H}:force_original_aspect_ratio=increase:flags=lanczos,crop={W}:{H},setsar=1", same
+        return f"scale={W}:{H}:force_original_aspect_ratio=increase:flags=lanczos,crop={W}:{H},setsar=1", same, crop_pct
     if mode == "pad":
-        return f"scale={W}:{H}:force_original_aspect_ratio=decrease:flags=lanczos,pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1", False
+        return f"scale={W}:{H}:force_original_aspect_ratio=decrease:flags=lanczos,pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1", False, 0.0
     return (f"split[a][b];[a]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},boxblur=30:3,eq=brightness=-0.08[bg];"
-            f"[b]scale={W}:{H}:force_original_aspect_ratio=decrease:flags=lanczos[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,setsar=1"), False
+            f"[b]scale={W}:{H}:force_original_aspect_ratio=decrease:flags=lanczos[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,setsar=1"), False, 0.0
 
 def measure_loudness(v):
     r = sh(["ffmpeg", "-hide_banner", "-nostats", "-i", str(v), "-af", "loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"])
@@ -89,7 +107,7 @@ def master_audio(src, out, lufs=-14.0, kbps=192, hz=48000, ceiling=-1.0, meas=No
     L = meas or measure_loudness(src)
     wav = Path(out).with_suffix(".pre.wav")
     af = (f"loudnorm=I={lufs}:TP=-1.5:LRA=11:measured_I={L['input_i']}:measured_TP={L['input_tp']}:measured_LRA={L['input_lra']}"
-          f":measured_thresh={L['input_thresh']}:offset={L['target_offset']}:linear=true,"
+          f":measured_thresh={L['input_thresh']}:offset={L['target_offset']}:linear=true,asetpts=N/SR/TB+STARTPTS,"
           f"aresample=192000,alimiter=limit=-2.5dB:attack=1:release=50:level=false,aresample={hz}")
     r = sh(["ffmpeg", "-y", "-v", "error", "-i", str(src), "-map", "0:a:0", "-vn", "-af", af, "-ac", "2", "-c:a", "pcm_s24le", str(wav)])
     if r.returncode:
@@ -112,7 +130,7 @@ def export_one(video, preset, outdir, mode="pad-blur", thumb_at=None, srt=None, 
     p = PRESETS[preset]
     src = src or probe(video)
     fps = p["fps"] or round(src["fps"])
-    vf, same = fit_filter(src, p, mode)
+    vf, same, crop_pct = fit_filter(src, p, mode)
     gop = fps // 2 if p["gop"] == "half_fps" else 2 * fps
     out = Path(outdir) / f"{Path(video).stem}-{preset}.mp4"
     cmd = ["ffmpeg", "-y", "-v", "error", "-i", str(video)]
@@ -159,7 +177,8 @@ def export_one(video, preset, outdir, mode="pad-blur", thumb_at=None, srt=None, 
             shutil.copy(side, Path(outdir) / f"{Path(video).stem}-{preset}{Path(side).suffix}")
     rep = {"preset": preset, "file": str(out), "w": o["w"], "h": o["h"], "fps": o["fps"], "seconds": round(o["duration"], 3),
            "mb": round(o["bytes"] / 1e6, 2), "notes": notes}
-    print(f"  {preset:16} {o['w']}x{o['h']} {o['fps']:.0f}fps {o['duration']:.2f}s {rep['mb']} MB {'; '.join(notes)}")
+    crop_msg = f" (crop: {crop_pct*100:.1f}% discarded)" if mode == "crop" and crop_pct > 0.1 else ""
+    print(f"  {preset:16} {o['w']}x{o['h']} {o['fps']:.0f}fps {o['duration']:.2f}s {rep['mb']} MB{crop_msg} {'; '.join(notes)}")
     return rep
 
 def main():
