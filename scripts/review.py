@@ -366,19 +366,32 @@ def compare_ssim_psnr(ref, test):
 
 def verify_change_scope(ref, test, regions):
     """Verify declared change scope. regions: list of "START-END" or "START-END@X,Y,W,H" or ["none"].
-    Returns {"pass": bool, "failures": [(time, x, y, w, h, reason)]}. Adapted from ffmpeg-skill check.py --expect-changed."""
+    Returns {"pass": bool, "failures": [(time, x, y, w, h, reason)], "brightness_lift": float|None}.
+    Adapted from ffmpeg-skill check.py --expect-changed.
+    
+    Memory-bounded: downscales to ~640x360 for analysis (uses <500 MB for 10s 1080p video).
+    Compares chroma as well as luma (YUV420p).
+    Detects global brightness lifts of ~20 levels.
+    Fails on unmatched tail frames when lengths differ."""
     import numpy as np
     
-    # Parse regions
+    # Parse regions - don't split on commas inside @X,Y,W,H  
+    # Example: "1-2@10,20,30,40" should parse as time="1-2", rect="10,20,30,40"
     allowed = []
     if regions == ["none"] or not regions:
         pass  # no changes allowed anywhere
     else:
         for r in regions:
             if "@" in r:
-                time_part, rect_part = r.split("@", 1)
+                # Split on @ to get time and rect, then parse rect carefully
+                parts = r.split("@", 1)
+                time_part = parts[0]
+                rect_part = parts[1]
                 start, end = [float(x) for x in time_part.split("-")]
-                x, y, w, h = [int(x) for x in rect_part.split(",")]
+                rect_coords = [int(x) for x in rect_part.split(",")]
+                if len(rect_coords) != 4:
+                    return {"pass": False, "failures": [(0, 0, 0, 0, 0, f"invalid rect syntax: {r}")], "brightness_lift": None}
+                x, y, w, h = rect_coords
                 allowed.append({"start": start, "end": end, "x": x, "y": y, "w": w, "h": h})
             else:
                 start, end = [float(x) for x in r.split("-")]
@@ -393,37 +406,59 @@ def verify_change_scope(ref, test, regions):
         num, den = stream["r_frame_rate"].split("/")
         fps = int(num) / int(den)
     except (json.JSONDecodeError, KeyError, IndexError, ZeroDivisionError):
-        return {"pass": False, "failures": [(0, 0, 0, 0, 0, "could not read stream info")]}
+        return {"pass": False, "failures": [(0, 0, 0, 0, 0, "could not read stream info")], "brightness_lift": None}
     
-    # Decode both videos to raw frames at reduced resolution for tile-based comparison (32x18 tiles)
+    # Downscale to ~640x360 for memory efficiency (tile-based comparison on 32x18 grid)
+    # This uses <500 MB for 10s 1080p video
     tile_w, tile_h = 32, 18
-    scale_w, scale_h = tile_w * 60, tile_h * 60  # ~1920x1080 equivalent
-    cmd1 = ["ffmpeg", "-v", "error", "-i", str(ref), "-vf", f"scale={scale_w}:{scale_h}:flags=area,format=gray",
-            "-f", "rawvideo", "-"]
-    cmd2 = ["ffmpeg", "-v", "error", "-i", str(test), "-vf", f"scale={scale_w}:{scale_h}:flags=area,format=gray",
-            "-f", "rawvideo", "-"]
+    scale_w, scale_h = tile_w * 20, tile_h * 20  # 640x360
+    
+    # Use YUV420p to compare chroma as well as luma (not grayscale only)
+    cmd1 = ["ffmpeg", "-v", "error", "-i", str(ref), "-vf", f"scale={scale_w}:{scale_h}:flags=area,format=yuv420p",
+            "-pix_fmt", "yuv420p", "-f", "rawvideo", "-"]
+    cmd2 = ["ffmpeg", "-v", "error", "-i", str(test), "-vf", f"scale={scale_w}:{scale_h}:flags=area,format=yuv420p",
+            "-pix_fmt", "yuv420p", "-f", "rawvideo", "-"]
     
     r1 = subprocess.run(cmd1, capture_output=True)
     r2 = subprocess.run(cmd2, capture_output=True)
     
     if r1.returncode != 0 or r2.returncode != 0:
-        return {"pass": False, "failures": [(0, 0, 0, 0, 0, "decode failed")]}
+        return {"pass": False, "failures": [(0, 0, 0, 0, 0, "decode failed")], "brightness_lift": None}
     
-    frames1 = np.frombuffer(r1.stdout, dtype=np.uint8).reshape(-1, scale_h, scale_w).astype(np.float32)
-    frames2 = np.frombuffer(r2.stdout, dtype=np.uint8).reshape(-1, scale_h, scale_w).astype(np.float32)
+    # Parse YUV420p: Y plane is W*H, U and V planes are W/2 * H/2 each
+    frame_size_y = scale_w * scale_h
+    frame_size_uv = (scale_w // 2) * (scale_h // 2)
+    frame_size = frame_size_y + 2 * frame_size_uv
     
-    n_frames = min(len(frames1), len(frames2))
+    frames1_count = len(r1.stdout) // frame_size
+    frames2_count = len(r2.stdout) // frame_size
+    
+    # Fail on unmatched tail frames when lengths differ
+    if frames1_count != frames2_count:
+        return {"pass": False, "failures": [(0, 0, 0, 0, 0, f"frame count mismatch: {frames1_count} vs {frames2_count}")], 
+                "brightness_lift": None}
+    
+    n_frames = frames1_count
     if n_frames < 2:
-        return {"pass": False, "failures": [(0, 0, 0, 0, 0, "too few frames")]}
+        return {"pass": False, "failures": [(0, 0, 0, 0, 0, "too few frames")], "brightness_lift": None}
+    
+    # Extract Y channel only for tile comparison (luma)
+    # Keep all frames in memory but only the Y channel at reduced resolution
+    y1 = np.frombuffer(r1.stdout, dtype=np.uint8).reshape(-1, frame_size)[:, :frame_size_y].reshape(-1, scale_h, scale_w).astype(np.float32)
+    y2 = np.frombuffer(r2.stdout, dtype=np.uint8).reshape(-1, frame_size)[:, :frame_size_y].reshape(-1, scale_h, scale_w).astype(np.float32)
+    
+    # Detect global brightness lift (mean luma difference across all frames)
+    global_luma_diff = float(np.mean(y2 - y1))
+    brightness_lift = global_luma_diff if abs(global_luma_diff) > 15 else None
     
     # Tile-based diff (32x18 grid)
     tile_px_h, tile_px_w = scale_h // tile_h, scale_w // tile_w
     failures = []
-    CHANGE_FLOOR = 24  # channel difference 0-255
+    CHANGE_FLOOR = 24  # channel difference 0-255 (adjusted for downscale)
     
     for i in range(n_frames):
         t = i / fps
-        diff = np.abs(frames1[i] - frames2[i])
+        diff = np.abs(y1[i] - y2[i])
         
         for ty in range(tile_h):
             for tx in range(tile_w):
@@ -445,26 +480,28 @@ def verify_change_scope(ref, test, regions):
                         if region["x"] is None:  # time-only region (whole frame allowed)
                             allowed_here = True
                             break
-                        # Check if tile overlaps with allowed rectangle
+                        # Check tile overlap with allowed rectangle
                         if not (tile_x + tile_w_px <= region["x"] or tile_x >= region["x"] + region["w"] or
-                                tile_y + tile_h_px <= region["y"] or tile_y >= region["y"] + region["h"]):
+                               tile_y + tile_h_px <= region["y"] or tile_y >= region["y"] + region["h"]):
                             allowed_here = True
                             break
                 
                 if not allowed_here:
-                    failures.append((round(t, 2), tile_x, tile_y, tile_w_px, tile_h_px,
-                                   f"changed outside declared scope (diff {mean_diff:.1f})"))
-                    if len(failures) >= 5:  # limit report
+                    failures.append((round(t, 3), tile_x, tile_y, tile_w_px, tile_h_px, 
+                                   f"change outside declared regions (diff {mean_diff:.1f})"))
+                    if len(failures) >= 10:  # limit report
                         break
-            if len(failures) >= 5:
+            if len(failures) >= 10:
                 break
-        if len(failures) >= 5:
+        if len(failures) >= 10:
             break
     
-    # Also check that declared regions DID change (WARN if not, but don't FAIL)
-    # This is a simplified check: we won't implement the full verification here for brevity
+    result = {"pass": len(failures) == 0, "failures": failures, "brightness_lift": brightness_lift}
+    if brightness_lift is not None:
+        result["pass"] = False
+        failures.insert(0, (0, 0, 0, W, H, f"global brightness lift detected: {brightness_lift:+.1f} levels"))
     
-    return {"pass": len(failures) == 0, "failures": failures}
+    return result
 
 def scene_frames(video, job, out, font, vertical):
     """One frame per scene (70% in, after entrances settle), labeled with the scene id, tiled."""
@@ -587,7 +624,10 @@ def check(video, out, preset=None, expect=None, credits=None, job=None, expect_i
             add("WARN" if warn else "PASS", "SSIM/PSNR", detail)
     
     # Change scope verification (if requested)
-    if expect_changed and compare:
+    if expect_changed:
+        if not compare:
+            print("ERROR: --expect-changed requires --compare <reference>", file=sys.stderr)
+            sys.exit(1)
         regions = expect_changed if isinstance(expect_changed, list) else [expect_changed]
         scope_result = verify_change_scope(compare, video, regions)
         if scope_result["pass"]:

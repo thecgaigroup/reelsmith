@@ -10,7 +10,7 @@ from pathlib import Path
 def is_available():
     """Check if scenedetect (PySceneDetect) is available."""
     try:
-        r = subprocess.run(["scenedetect", "--version"], capture_output=True, timeout=2)
+        r = subprocess.run(["scenedetect", "version"], capture_output=True, timeout=2)
         return r.returncode == 0
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return False
@@ -45,7 +45,8 @@ def detect_cuts_pyscenedetect(video_path, threshold=27.0):
                 return {"success": False, "cuts": [], "error": "no scene CSV generated", 
                        "method": "pyscenedetect"}
             
-            # Parse CSV (Start Frame column)
+            # Parse CSV (Start Frame column is 1-based)
+            # Don't count the opening frame (1) as a cut
             cuts = []
             for line in csv_files[0].read_text().split("\n")[1:]:  # skip header
                 if not line.strip():
@@ -53,7 +54,9 @@ def detect_cuts_pyscenedetect(video_path, threshold=27.0):
                 parts = line.split(",")
                 if len(parts) >= 2:
                     try:
-                        cuts.append(int(parts[1]))  # Start Frame is column 1
+                        frame_num = int(parts[1])  # Start Frame is column 1 (1-based)
+                        if frame_num > 1:  # Opening frame is not a cut
+                            cuts.append(frame_num)
                     except ValueError:
                         pass
             
@@ -66,6 +69,7 @@ def detect_cuts_pyscenedetect(video_path, threshold=27.0):
 
 def detect_cuts_ffmpeg(video_path, threshold=0.4):
     """Fallback: detect cuts using ffmpeg scene filter.
+    Reports real source frame numbers, not select indices.
     
     Returns:
         {"success": bool, "cuts": [frame_numbers], "error": str|None, "method": "ffmpeg"}
@@ -80,20 +84,38 @@ def detect_cuts_ffmpeg(video_path, threshold=0.4):
         fps_data = json.loads(r_probe.stdout)
         fps_str = fps_data["streams"][0]["r_frame_rate"]
         num, den = fps_str.split("/")
-        fps = int(num) / int(den)
+        fps = float(num) / float(den)
         
-        # Run ffmpeg scene detection
+        # Run ffmpeg scene detection with metadata
+        # Use scene filter to tag frames, then print metadata with showinfo
         r = subprocess.run([
             "ffmpeg", "-hide_banner", "-nostats", "-i", str(video_path),
-            "-vf", f"select='gt(scene\\,{threshold})',showinfo", "-f", "null", "-"
+            "-vf", f"select='gt(scene\\,{threshold})',metadata=print:file=-", "-f", "null", "-"
         ], capture_output=True, text=True, timeout=120)
         
-        # Parse frame numbers from showinfo output
+        # Parse pts_time from metadata output to get real frame numbers
         cuts = []
-        for match in re.finditer(r"n:\s*(\d+)", r.stderr):
-            cuts.append(int(match.group(1)))
+        for match in re.finditer(r"pts_time:([\d.]+)", r.stderr):
+            pts_time = float(match.group(1))
+            frame_num = int(round(pts_time * fps))
+            if frame_num > 0:  # Don't count frame 0 as a cut
+                cuts.append(frame_num)
         
-        return {"success": True, "cuts": cuts, "error": None, "method": "ffmpeg"}
+        # Fallback: if metadata approach doesn't work, use alternative parsing
+        if not cuts:
+            # Try parsing with showinfo which gives pts_time
+            r2 = subprocess.run([
+                "ffmpeg", "-hide_banner", "-nostats", "-i", str(video_path),
+                "-vf", f"select='gt(scene\\,{threshold})',showinfo", "-f", "null", "-"
+            ], capture_output=True, text=True, timeout=120)
+            
+            for match in re.finditer(r"pts_time:([\d.]+)", r2.stderr):
+                pts_time = float(match.group(1))
+                frame_num = int(round(pts_time * fps))
+                if frame_num > 0:  # Don't count frame 0 as a cut
+                    cuts.append(frame_num)
+        
+        return {"success": True, "cuts": sorted(set(cuts)), "error": None, "method": "ffmpeg"}
     
     except Exception as e:
         return {"success": False, "cuts": [], "error": str(e)[:200], "method": "ffmpeg"}

@@ -15,42 +15,51 @@ def is_available():
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return False
 
-def is_music_or_vocal(audio_path, metadata=None):
-    """Detect if input is song vocal or music stem. Returns True if it should be refused.
+def is_dialogue_allowed(audio_path, metadata=None):
+    """Fail-closed: only explicitly dialogue-classified input is allowed.
     
     Args:
         audio_path: path to audio file
-        metadata: optional dict with keys like 'is_vocal', 'is_music', 'stem_type'
+        metadata: optional dict with keys like 'is_dialogue', 'stem_type', 'audio_type'
     
     Returns:
-        (is_music_or_vocal: bool, reason: str)
+        (allowed: bool, reason: str) - allowed is True only if explicitly dialogue
     """
-    # Check metadata tags first
+    # Check metadata tags - must be explicitly marked as dialogue
     if metadata:
+        if metadata.get("is_dialogue") is True or metadata.get("audio_type", "").lower() == "dialogue":
+            # Explicitly allowed
+            name_lower = Path(audio_path).stem.lower()
+            # Double-check filename doesn't have music/vocal indicators
+            if any(pattern in name_lower for pattern in ["vox", "vocal", "lead", "chorus", "backing", "bgm", "stem", "music", "song", "inst"]):
+                return False, f"metadata says dialogue but filename has music/vocal indicator"
+            return True, None
+        
+        # Check for explicit music/vocal tags
         if metadata.get("is_vocal") or metadata.get("is_music"):
-            return True, "metadata indicates vocal or music"
-        if metadata.get("stem_type") in ("vocals", "music", "instrumental", "accompaniment"):
-            return True, f"stem_type is {metadata['stem_type']}"
+            return False, "metadata indicates vocal or music"
+        stem_type = metadata.get("stem_type", "").lower()
+        if stem_type in ("vocals", "music", "instrumental", "accompaniment"):
+            return False, f"stem_type is {stem_type}"
     
-    # Check filename patterns that indicate music/vocal stems
-    name = Path(audio_path).stem.lower()
-    music_indicators = ["vocal", "vocals", "stem", "music", "instrumental", "accompaniment", 
-                       "melody", "harmony", "singing", "song"]
+    # Check filename patterns - refuse anything with music/vocal indicators
+    name_lower = Path(audio_path).stem.lower()
+    refused_patterns = ["vox", "vocal", "lead", "chorus", "backing", "bgm", "stem", "music", "song", "inst"]
     
-    for indicator in music_indicators:
-        if indicator in name:
-            return True, f"filename contains '{indicator}'"
+    for pattern in refused_patterns:
+        if pattern in name_lower:
+            return False, f"filename contains '{pattern}' (not explicitly dialogue)"
     
-    return False, None
+    # Fail closed: unclassified = refused
+    return False, "not explicitly classified as dialogue"
 
-def denoise_dialogue(input_path, output_path, metadata=None, force=False):
-    """Run DeepFilterNet on dialogue audio only. Refuses music/vocal inputs unless force=True.
+def denoise_dialogue(input_path, output_path, metadata=None):
+    """Run DeepFilterNet on dialogue audio only. Fail-closed: only explicitly dialogue-classified input allowed.
     
     Args:
         input_path: input audio file (must be 48 kHz wav for deep-filter)
         output_path: output audio file
-        metadata: optional metadata dict for music/vocal detection
-        force: bypass music/vocal refusal (use with extreme caution)
+        metadata: optional metadata dict for dialogue classification
     
     Returns:
         {"success": bool, "error": str|None, "skipped": str|None, "refused": str|None}
@@ -58,33 +67,37 @@ def denoise_dialogue(input_path, output_path, metadata=None, force=False):
     if not is_available():
         return {"success": False, "error": None, "skipped": "deep-filter binary not available", "refused": None}
     
-    # Enforce: never on music or vocals (unless explicit force override for testing)
-    if not force:
-        is_mus, reason = is_music_or_vocal(input_path, metadata)
-        if is_mus:
-            return {"success": False, "error": None, "skipped": None, 
-                   "refused": f"refused to denoise music/vocal: {reason} (DeepFilterNet is dialogue-only)"}
+    # Enforce: fail closed - only explicitly dialogue-classified input is allowed
+    allowed, reason = is_dialogue_allowed(input_path, metadata)
+    if not allowed:
+        return {"success": False, "error": None, "skipped": None, 
+               "refused": f"refused: {reason} (DeepFilterNet requires explicit dialogue classification)"}
     
     # Check input format (deep-filter requires 48 kHz wav)
     input_path = Path(input_path)
     output_path = Path(output_path)
     
     # Run deep-filter with --compensate-delay
+    # Stage output in private temp dir to avoid overwriting source when input is in output folder
+    import tempfile
     try:
-        r = subprocess.run(["deep-filter", "--compensate-delay", str(input_path), "-o", str(output_path.parent)],
-                          capture_output=True, text=True, timeout=300)
-        if r.returncode != 0:
-            return {"success": False, "error": f"deep-filter failed: {r.stderr[:200]}", 
-                   "skipped": None, "refused": None}
-        
-        # deep-filter writes to output_dir with original name; may need to rename
-        expected_out = output_path.parent / input_path.name
-        if expected_out.exists() and expected_out != output_path:
-            expected_out.rename(output_path)
-        
-        if not output_path.exists():
-            return {"success": False, "error": "deep-filter completed but output file not found",
-                   "skipped": None, "refused": None}
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir_path = Path(tmpdir)
+            
+            # deep-filter writes to output_dir with input basename
+            r = subprocess.run(["deep-filter", "--compensate-delay", str(input_path), "-o", str(tmpdir_path)],
+                              capture_output=True, text=True, timeout=300)
+            if r.returncode != 0:
+                return {"success": False, "error": f"deep-filter failed: {r.stderr[:200]}", 
+                       "skipped": None, "refused": None}
+            
+            # Move staged output to final destination
+            staged = tmpdir_path / input_path.name
+            if not staged.exists():
+                return {"success": False, "error": "deep-filter completed but output file not found in temp dir",
+                       "skipped": None, "refused": None}
+            
+            shutil.move(str(staged), str(output_path))
         
         return {"success": True, "error": None, "skipped": None, "refused": None}
     
@@ -96,11 +109,10 @@ def denoise_dialogue(input_path, output_path, metadata=None, force=False):
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("Usage: deepfilternet_helper.py INPUT.wav OUTPUT.wav [--force]")
+        print("Usage: deepfilternet_helper.py INPUT.wav OUTPUT.wav")
         sys.exit(1)
     
-    force = "--force" in sys.argv
-    result = denoise_dialogue(sys.argv[1], sys.argv[2], force=force)
+    result = denoise_dialogue(sys.argv[1], sys.argv[2])
     
     if result["success"]:
         print(f"DeepFilterNet: {sys.argv[1]} -> {sys.argv[2]}")
