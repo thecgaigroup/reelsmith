@@ -86,10 +86,18 @@ def detect_dropouts(v, floor_db=-80, min_dur=0.02, max_dur=1.0, edge_s=0.05):
     return dropouts
 
 def file_identity(path):
-    """Return 'size:mtime_ns' identity string. Adapted from ffmpeg-skill emit.py."""
+    """Return 'size:mtime_ns:sha256' identity string for a file (empty if missing/inaccessible).
+    Uses content digest (sha256) with size:mtime_ns as quick pre-check.
+    Used to lock `verified` to a specific output file. Adapted from ffmpeg-skill emit.py technique."""
+    import hashlib
     try:
         st = Path(path).stat()
-        return f"{st.st_size}:{st.st_mtime_ns}"
+        # Compute sha256 of file content
+        sha = hashlib.sha256()
+        with open(path, 'rb') as f:
+            while chunk := f.read(8192):
+                sha.update(chunk)
+        return f"{st.st_size}:{st.st_mtime_ns}:{sha.hexdigest()}"
     except (OSError, FileNotFoundError):
         return ""
 
@@ -989,7 +997,37 @@ def main():
         print_audit(rep)
         sys.exit(1 if rep["level"] == "FAIL" else 0)
     if a.cmd == "check":
-        expect_changed_arg = a.expect_changed.split(",") if hasattr(a, "expect_changed") and a.expect_changed else None
+        # Parse --expect-changed carefully: split on commas/semicolons but not inside @ rects
+        expect_changed_arg = None
+        if hasattr(a, "expect_changed") and a.expect_changed:
+            if a.expect_changed == "none":
+                expect_changed_arg = ["none"]
+            else:
+                # Split on comma or semicolon, but preserve rect syntax like 1-2@10,20,30,40
+                regions = []
+                current = ""
+                in_rect = False
+                for char in a.expect_changed:
+                    if char == "@":
+                        in_rect = True
+                        current += char
+                    elif char in (",", ";") and not in_rect:
+                        if current.strip():
+                            regions.append(current.strip())
+                        current = ""
+                    else:
+                        current += char
+                        # Exit rect mode after we've seen 4 commas inside rect (x,y,w,h)
+                        if in_rect and char in (",", ";"):
+                            # Count commas in current since @
+                            at_pos = current.rfind("@")
+                            if at_pos >= 0:
+                                rect_part = current[at_pos+1:]
+                                if rect_part.count(",") >= 3:  # x,y,w,h = 3 commas
+                                    in_rect = False
+                if current.strip():
+                    regions.append(current.strip())
+                expect_changed_arg = regions if regions else None
         res = check(a.video, a.out, a.preset, a.expect_seconds, a.credits, a.job,
                    getattr(a, "expect_identity", None), getattr(a, "compare", None), expect_changed_arg)
         sys.exit(0 if res["auto_pass"] else 1)

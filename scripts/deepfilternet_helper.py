@@ -4,7 +4,7 @@
 ENFORCED RULE: Never run on song vocals or music stems. This is speech enhancement only.
 Skips cleanly when deep-filter binary is not available.
 """
-import subprocess, sys
+import subprocess, sys, shutil
 from pathlib import Path
 
 def is_available():
@@ -108,14 +108,25 @@ def denoise_dialogue(input_path, output_path, metadata=None):
                "skipped": None, "refused": None}
 
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("Usage: deepfilternet_helper.py INPUT.wav OUTPUT.wav")
-        sys.exit(1)
+    import argparse
+    p = argparse.ArgumentParser(description="DeepFilterNet dialogue-only denoise")
+    p.add_argument("input", help="Input audio file (48kHz wav)")
+    p.add_argument("output", help="Output audio file")
+    p.add_argument("--audio-type", help="Audio type (e.g., 'dialogue') for classification")
+    p.add_argument("--is-dialogue", action="store_true", help="Explicitly mark as dialogue")
+    args = p.parse_args()
     
-    result = denoise_dialogue(sys.argv[1], sys.argv[2])
+    # Build metadata from CLI arguments
+    metadata = {}
+    if args.is_dialogue:
+        metadata["is_dialogue"] = True
+    if args.audio_type:
+        metadata["audio_type"] = args.audio_type
+    
+    result = denoise_dialogue(args.input, args.output, metadata if metadata else None)
     
     if result["success"]:
-        print(f"DeepFilterNet: {sys.argv[1]} -> {sys.argv[2]}")
+        print(f"DeepFilterNet: {args.input} -> {args.output}")
         sys.exit(0)
     elif result["refused"]:
         print(f"REFUSED: {result['refused']}", file=sys.stderr)

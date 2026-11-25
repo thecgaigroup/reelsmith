@@ -61,7 +61,7 @@ def cross_check_lyrics(audio_path, official_lyrics, language="en", device="cpu",
         detected_words_timed = []
         for segment in result.get("segments", []):
             for word_obj in segment.get("words", []):
-                word_text = word_obj.get("word", "").strip().lower()
+                word_text = word_obj.get("word", "").strip()
                 if word_text:
                     detected_words_timed.append({
                         "word": word_text,
@@ -69,9 +69,18 @@ def cross_check_lyrics(audio_path, official_lyrics, language="en", device="cpu",
                         "end": word_obj.get("end", 0.0)
                     })
         
-        # Normalize official lyrics (order preserved)
-        official_normalized = [w.strip().lower() for w in official_lyrics if w.strip()]
-        detected_normalized = [w["word"] for w in detected_words_timed]
+        # Normalize: lowercase and strip punctuation
+        import string
+        def normalize_word(w):
+            return w.strip().lower().strip(string.punctuation)
+        
+        official_normalized = [normalize_word(w) for w in official_lyrics if normalize_word(w)]
+        detected_normalized = [normalize_word(w["word"]) for w in detected_words_timed if normalize_word(w["word"])]
+        # Keep original timed words for timing checks
+        detected_words_normalized_timed = [
+            {"word": normalize_word(w["word"]), "start": w["start"], "end": w["end"]} 
+            for w in detected_words_timed if normalize_word(w["word"])
+        ]
         
         # Compare order and repeated words (not just sets)
         # Use simple sequence alignment to match words in order
@@ -83,12 +92,12 @@ def cross_check_lyrics(audio_path, official_lyrics, language="en", device="cpu",
         
         # Find mismatches in order
         order_mismatches = []
-        timing_issues = []
+        timing_mismatches = []
+        TIMING_TOLERANCE = 0.3  # 300ms tolerance for timing
         
         # Simple linear pass to check order consistency
         official_idx = 0
         detected_idx = 0
-        TIMING_TOLERANCE = 0.3  # 300ms tolerance for timing
         
         while official_idx < len(official_normalized) and detected_idx < len(detected_normalized):
             if official_normalized[official_idx] == detected_normalized[detected_idx]:
@@ -100,6 +109,18 @@ def cross_check_lyrics(audio_path, official_lyrics, language="en", device="cpu",
                 order_mismatches.append(f"pos {official_idx}: expected '{official_normalized[official_idx]}', got '{detected_normalized[detected_idx]}'")
                 detected_idx += 1
                 if len(order_mismatches) >= 5:
+                    break
+        
+        # Check timing: flag gaps between consecutive words > 300ms
+        for i in range(len(detected_words_normalized_timed) - 1):
+            curr_end = detected_words_normalized_timed[i]["end"]
+            next_start = detected_words_normalized_timed[i+1]["start"]
+            gap = next_start - curr_end
+            if gap > TIMING_TOLERANCE:
+                timing_mismatches.append(
+                    f"gap {gap:.3f}s between '{detected_words_normalized_timed[i]['word']}' and '{detected_words_normalized_timed[i+1]['word']}' (>300ms)"
+                )
+                if len(timing_mismatches) >= 5:
                     break
         
         # Count repeated words
@@ -119,6 +140,7 @@ def cross_check_lyrics(audio_path, official_lyrics, language="en", device="cpu",
             f"  Detected tokens: {len(detected_normalized)}",
             f"  Matched in order: {matched_count}",
             f"  Order mismatches: {len(order_mismatches)} {order_mismatches[:3]}",
+            f"  Timing mismatches: {len(timing_mismatches)} {timing_mismatches[:3]}",
             f"  Repeat count issues: {len(repeat_issues)} {repeat_issues[:3]}",
         ]
         
@@ -127,6 +149,7 @@ def cross_check_lyrics(audio_path, official_lyrics, language="en", device="cpu",
             "detected": detected_normalized,
             "matched_count": matched_count,
             "order_mismatches": order_mismatches,
+            "timing_mismatches": timing_mismatches,
             "repeat_issues": repeat_issues,
             "detected_timed": detected_words_timed
         }

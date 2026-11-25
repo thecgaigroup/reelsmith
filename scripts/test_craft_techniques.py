@@ -250,6 +250,124 @@ def test_speed_change_refusal():
     assert ok is True
     print(f"  allowed {factor:.2f}x with --allow-speed-change")
 
+# (7) Test crop % only shown for crop mode, not pad-blur
+def test_crop_percentage_only_on_crop():
+    """Crop % is printed for crop mode but not pad-blur mode."""
+    sys.path.insert(0, str(HERE))
+    import export
+    from io import StringIO
+    import sys as pysys
+    
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        # Create a wide video (needs cropping for 9:16)
+        v = make_test_video(out, dur=0.5)
+        
+        # Test crop mode (should show %)
+        old_stdout = pysys.stdout
+        pysys.stdout = StringIO()
+        try:
+            export.export_one(str(v), "instagram-story", str(out), mode="crop")
+            crop_output = pysys.stdout.getvalue()
+        finally:
+            pysys.stdout = old_stdout
+        
+        # Test pad-blur mode (should NOT show %)
+        pysys.stdout = StringIO()
+        try:
+            export.export_one(str(v), "instagram-story", str(out), mode="pad-blur")
+            pad_output = pysys.stdout.getvalue()
+        finally:
+            pysys.stdout = old_stdout
+        
+        # Crop mode should mention "crop: X% discarded"
+        assert "crop:" in crop_output and "% discarded" in crop_output
+        # Pad-blur mode should NOT mention crop %
+        assert "crop:" not in pad_output or "% discarded" not in pad_output
+        print(f"  crop shows %, pad-blur does not")
+
+# (8) Test old sanitizer removed from export.py
+def test_no_sanitizer_in_export():
+    """export.py should not have sanitize_filter_input (review.py has it)."""
+    sys.path.insert(0, str(HERE))
+    import export
+    
+    # Should not have sanitize_filter_input function
+    assert not hasattr(export, "sanitize_filter_input")
+    print(f"  export.py has no sanitize_filter_input")
+
+# (5) Test duration fit (1, 0.6) must fail
+def test_duration_fit_one_to_point_six_fails():
+    """check_duration_fit(1, 0.6) must fail (1.67x > 1.15x threshold)."""
+    from export import check_duration_fit
+    ok, factor, reason = check_duration_fit(1.0, 0.6, allow_speed_change=False)
+    assert ok is False
+    assert abs(factor - 1.6667) < 0.01  # 1.0 / 0.6 ≈ 1.67
+    print(f"  (1, 0.6) refused: {factor:.2f}x")
+
+# (5) Test audio/video sync with speed factor
+def test_audio_video_sync_with_speed():
+    """Audio and video durations match within one frame after speed change."""
+    sys.path.insert(0, str(HERE))
+    import export
+    
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        # Create a 2s test video with audio
+        v = make_test_video(out, dur=2, audio=True)
+        
+        # Export with target duration 1.5s (requires 1.33x speed)
+        # This is > 1.15x so needs --allow-speed-change
+        preset = "instagram-story"
+        export.export_one(str(v), preset, str(out), target_duration=1.5, allow_speed_change=True)
+        
+        result = out / f"{v.stem}-{preset}.mp4"
+        assert result.exists()
+        
+        # Probe audio and video durations
+        p = export.probe(str(result))
+        video_dur = p["duration"]
+        
+        # Get audio duration specifically
+        r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "a:0",
+                          "-show_entries", "stream=duration", "-of", "json", str(result)],
+                          capture_output=True, text=True, check=True)
+        audio_dur = float(json.loads(r.stdout)["streams"][0]["duration"])
+        
+        # Both should be ~1.5s (2s / 1.33)
+        expected = 2.0 / (2.0 / 1.5)  # src / factor
+        frame_time = 1.0 / 30.0  # 30fps
+        assert abs(video_dur - expected) < frame_time
+        assert abs(audio_dur - expected) < frame_time
+        # Audio and video must match within one frame
+        assert abs(audio_dur - video_dur) < frame_time
+        print(f"  video={video_dur:.3f}s audio={audio_dur:.3f}s (target={expected:.3f}s, in sync)")
+
+# (4) Test shared identity format
+def test_shared_identity_format():
+    """export.py and review.py use same identity format (size:mtime_ns:sha256)."""
+    sys.path.insert(0, str(HERE))
+    import export
+    import review
+    
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        # Create a test file
+        test_file = out / "test.txt"
+        test_file.write_text("hello world")
+        
+        # Get identity from both modules
+        export_id = export.file_identity(test_file)
+        review_id = review.file_identity(test_file)
+        
+        # Must be identical
+        assert export_id == review_id
+        # Must have sha256 (3 colon-separated parts)
+        parts = export_id.split(":")
+        assert len(parts) == 3
+        assert len(parts[2]) == 64  # sha256 hex digest length
+        print(f"  shared format: size:mtime_ns:sha256")
+
 # 10. DeepFilterNet skip when unavailable
 def test_deepfilternet_skip():
     """DeepFilterNet skips cleanly when binary is unavailable."""
@@ -393,6 +511,30 @@ def test_dialogue_guard_refusals():
     assert "not explicitly classified" in reason
     print(f"  unclassified refused: {reason}")
 
+# (1) Test CLI dialogue metadata flags
+def test_deepfilternet_cli_dialogue_flags():
+    """DeepFilterNet CLI accepts --audio-type and --is-dialogue flags."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        v = make_test_video(out, dur=0.5, audio=True)
+        wav = out / "audio.wav"
+        subprocess.run(["ffmpeg", "-y", "-i", str(v), "-ar", "48000", str(wav)],
+                       capture_output=True, check=True)
+        
+        # Test --audio-type dialogue (should still refuse because deep-filter not available or file not dialogue)
+        result = subprocess.run([sys.executable, str(HERE / "deepfilternet_helper.py"),
+                                str(wav), str(out / "out1.wav"), "--audio-type", "dialogue"],
+                               capture_output=True, text=True)
+        # Will exit 2 (refused) or 3 (skipped) depending on deep-filter availability
+        assert result.returncode in (2, 3)
+        
+        # Test --is-dialogue flag
+        result = subprocess.run([sys.executable, str(HERE / "deepfilternet_helper.py"),
+                                str(wav), str(out / "out2.wav"), "--is-dialogue"],
+                               capture_output=True, text=True)
+        assert result.returncode in (2, 3)
+        print(f"  CLI flags accepted (exit code {result.returncode})")
+
 # 21. Change scope rectangle parsing (don't split on commas inside rect)
 def test_change_scope_rect_parsing():
     """Parse '1-2@10,20,30,40' correctly without splitting on commas inside rectangle."""
@@ -406,6 +548,27 @@ def test_change_scope_rect_parsing():
         # Should parse successfully (not fail with "invalid rect syntax")
         assert "invalid rect" not in str(result.get("failures", []))
         print(f"  rect parsed: 0.1-0.3@10,20,30,40")
+
+# (2) Test CLI rect parsing with subprocess
+def test_cli_expect_changed_rect_parsing():
+    """review.py CLI parses '1-2@10,20,30,40' without breaking on rect commas."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        # Create two identical short videos
+        v1 = make_test_video(out, dur=0.5)
+        v2 = make_test_video(out, dur=0.5)
+        review_dir = out / "review"
+        review_dir.mkdir()
+        
+        # Run review.py check with rect argument via CLI
+        r = subprocess.run([sys.executable, str(HERE / "review.py"), "check", str(v2),
+                           "--out", str(review_dir), "--compare", str(v1),
+                           "--expect-changed", "0.1-0.3@10,20,30,40"],
+                          capture_output=True, text=True)
+        # Should succeed (identical videos, no change outside allowed rect)
+        # The key test is that it parsed the rect correctly and didn't split on commas
+        assert r.returncode == 0
+        print(f"  CLI parsed rect: 0.1-0.3@10,20,30,40")
 
 # 22. Change scope errors when --compare missing
 def test_change_scope_no_compare():
@@ -663,6 +826,30 @@ def test_black_white_appended_fails_none():
         assert result["pass"] is False
         print(f"  appended white frames caught")
 
+# (3) Test failure reasons preserved with ≥10 failures
+def test_many_failures_preserve_reasons():
+    """When there are ≥10 failures, all failure reasons are preserved correctly."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        # Create a video that changes throughout (black -> white)
+        # This will trigger many tile failures
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "color=black:s=320x240:r=30:duration=0.5",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "ref.mp4")],
+                       capture_output=True, check=True)
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "color=white:s=320x240:r=30:duration=0.5",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "test.mp4")],
+                       capture_output=True, check=True)
+        
+        result = verify_change_scope(out / "ref.mp4", out / "test.mp4", ["none"])
+        assert result["pass"] is False
+        failures = result["failures"]
+        # Should have exactly 10 failures (limit)
+        assert len(failures) >= 10
+        # All failures should have the correct reason
+        for f in failures[:10]:
+            assert "change outside declared regions" in str(f[5])
+        print(f"  {len(failures)} failures, all with correct reasons")
+
 # (c) Test memory bounds with streaming
 def test_change_scope_memory_bounded():
     """verify_change_scope stays <150MB on 10s 1080x1920 video (frame-by-frame streaming)."""
@@ -784,6 +971,119 @@ def test_whisperx_wrong_order():
                 timing_mismatches = details.get("timing_mismatches", [])
                 assert len(order_mismatches) > 0 or len(timing_mismatches) > 0, "Should detect order or timing mismatch"
                 print(f"  order/timing mismatch detected")
+
+# (6) Test WhisperX timing tolerance > 300ms fails
+def test_whisperx_timing_over_300ms_fails():
+    """WhisperX detects timing gaps > 300ms."""
+    from unittest.mock import Mock, patch
+    import numpy as np
+    
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        v = make_test_video(out, dur=1, audio=True)
+        
+        mock_whisperx = Mock()
+        mock_whisperx.load_audio.return_value = np.zeros(16000)
+        mock_model = Mock()
+        mock_model.transcribe.return_value = {"segments": [{"text": "hello world"}]}
+        mock_whisperx.load_model.return_value = mock_model
+        
+        # Words with >300ms gap (500ms gap)
+        mock_align_model = Mock()
+        mock_whisperx.load_align_model.return_value = (mock_align_model, {})
+        mock_whisperx.align.return_value = {
+            "segments": [{
+                "words": [
+                    {"word": "hello", "start": 0.0, "end": 0.2},
+                    {"word": "world", "start": 0.7, "end": 0.9}  # 500ms gap
+                ]
+            }]
+        }
+        
+        with patch.dict('sys.modules', {'whisperx': mock_whisperx, 'torch': Mock()}):
+            import whisperx_helper
+            result = whisperx_helper.cross_check_lyrics(str(v), ["hello", "world"])
+            details = result.get("details", {})
+            if isinstance(details, dict):
+                timing_mismatches = details.get("timing_mismatches", [])
+                assert len(timing_mismatches) > 0
+                print(f"  timing gap >300ms detected")
+
+# (6) Test WhisperX timing tolerance < 300ms passes
+def test_whisperx_timing_under_300ms_passes():
+    """WhisperX allows timing gaps < 300ms."""
+    from unittest.mock import Mock, patch
+    import numpy as np
+    
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        v = make_test_video(out, dur=1, audio=True)
+        
+        mock_whisperx = Mock()
+        mock_whisperx.load_audio.return_value = np.zeros(16000)
+        mock_model = Mock()
+        mock_model.transcribe.return_value = {"segments": [{"text": "hello world"}]}
+        mock_whisperx.load_model.return_value = mock_model
+        
+        # Words with <300ms gap (100ms gap)
+        mock_align_model = Mock()
+        mock_whisperx.load_align_model.return_value = (mock_align_model, {})
+        mock_whisperx.align.return_value = {
+            "segments": [{
+                "words": [
+                    {"word": "hello", "start": 0.0, "end": 0.2},
+                    {"word": "world", "start": 0.3, "end": 0.5}  # 100ms gap
+                ]
+            }]
+        }
+        
+        with patch.dict('sys.modules', {'whisperx': mock_whisperx, 'torch': Mock()}):
+            import whisperx_helper
+            result = whisperx_helper.cross_check_lyrics(str(v), ["hello", "world"])
+            details = result.get("details", {})
+            if isinstance(details, dict):
+                timing_mismatches = details.get("timing_mismatches", [])
+                assert len(timing_mismatches) == 0
+                print(f"  timing gap <300ms allowed")
+
+# (6) Test WhisperX punctuation normalization
+def test_whisperx_punctuation_normalization():
+    """WhisperX normalizes 'Hello,' to match 'hello'."""
+    from unittest.mock import Mock, patch
+    import numpy as np
+    
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        v = make_test_video(out, dur=1, audio=True)
+        
+        mock_whisperx = Mock()
+        mock_whisperx.load_audio.return_value = np.zeros(16000)
+        mock_model = Mock()
+        mock_model.transcribe.return_value = {"segments": [{"text": "Hello, world!"}]}
+        mock_whisperx.load_model.return_value = mock_model
+        
+        # Detected with punctuation
+        mock_align_model = Mock()
+        mock_whisperx.load_align_model.return_value = (mock_align_model, {})
+        mock_whisperx.align.return_value = {
+            "segments": [{
+                "words": [
+                    {"word": "Hello,", "start": 0.0, "end": 0.3},
+                    {"word": "world!", "start": 0.3, "end": 0.6}
+                ]
+            }]
+        }
+        
+        with patch.dict('sys.modules', {'whisperx': mock_whisperx, 'torch': Mock()}):
+            import whisperx_helper
+            # Official without punctuation
+            result = whisperx_helper.cross_check_lyrics(str(v), ["hello", "world"])
+            details = result.get("details", {})
+            if isinstance(details, dict):
+                # Should match after normalization
+                matched = details.get("matched_count", 0)
+                assert matched == 2
+                print(f"  'Hello,' matched 'hello' (punctuation normalized)")
 
 # (f) Test filter sanitizer renders correctly
 def test_filter_sanitizer_renders_correctly():

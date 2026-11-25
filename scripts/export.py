@@ -52,16 +52,6 @@ def overlay_png(preset, out, w=None, h=None):
     im.save(out)
     return out
 
-def sanitize_filter_input(text):
-    """Sanitize text for use in ffmpeg filter graphs. Escapes or rejects dangerous chars.
-    Prevents filter-graph injection via user/prompt text or filenames."""
-    # Characters that can break filter graphs or cause injection
-    dangerous = set("':;[]\\")
-    if any(c in text for c in dangerous):
-        # Escape single quotes and backslashes (most common in drawtext)
-        text = text.replace("\\", "\\\\").replace("'", "\\'").replace(":", "\\:")
-    return text
-
 def safe_overlay_frame(video, preset, out, t=1.0):
     p = probe(video)
     png = Path(out).with_suffix(".overlay.png")
@@ -181,7 +171,7 @@ def file_identity(path):
 def check_duration_fit(src_duration, target_duration, allow_speed_change=False):
     """Check if duration fit requires large speed change. Refuse silent retime > 1.15x unless explicit flag.
     Returns (ok: bool, factor: float, reason: str). Adapted from ffmpeg-skill fit.py technique."""
-    if target_duration is None or abs(src_duration - target_duration) < 0.5:
+    if target_duration is None:
         return True, 1.0, None
     
     factor = src_duration / target_duration
@@ -227,8 +217,18 @@ def export_one(video, preset, outdir, mode="pad-blur", thumb_at=None, srt=None, 
         audio_input = video
         if speed_factor != 1.0:
             # Pre-process audio with atempo before master_audio
+            # atempo only supports 0.5-2.0, so chain filters for factors outside that range
             temp_audio = Path(outdir) / f".{Path(video).stem}-{preset}-speed.wav"
-            atempo_filter = f"atempo={speed_factor}" if 0.5 <= speed_factor <= 2.0 else f"atempo={min(2.0, max(0.5, speed_factor))}"
+            atempo_chain = []
+            remaining = speed_factor
+            while remaining > 2.0:
+                atempo_chain.append("atempo=2.0")
+                remaining /= 2.0
+            while remaining < 0.5:
+                atempo_chain.append("atempo=0.5")
+                remaining /= 0.5
+            atempo_chain.append(f"atempo={remaining}")
+            atempo_filter = ",".join(atempo_chain)
             sh(["ffmpeg", "-y", "-v", "error", "-i", str(video), "-af", atempo_filter, str(temp_audio)])
             audio_input = temp_audio
         master_audio(audio_input, aud, p.get("lufs", -14), p["audio_kbps"], p["audio_hz"], p.get("true_peak", -1.0), meas)
@@ -281,8 +281,8 @@ def export_one(video, preset, outdir, mode="pad-blur", thumb_at=None, srt=None, 
            "mb": round(o["bytes"] / 1e6, 2), "output_identity": identity, "verified": verified, "notes": notes,
            "crop_placement": crop_placement}
     print(f"  {preset:16} {o['w']}x{o['h']} {o['fps']:.0f}fps {o['duration']:.2f}s {rep['mb']} MB {'; '.join(notes)}")
-    # Only show crop percentage when mode is crop and significant cropping happened
-    if mode in ("crop", "pad-blur") and crop_placement["discarded_fraction"] > 0.1:
+    # Only show crop percentage when mode is crop (not pad-blur) and significant cropping happened
+    if mode == "crop" and crop_placement["discarded_fraction"] > 0.1:
         print(f"    crop: {crop_placement['discarded_fraction']*100:.1f}% discarded")
     return rep
 
