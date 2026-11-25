@@ -1,5 +1,21 @@
 # Development Log
 
+## 2026-11-25 (Finish pass review round 1)
+
+**What changed**
+- Preserved the opening cover through preset FPS conversion and retained the original A/V lead or lag through mastering and export.
+- Restricted local media input protocols, clustered caption masks around aligned glyphs, and added independent opening-frame text checks.
+- Staged the report ahead of MP4 replacement and added flag-off golden coverage for the audio-mastering and mux commands.
+
+**State**
+- The local Signal render and checker pass with 23 cues, −14.0 LUFS and −1.3 dBTP. Flag-off audio-bearing Reels export and thumbnail match the local `origin/main` results byte for byte.
+
+**Where we left off**
+- The local build report maps the six review findings to fixes and regression evidence. The worktree contains the uncommitted patch.
+
+**Open**
+- The updated patch awaits independent review. The local stream-highlights integration test requires an FFmpeg build with libass.
+
 ## 2026-11-25 (Opt-in finish pass)
 
 **What changed**
