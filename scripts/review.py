@@ -555,9 +555,10 @@ def verify_change_scope(ref, test, regions):
         p1.wait()
         p2.wait()
         
-        # Check for decode errors (but not if we already detected frame count mismatch)
+        # Check for decode errors only if we didn't read any frames successfully
+        # (closing stdout while ffmpeg is writing causes SIGPIPE, so don't check returncode if we got frames)
         has_frame_mismatch = any("frame count mismatch" in str(f) for f in failures)
-        if not has_frame_mismatch and (p1.returncode != 0 or p2.returncode != 0):
+        if frame_index == 0 and not has_frame_mismatch and (p1.returncode != 0 or p2.returncode != 0):
             return {"pass": False, "failures": [(0, 0, 0, 0, 0, "decode failed")], "brightness_lift": None}
     
     # Check minimum frame count
