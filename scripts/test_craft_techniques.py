@@ -43,16 +43,19 @@ def make_test_video(out, dur=5, audio=True, silence_gap_ms=0):
 
 # 1. Output identity verification (ffmpeg-skill technique #1)
 def test_file_identity():
-    """file_identity returns size:mtime_ns string."""
+    """file_identity returns size:mtime_ns:sha256 string."""
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp)
         v = make_test_video(out, dur=3)
         identity = file_identity(v)
-        assert ":" in identity, f"Expected size:mtime_ns format, got {identity}"
-        size, mtime_ns = identity.split(":")
+        assert ":" in identity, f"Expected size:mtime_ns:sha256 format, got {identity}"
+        parts = identity.split(":")
+        assert len(parts) == 3, f"Expected 3 parts, got {len(parts)}"
+        size, mtime_ns, sha = parts
         assert int(size) > 0, f"Expected nonzero size"
         assert int(mtime_ns) > 0, f"Expected nonzero mtime"
-        print(f"  identity: {identity}")
+        assert len(sha) == 64, f"Expected 64-char sha256, got {len(sha)}"
+        print(f"  identity: size:{size} mtime:{mtime_ns[:10]}... sha256:{sha[:16]}...")
 
 def test_identity_check_pass():
     """Identity check passes when file matches expected identity."""
@@ -206,7 +209,7 @@ def test_loudnorm_timestamp_fix():
 # 7. Filter graph sanitization
 def test_sanitize_filter_input():
     """Sanitize dangerous characters in filter graph inputs."""
-    from export import sanitize_filter_input
+    from review import sanitize_filter_input
     # Test dangerous characters are escaped
     assert "\\'" in sanitize_filter_input("it's")
     assert "\\:" in sanitize_filter_input("C:/path")
@@ -267,7 +270,7 @@ def test_crop_percentage_only_on_crop():
         old_stdout = pysys.stdout
         pysys.stdout = StringIO()
         try:
-            export.export_one(str(v), "instagram-story", str(out), mode="crop")
+            export.export_one(str(v), "ig-stories", str(out), mode="crop")
             crop_output = pysys.stdout.getvalue()
         finally:
             pysys.stdout = old_stdout
@@ -275,7 +278,7 @@ def test_crop_percentage_only_on_crop():
         # Test pad-blur mode (should NOT show %)
         pysys.stdout = StringIO()
         try:
-            export.export_one(str(v), "instagram-story", str(out), mode="pad-blur")
+            export.export_one(str(v), "ig-stories", str(out), mode="pad-blur")
             pad_output = pysys.stdout.getvalue()
         finally:
             pysys.stdout = old_stdout
@@ -318,7 +321,7 @@ def test_audio_video_sync_with_speed():
         
         # Export with target duration 1.5s (requires 1.33x speed)
         # This is > 1.15x so needs --allow-speed-change
-        preset = "instagram-story"
+        preset = "ig-stories"
         export.export_one(str(v), preset, str(out), target_duration=1.5, allow_speed_change=True)
         
         result = out / f"{v.stem}-{preset}.mp4"
@@ -831,12 +834,12 @@ def test_many_failures_preserve_reasons():
     """When there are ≥10 failures, all failure reasons are preserved correctly."""
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp)
-        # Create a video that changes throughout (black -> white)
-        # This will trigger many tile failures
-        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "color=black:s=320x240:r=30:duration=0.5",
+        # Create a larger video that changes throughout (black -> white)
+        # At 1080p this will trigger many tile failures (32x18 tiles)
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "color=black:s=1920x1080:r=30:duration=0.5",
                         "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "ref.mp4")],
                        capture_output=True, check=True)
-        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "color=white:s=320x240:r=30:duration=0.5",
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "color=white:s=1920x1080:r=30:duration=0.5",
                         "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "test.mp4")],
                        capture_output=True, check=True)
         
@@ -844,7 +847,7 @@ def test_many_failures_preserve_reasons():
         assert result["pass"] is False
         failures = result["failures"]
         # Should have exactly 10 failures (limit)
-        assert len(failures) >= 10
+        assert len(failures) >= 10, f"Expected ≥10 failures, got {len(failures)}"
         # All failures should have the correct reason
         for f in failures[:10]:
             assert "change outside declared regions" in str(f[5])
