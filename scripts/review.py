@@ -319,7 +319,7 @@ def check(video, out, preset=None, expect=None, credits=None, job=None):
         ok = L["lufs"] is not None and abs(L["lufs"] - tgt) <= 2 and (L["true_peak"] or 0) <= -0.9
         add("PASS" if ok else "WARN", "loudness", f"{L['lufs']} LUFS, TP {L['true_peak']} dBFS, LRA {L['lra']} (target {tgt} LUFS, TP <= -1)")
         sil = re.findall(r"silence_duration: ([\d.]+)", sh(["ffmpeg", "-hide_banner", "-nostats", "-i", str(video), "-af", "silencedetect=n=-50dB:d=2", "-f", "null", "-"]).stderr)
-        add("WARN" if sil else "PASS", "silence > 2s", ", ".join(f"{float(s):.1f}s" for s in sil) or "none (interior holes and end dropout both checked)")
+        add("WARN" if sil else "PASS", "silence > 2s", ", ".join(f"{float(s):.1f}s" for s in sil) or "none")
         # Check for audio dropout (audio ends before video)
         p_a = sh(["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries", "stream=duration", "-of", "json", str(video)])
         p_v = sh(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=duration", "-of", "json", str(video)])

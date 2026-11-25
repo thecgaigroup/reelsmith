@@ -47,24 +47,46 @@ def test_filter_sanitizer_scene_drawtext():
         }
         job_file.write_text(json.dumps(job))
         
-        # Create font file (just check if system font exists)
+        # Resolve a real font file (required, no skip)
         font = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
         if not Path(font).exists():
-            font = None
+            # Try fc-match
+            fc_result = subprocess.run(["fc-match", "-f", "%{file}", "sans"],
+                                      capture_output=True, text=True)
+            if fc_result.returncode == 0 and fc_result.stdout.strip():
+                font = fc_result.stdout.strip()
+            else:
+                font = None
         
-        # Run scene_frames - should not crash with dangerous chars
+        if font is None or not Path(font).exists():
+            raise AssertionError("No font file found (tried DejaVu and fc-match sans). Cannot test drawtext.")
+        
+        print(f"  using font: {font}")
+        
+        # Test that drawtext runs without error on dangerous scene ids
+        # Extract one frame WITH label
         review_dir = out / "review"
         review_dir.mkdir()
-        try:
-            review.scene_frames(video, job, review_dir, font, vertical=True)
-            # If we get here without exception, sanitization worked
-            print(f"  scene ids with : and \" rendered without error")
-        except subprocess.CalledProcessError as e:
-            # Check if it's an ffmpeg drawtext error
-            if "drawtext" in str(e.stderr):
-                raise AssertionError(f"Drawtext failed with dangerous chars: {e.stderr}")
-            # Other errors might be font-related, that's ok
-            print(f"  sanitization verified (font issue ignored)")
+        
+        # Run scene_frames with the sanitizer
+        review.scene_frames(video, job, review_dir, font, vertical=True)
+        
+        # Verify scenes.jpg was created (proves drawtext ran)
+        scenes_jpg = review_dir / "scenes.jpg"
+        assert scenes_jpg.exists(), "scenes.jpg not created - drawtext may not have run"
+        
+        # Also test individual frame with dangerous chars to verify ffmpeg exit code
+        test_out = out / "test_frame.jpg"
+        scene_text = review.sanitize_filter_input("1 Chapter: recap")
+        lab = f",drawtext=fontfile='{font}':text='{scene_text}':x=8:y=h-th-8:fontsize=20:fontcolor=white:box=1:boxcolor=black@0.7"
+        r = subprocess.run(["ffmpeg", "-y", "-v", "error", "-ss", "0.5", "-i", str(video),
+                           "-frames:v", "1", "-vf", f"scale=270:-2{lab}", str(test_out)],
+                          capture_output=True, text=True)
+        
+        assert r.returncode == 0, f"ffmpeg failed with sanitized text: {r.stderr}"
+        assert test_out.exists(), "Output frame not created"
+        
+        print(f"  scene ids with : and \" rendered without error")
 
 # Test 2: Dropout detection via real review.check (50ms gap)
 def test_dropout_detection_real_check_50ms():
