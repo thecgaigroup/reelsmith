@@ -43,13 +43,13 @@ def test_late_cue_survives_short_programme(monkeypatch, tmp_path, programme):
     assert np.sqrt(np.mean(samples ** 2)) > 0.01
 
 
-@pytest.mark.parametrize("timestamps", [[0, 1/30, 0.1], [0, 1/30, 1/30], [0, 1/30], [0, 1/30, float("nan")]])
-def test_guard_checks_timestamps_even_when_rate_metadata_agrees(timestamps):
+@pytest.mark.parametrize("ticks", [[0, 1000, 3000], [0, 1000, 1000], [0, 1000], [0, 1000, None]])
+def test_guard_checks_timestamps_even_when_rate_metadata_agrees(ticks):
     info = {"fps": Fraction(30), "avg_fps": "30/1", "frames": 3,
             "time_base": "1/30000", "audio": None}
-    fp.require_supported_input(info, [0, 0.033333, 0.066667])
+    fp.require_supported_input(info, [0, 1000, 2000])
     with pytest.raises(fp.UnsupportedInput, match="variable frame rate|missing frame"):
-        fp.require_supported_input(info, timestamps)
+        fp.require_supported_input(info, ticks)
 
 
 @pytest.mark.parametrize("rate", [24000, 30000, 60000])
@@ -59,13 +59,13 @@ def test_guard_allows_regular_ntsc_timestamp_rounding(rate):
             "time_base": "1/1000", "audio": None}
     ticks_per_frame = 1000 / fps
     ticks = [round(i * ticks_per_frame) for i in range(info["frames"])]
-    fp.require_supported_input(info, [tick / 1000 for tick in ticks])
-    fp.require_supported_input(info, [(tick + 5) / 1000 for tick in ticks])
+    fp.require_supported_input(info, ticks)
+    fp.require_supported_input(info, [tick + 5 for tick in ticks])
     # Moving one timestamp by one tick can leave both adjacent deltas within
     # floor/ceil but break the single rounding pattern across the clip.
     ticks[1] = int(ticks_per_frame) if ticks[1] > int(ticks_per_frame) else ticks[1] + 1
     with pytest.raises(fp.UnsupportedInput, match="variable frame rate"):
-        fp.require_supported_input(info, [tick / 1000 for tick in ticks])
+        fp.require_supported_input(info, ticks)
 
 
 def assert_run_refused(src, tmp_path, reason):
@@ -98,9 +98,25 @@ def test_submillisecond_vfr_is_refused_without_output(monkeypatch, tmp_path):
               "-video_track_timescale", "30000", "-bf", "0", "-c:v", "libx264", "-c:a", "aac", src)
     info = fp.probe(src)
     assert info["fps"] == 30 and Fraction(info["avg_fps"]) == 30
-    ticks = [round(t * 30000) for t in sfx_cues.frame_times(src)]
+    ticks = sfx_cues.frame_times(src)
     assert {b - a for a, b in zip(ticks, ticks[1:])} == {985, 1000, 1015}
     assert_run_refused(src, tmp_path, "variable frame rate")
+
+
+def test_single_tick_vfr_is_refused_without_output(monkeypatch, tmp_path):
+    monkeypatch.setenv("REELSMITH_FINISH_PASS", "1")
+    src = tmp_path / "single-tick-jitter.mp4"
+    fp.ffmpeg("-v", "error", "-f", "lavfi", "-i", "testsrc2=s=96x96:r=25:d=3",
+              "-f", "lavfi", "-i", "sine=f=440:r=44100:d=3",
+              "-vf", r"settb=1/4000000,setpts=N*160000+eq(mod(N\,3)\,1)",
+              "-fps_mode", "passthrough", "-enc_time_base", "1:4000000",
+              "-video_track_timescale", "4000000", "-bf", "0", "-c:v", "libx264", "-c:a", "aac", src)
+    info = fp.probe(src)
+    assert info["time_base"] == "1/4000000"
+    assert info["fps"] == 25 and Fraction(info["avg_fps"]) == 25
+    assert_run_refused(src, tmp_path, "variable frame rate")
+    ticks = sfx_cues.frame_times(src)
+    assert {b - a for a, b in zip(ticks, ticks[1:])} == {159999, 160000, 160001}
 
 
 @pytest.mark.parametrize("delayed_stream", ["video", "audio"])
@@ -139,6 +155,23 @@ def test_cfr_timebases_and_cue_only_mix(monkeypatch, tmp_path, fps, timescale):
     assert report["timing"]["source_frames"] == report["timing"]["output_frames"] == 39
     assert len(fp.probe(out)["audio_tracks"]) == 1
     assert fp.check(out, src)["pass"]
+
+
+def test_exact_cfr_at_fine_timebase_keeps_all_frames(monkeypatch, tmp_path):
+    monkeypatch.setenv("REELSMITH_FINISH_PASS", "1")
+    src, out = (tmp_path / name for name in ("src.mp4", "out.mp4"))
+    fp.ffmpeg("-v", "error", "-f", "lavfi", "-i", "color=s=96x96:r=30:d=3",
+              "-c:v", "libx264", "-video_track_timescale", "3000000", "-bf", "0", src)
+    source = fp.probe(src)
+    assert source["time_base"] == "1/3000000"
+    assert source["fps"] == 30 and Fraction(source["avg_fps"]) == 30
+    fp.run(src, out)
+    result = fp.probe(out)
+    assert result["frames"] == source["frames"] == 90
+    assert [track["codec_name"] for track in result["audio_tracks"]] == ["aac"]
+    assert fp.check(out, src)["pass"]
+    ticks = sfx_cues.frame_times(src)
+    assert {b - a for a, b in zip(ticks, ticks[1:])} == {100000}
 
 
 def test_33_frame_ntsc_cue_only_mix_allows_aac_container_padding(monkeypatch, tmp_path):

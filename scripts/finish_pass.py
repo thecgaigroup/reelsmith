@@ -127,22 +127,18 @@ def stream_start(stream):
     return None if start == "N/A" else float(start)
 
 
-def require_supported_input(info, timestamps):
+def require_supported_input(info, ticks):
     fps = info["fps"]
     if fps <= 0 or info["avg_fps"] == "0/0":
         raise UnsupportedInput("unknown frame rate")
     if fps != Fraction(info["avg_fps"]):
         raise UnsupportedInput("variable frame rate")
-    if (not timestamps or len(timestamps) != info["frames"] or
-            not all(math.isfinite(t) for t in timestamps)):
+    if not ticks or len(ticks) != info["frames"] or not all(type(tick) is int for tick in ticks):
         raise UnsupportedInput("missing frame presentation timestamps")
-    time_base = Fraction(info["time_base"])
-    ticks = [round(t / float(time_base)) for t in timestamps]
-    frame_ticks = 1 / (fps * time_base)
-    if frame_ticks.denominator != 1 and fps in (Fraction(24000, 1001), Fraction(30000, 1001),
-                                                Fraction(60000, 1001)):
-        # A single rounding phase must explain every timestamp. In units of
-        # 1/denominator ticks, the residuals must fit in one tick of width.
+    frame_ticks = 1 / (fps * Fraction(info["time_base"]))
+    if frame_ticks.denominator != 1:
+        # Floor/ceil deltas must follow one rounding phase across the clip.
+        # The residuals from the exact cadence can span at most one tick.
         numerator, denominator = frame_ticks.numerator, frame_ticks.denominator
         residuals = [tick * denominator - index * numerator for index, tick in enumerate(ticks)]
         low, high = min(residuals), max(residuals)
@@ -436,10 +432,10 @@ def run(video, out, *, layout=None, scenes=None):
         raise ValueError("output paths must differ from input paths")
     info = probe(video)
     try:
-        timestamps = frame_times(video)
+        ticks = frame_times(video)
     except (ValueError, TypeError) as error:
         raise UnsupportedInput(str(error)) from error
-    require_supported_input(info, timestamps)
+    require_supported_input(info, ticks)
     width, height = info["width"], info["height"]
     if min(width, height) < 8 or width % 2 or height % 2 or not info["duration"] > 0:
         raise ValueError("finish pass needs even video dimensions and a valid frame rate and duration")

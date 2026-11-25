@@ -150,18 +150,20 @@ def motion_deltas(video):
 
 
 def frame_times(video):
+    """Read presentation timestamps in the video stream's time-base ticks."""
     source = local_file(video)
     result = subprocess.run(
         ["ffprobe", "-v", "error", *LOCAL_PROTOCOLS, "-select_streams", "v:0",
-         "-show_entries", "frame=best_effort_timestamp_time,pts_time",
+         "-show_entries", "frame=best_effort_timestamp,pts",
          "-of", "json", str(source)], capture_output=True, text=True,
     )
     if result.returncode:
         raise ValueError(f"cannot read video frame timestamps: {result.stderr.strip()}")
     data = json.loads(result.stdout)
+    timestamps = [frame.get("best_effort_timestamp", frame.get("pts"))
+                  for frame in data.get("frames", [])]
     try:
-        return [float(frame.get("best_effort_timestamp_time", frame.get("pts_time", "nan")))
-                for frame in data.get("frames", [])]
+        return [int(tick) if tick is not None else None for tick in timestamps]
     except ValueError as error:
         raise ValueError("invalid frame presentation timestamp") from error
 
