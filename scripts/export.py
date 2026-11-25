@@ -126,14 +126,22 @@ def export_one(video, preset, outdir, mode="pad-blur", thumb_at=None, srt=None, 
         master_audio(video, aud, p.get("lufs", -14), p["audio_kbps"], p["audio_hz"], p.get("true_peak", -1.0), meas)
         cmd += ["-i", str(aud)]
         amap = ["-map", "1:a:0", "-c:a", "copy"]
-    cmd += ["-filter_complex", f"[0:v]{vf},fps={fps},format=yuv420p[v]", "-map", "[v]"] + amap
+    cadence = f"fps={fps}"
+    if mastered:
+        # Round from the first picture's timestamp so downsampling keeps it.
+        # Restore the video's offset on the new frame grid for the copied AAC.
+        video_ticks = round(src["video_start"] * fps)
+        cadence = f"setpts=PTS-STARTPTS,fps={fps}:round=up,setpts=PTS+{video_ticks}"
+        cmd.insert(4, "-copyts")
+    cmd += ["-filter_complex", f"[0:v]{vf},{cadence},format=yuv420p[v]", "-map", "[v]"] + amap
     v = ["-c:v", "libx264", "-profile:v", "high", "-preset", "medium", "-g", str(gop), "-keyint_min", str(gop), "-sc_threshold", "0", "-bf", "2", "-flags", "+cgop"]
     if p.get("video_kbps"):
         v += ["-crf", "18", "-maxrate", f"{p['maxrate_kbps']}k", "-bufsize", f"{p['maxrate_kbps'] * 2}k"]
     else:
         v += ["-crf", str(p.get("crf", 16))]
     v += ["-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-movflags", "+faststart", "-map_metadata", "-1"]
-    r = sh(cmd + v + ["-shortest", str(out)])
+    timing = ["-fps_mode", "passthrough"] if mastered else ["-shortest"]
+    r = sh(cmd + v + timing + [str(out)])
     if src["audio"] and not mastered:
         aud.unlink(missing_ok=True)
     if r.returncode:
@@ -166,8 +174,11 @@ def export_one(video, preset, outdir, mode="pad-blur", thumb_at=None, srt=None, 
     print(f"  {preset:16} {o['w']}x{o['h']} {o['fps']:.0f}fps {o['duration']:.2f}s {rep['mb']} MB {'; '.join(notes)}")
     return rep
 
-def run_exports(a, video, *, mastered=False):
+def run_exports(a, video, *, video_start=None):
     src = probe(video)
+    mastered = video_start is not None
+    if mastered:
+        src["video_start"] = video_start
     meas = measure_loudness(video) if src["audio"] and not mastered else None
     return [export_one(video, pr.strip(), a.out, a.fit, a.thumb_at, a.srt, a.vtt, src, meas, mastered=mastered)
             for pr in a.preset.split(",")]
@@ -208,10 +219,10 @@ def main():
         with tempfile.TemporaryDirectory(prefix=".finish-export-", dir=a.out) as work:
             video = Path(work) / (Path(a.video).stem + ".mp4")
             try:
-                finish(a.video, video)
+                finish_report = finish(a.video, video)
             except (ValueError, OSError, ImportError) as error:
                 sys.exit(f"Export finish pass failed: {error}")
-            reps = run_exports(a, video, mastered=True)
+            reps = run_exports(a, video, video_start=finish_report["timing"]["output_video_start"])
     else:
         reps = run_exports(a, a.video)
     (Path(a.out) / "export-report.json").write_text(json.dumps(reps, indent=2))

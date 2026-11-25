@@ -33,10 +33,14 @@ def test_disabled_run_does_not_write(monkeypatch, tmp_path):
     assert not target.parent.exists()
 
 
-def test_export_off_matches_main_argv_and_is_byte_identical(monkeypatch, tmp_path):
+@pytest.mark.parametrize("audio", [False, True], ids=["video-only", "with-audio"])
+def test_export_off_matches_main_argv_and_is_byte_identical(monkeypatch, tmp_path, audio):
     src, out = tmp_path / "src.mp4", tmp_path / "delivery"
-    subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "testsrc2=s=90x160:r=10:d=1",
-                    "-c:v", "libx264", str(src)], check=True)
+    seconds = 3 if audio else 1
+    cmd = ["ffmpeg", "-v", "error", "-f", "lavfi", "-i", f"testsrc2=s=90x160:r=10:d={seconds}"]
+    if audio:
+        cmd += ["-f", "lavfi", "-i", f"sine=f=480:r=48000:d={seconds}", "-c:a", "aac"]
+    subprocess.run(cmd + ["-c:v", "libx264", str(src)], check=True)
     # Isolate the actual CLI. Reject even an attempted import and record its real ffmpeg arguments.
     harness = r"""
 import importlib.abc
@@ -54,6 +58,12 @@ real_run = subprocess.run
 def record(argv, *args, **kwargs):
     if argv[0] == "ffmpeg":
         print(json.dumps(argv), file=sys.stderr)
+        # Fix the analysis values so the command fixture is portable across
+        # FFmpeg versions. The mastering, AAC, and mux commands still run.
+        if any("print_format=json" in arg for arg in argv):
+            measured = dict(input_i="-24.00", input_tp="-21.00", input_lra="0.00",
+                            input_thresh="-34.00", target_offset="0.00")
+            return subprocess.CompletedProcess(argv, 0, "", json.dumps(measured))
     return real_run(argv, *args, **kwargs)
 
 sys.meta_path.insert(0, Guard())
@@ -63,7 +73,8 @@ sys.argv = sys.argv[1:]
 runpy.run_path(script, run_name="__main__")
 """
     monkeypatch.setenv("PYTHONPATH", str(SCRIPTS))
-    expected = json.loads((SCRIPTS / "fixtures/finish_pass/export_reels_argv.json").read_text())
+    fixture = "export_reels_audio_argv.json" if audio else "export_reels_argv.json"
+    expected = json.loads((SCRIPTS / "fixtures/finish_pass" / fixture).read_text())
     outputs = []
     for value in (None, "0"):
         env = os.environ.copy()
@@ -79,3 +90,25 @@ runpy.run_path(script, run_name="__main__")
         assert normalized == expected
         outputs.append(sorted((p.name, p.read_bytes()) for p in out.iterdir()))
     assert outputs[0] == outputs[1]
+
+
+@pytest.mark.parametrize("url", ["http://example.invalid/x", "https://example.invalid/x",
+                                 "tcp://example.invalid:1234", "file:///tmp/fake.mp4", "-"])
+def test_finish_pass_rejects_nonlocal_inputs_before_subprocess(monkeypatch, tmp_path, url):
+    import finish_pass as fp
+
+    monkeypatch.setenv("REELSMITH_FINISH_PASS", "1")
+    local = tmp_path / "local.mp4"
+    local.touch()
+
+    def unexpected(*args, **kwargs):
+        pytest.fail("media tool invoked before local file validation")
+
+    monkeypatch.setattr(subprocess, "run", unexpected)
+    monkeypatch.setattr(subprocess, "Popen", unexpected)
+    with pytest.raises(ValueError, match="local regular file"):
+        fp.run(url, local)
+    with pytest.raises(ValueError, match="local regular file"):
+        fp.check(url, local)
+    with pytest.raises(ValueError, match="local regular file"):
+        fp.check(local, url)
