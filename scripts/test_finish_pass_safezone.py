@@ -1,5 +1,7 @@
 import re
 
+import pytest
+
 import finish_pass as fp
 
 
@@ -98,6 +100,9 @@ def test_caption_and_pill_mask_follow_ink_instead_of_background(monkeypatch, tmp
         assert np.count_nonzero(with_ink[:, centre - 24:centre + 24] > 200) > 25, name
         # The scenery at both ends of the crop should still be the destination scenery.
         assert np.abs(with_ink[:, :12].astype(float) - area.crop(baseline[ink])[:, :12]).mean() < 3, name
+    original_strip = plan["sources"]["captions"].crop(actual[blank])
+    for x in (5, original_strip.shape[1] - 10):
+        assert original_strip[8:14, x:x + 5].mean() > 180
 
 
 
@@ -114,3 +119,40 @@ def test_checker_detects_missing_caption_independently_of_compositing_mask(monke
     check = fp.anchor_checks(plan, source, delivered)["captions"]
     assert check["present"]
     assert not check["pass"]
+
+
+
+@pytest.mark.parametrize("text", ["A", "OK"])
+def test_short_caption_relocates_and_missing_ink_fails_check(monkeypatch, tmp_path, text):
+    import cv2
+    import numpy as np
+
+    monkeypatch.setenv("REELSMITH_FINISH_PASS", "1")
+    src, out = (tmp_path / name for name in ("source.mp4", "finished.mp4"))
+    w, h = 360, 640
+    plan = fp.plan_layout(fp.DEFAULT_LAYOUT, w, h)
+    source, target = (plan[key]["captions"] for key in ("sources", "targets"))
+    frame = np.full((h, w), 56, dtype=np.uint8)
+    frame[190:365] = 184
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    (tw, th), _ = cv2.getTextSize(text, font, 0.45, 1)
+    cv2.putText(frame, text, ((source.x0 + source.x1 - tw) // 2,
+                             (source.y0 + source.y1 + th) // 2),
+                font, 0.45, 240, 1, cv2.LINE_8)
+    still = tmp_path / "caption.pgm"
+    still.write_bytes(f"P5\n{w} {h}\n255\n".encode() + frame.tobytes())
+    fp.ffmpeg("-v", "error", "-loop", "1", "-framerate", 12, "-i", still,
+              "-f", "lavfi", "-i", "sine=f=360:r=48000:d=1",
+              "-t", 1, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", src)
+    report = fp.run(src, out)
+    decoded = fp.gray_frames(out, w, h, 2)
+    assert all(np.count_nonzero(target.crop(frame) > 170) >= 8 for frame in decoded)
+    assert all(source.crop(frame).max() < 120 for frame in decoded)
+    assert report["safe_zone"]["frame0_anchor_checks"]["captions"]["present"]
+    reference = fp.gray_frames(src, w, h, 1)[0]
+    blank = decoded[0].copy()
+    monkeypatch.setattr(fp, "text_alpha", lambda gray, *args: np.zeros_like(gray))
+    for level in (56, 240):
+        target.crop(blank)[:] = level
+        result = fp.anchor_checks(plan, reference, blank)["captions"]
+        assert result["present"] and not result["pass"]

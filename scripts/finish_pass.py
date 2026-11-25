@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Finish a flat master offline, or recheck the rendered file against its source."""
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -289,7 +290,7 @@ def text_alpha(gray, name, width):
     glyphs = sorted((int(x), int(y), int(w), int(h)) for x, y, w, h, area in components[1:]
                     if max(3, 9 * scale) <= h <= max(7, 35 * scale)
                     and w <= 1.65 * h and area >= max(4, 12 * scale ** 2))
-    if len(glyphs) < 3:
+    if not glyphs:
         return np.zeros_like(gray)
 
     # Use the densest baseline band. Glyphs with descenders may extend a
@@ -312,10 +313,14 @@ def text_alpha(gray, name, width):
 
     alpha = np.zeros(gray.shape, dtype=np.float32)
     for run in bounds:
-        if len(run) < 3:
-            continue
         x0, y0 = min(x for x, _, _, _ in run), min(y for _, y, _, _ in run)
         x1, y1 = max(x + w for x, _, w, _ in run), max(y + h for _, y, _, h in run)
+        if len(run) < 3 and (
+            name != "captions"
+            or abs((x0 + x1) / 2 - gray.shape[1] / 2) > gray.shape[1] / 6
+            or abs((y0 + y1) / 2 - gray.shape[0] / 2) > gray.shape[0] / 6
+        ):
+            continue
         pad_x, pad_y = min(20 * scale, 0.7 * height), 18 * scale
         if name == "pill":
             for x, y, w, h, area in components[1:]:
@@ -407,7 +412,8 @@ def video_graph(width, height, plan, cover, hold, work, matrix, fps):
         inputs.append(["-f", "rawvideo", "-pixel_format", "gray", "-video_size",
                        f"{source.width}x{source.height}", "-framerate", str(fps),
                        "-i", work / f"{name}.gray"])
-        label = f"[{len(inputs) + 1}:v:0]"
+        graph.append(f"[{len(inputs) + 1}:v:0]split[{name}erase][{name}paste]")
+        label = f"[{name}paste]"
         if (source.width, source.height) != (target.width, target.height):
             graph.append(f"{label}{scale(target.width, target.height, 'bilinear')},format=gray[{name}mask]")
             label = f"[{name}mask]"
@@ -440,6 +446,8 @@ def video_graph(width, height, plan, cover, hold, work, matrix, fps):
     graph.append(f"[bg]{scale(width//2, height//2, 'area')},gblur=sigma={soft:.2f}:steps=2,"
                  f"{scale(width, height, 'bicubic')}[blurred]")
     base = "[blurred]"
+    text_masks = {name: text_input(name, plan["sources"][name], plan["targets"][name])
+                  for name in TEXT_ANCHORS}
     for name in ANCHORS:
         rect = plan["sources"][name]
         border = max(4, even_up(width * 0.009))
@@ -461,9 +469,11 @@ def video_graph(width, height, plan, cover, hold, work, matrix, fps):
             graph.append(f"[{name}fill]{band.filter()}[{name}bands]")
         else:
             raise ValueError(f"no neighbouring background to fill {name}")
-        graph.append(f"[{name}bands]{scale(outer.width, outer.height, 'bilinear')},"
+        fill = rect if name in TEXT_ANCHORS else outer
+        graph.append(f"[{name}bands]{scale(fill.width, fill.height, 'bilinear')},"
                      f"gblur=sigma={border*1.4:.2f}:steps=3[{name}patch]")
-        base = composite(base, f"[{name}patch]", outer, f"{name}erased", mask(outer, rect, name))
+        erase = f"[{name}erase]" if name in TEXT_ANCHORS else mask(outer, rect, name)
+        base = composite(base, f"[{name}patch]", fill, f"{name}erased", erase)
 
     title = plan["sources"]["title"]
     outer = pad(title, max(6, even_up(width * 0.02)))
@@ -487,8 +497,7 @@ def video_graph(width, height, plan, cover, hold, work, matrix, fps):
         resize = (f",{scale(target.width, target.height, 'lanczos')}"
                   if (source.width, source.height) != (target.width, target.height) else "")
         graph.append(f"[{name}src]{source.filter()}{resize}[{name}anchor]")
-        alpha = text_input(name, source, target) if name in TEXT_ANCHORS else None
-        base = composite(base, f"[{name}anchor]", target, f"{name}moved", alpha)
+        base = composite(base, f"[{name}anchor]", target, f"{name}moved", text_masks.get(name))
     graph.append(f"{base}format=yuv420p[v]")
     return ";".join(graph), inputs
 
@@ -506,6 +515,21 @@ def layout_path(info, custom=None):
 
 def sidecar(out):
     return Path(f"{out}.finish") / "report.json"
+
+
+def artifact_identity(path):
+    digest = hashlib.sha256()
+    size = 0
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+            size += len(chunk)
+    return {"sha256": digest.hexdigest(), "size_bytes": size}
+
+
+def verify_artifact(path, recorded):
+    expected = recorded.get("artifact")
+    return {"expected": expected, "pass": expected is not None and artifact_identity(path) == expected}
 
 
 def serial_plan(plan):
@@ -543,9 +567,35 @@ def anchor_checks(plan, reference, delivered):
                 for first, second, third in zip(runs, runs[1:], runs[2:]):
                     if second[0] - first[1] <= gap and third[0] - second[1] <= gap:
                         solid[row, first[0]:third[1]] = ink[row, first[0]:third[1]]
+            if name == "captions":
+                # A short centred caption may have only one bright stroke on
+                # each scanline. Inspect vertical ink extent without using the
+                # compositor's connected components or relocation alpha.
+                left, right = target.width // 3, 2 * target.width // 3
+                center = ink[:, left:right]
+                edges = np.flatnonzero(np.diff(center.any(axis=0), prepend=False, append=False))
+                scale = reference.shape[1] / 1080 * target.height / source.height
+                for start, stop in edges.reshape(-1, 2):
+                    strokes = center[:, start:stop]
+                    rows = np.flatnonzero(strokes.any(axis=1))
+                    height = rows[-1] - rows[0] + 1
+                    if (max(3, 9 * scale) <= height <= max(7, 35 * scale)
+                            and stop - start <= 1.65 * height
+                            and abs((rows[0] + rows[-1] + 1) / 2 - target.height / 2) <= target.height / 6):
+                        solid[:, left + start:left + stop] |= strokes
         if not solid.any():
             checks[name] = {"present": False, "mean_abs_error": None, "bright_pixel_retention": None, "pass": True}
             continue
+        if name == "captions" and patch.shape != expected.shape:
+            import cv2
+
+            # Nearest-neighbour locates the source ink above, but overstates
+            # the expected brightness of thin strokes after interpolation.
+            resized = cv2.resize(patch.astype(np.float32), (target.width, target.height),
+                                 interpolation=cv2.INTER_LINEAR)
+            strong = solid & (resized >= max(120, float(np.median(resized)) + 55))
+            if strong.any():
+                expected, solid = resized, strong
         error = np.abs(expected[solid] - actual[solid])
         mae = float(error.mean())
         # Bright anchor pixels must still be bright even when the rest of the crop
@@ -553,7 +603,10 @@ def anchor_checks(plan, reference, delivered):
         standout = solid & (expected > max(105, float(expected[solid].mean()) + 35))
         if name in TEXT_ANCHORS:
             standout = solid
-        visible = float((actual[standout] >= expected[standout] - 50).mean()) if standout.any() else None
+        required = expected[standout] - 50
+        if name == "captions":
+            required = np.maximum(required, float(np.median(actual)) + 30)
+        visible = float((actual[standout] >= required).mean()) if standout.any() else None
         checks[name] = {"present": True, "mean_abs_error": round(mae, 3),
                         "bright_pixel_retention": None if visible is None else round(visible, 3),
                         "pass": (name in TEXT_ANCHORS or mae <= 12) and (visible is None or visible >= 0.72)}
@@ -570,10 +623,17 @@ def check(out, reference, layout=None, cover_frame=None):
 
     out, reference = local_file(out), local_file(reference)
     metadata = sidecar(out)
-    if metadata.is_file() and cover_frame is None:
+    artifact = None
+    if metadata.is_file():
         recorded = json.loads(metadata.read_text())
+        artifact = verify_artifact(out, recorded)
+        if not artifact["pass"]:
+            return {"artifact": artifact, "pass": False}
         layout = layout or recorded["layout"]
-        cover_frame = recorded["cover"]["frame"]
+        if cover_frame is None:
+            cover_frame = recorded["cover"]["frame"]
+    elif cover_frame is None:
+        return {"artifact": {"pass": False, "error": "missing finish report"}, "pass": False}
     source, result = probe(reference), probe(out)
     width, height = source["width"], source["height"]
     same_size = (width, height) == (result["width"], result["height"])
@@ -612,8 +672,11 @@ def check(out, reference, layout=None, cover_frame=None):
               "pass": (sync_ok and same_size and source["fps"] == result["fps"] and
                        frame_counts[0] == frame_counts[1] and
                        abs(source["duration"] - result["duration"]) < 0.001)}
-    return {"frame0": frame0, "safe_zone": safe, "loudness": {"after": stats, "pass": audio_ok},
-            "timing": timing, "pass": frame0["pass"] and safe["pass"] and audio_ok and timing["pass"]}
+    report = {"frame0": frame0, "safe_zone": safe, "loudness": {"after": stats, "pass": audio_ok},
+              "timing": timing, "pass": frame0["pass"] and safe["pass"] and audio_ok and timing["pass"]}
+    if artifact is not None:
+        report["artifact"] = artifact
+    return report
 
 
 def render_picture(video, work, info, plan, cover, hold):
@@ -718,6 +781,7 @@ def run(video, out, *, layout=None, cover_hold=None, scenes=None):
         report = check(candidate, video, layout=layout, cover_frame=cover)
         counts = Counter(cue.sound for cue in cues)
         report.update({
+            "artifact": artifact_identity(candidate),
             "flag": os.environ["REELSMITH_FINISH_PASS"],
             "layout": str(layout) if layout else None,
             "cover": {"frame": cover, "time_seconds": float(cover / info["fps"]), "hold_frames": hold},
@@ -734,19 +798,22 @@ def run(video, out, *, layout=None, cover_hold=None, scenes=None):
             if not out.exists():
                 prepared.replace(report_path)
             raise ValueError("finish pass gates failed: " + json.dumps(report))
-        previous_report = work / "previous-report.json"
-        if report_path.is_file():
-            # Keep the previous report available if publishing the MP4 fails.
-            os.link(report_path, previous_report, follow_symlinks=False)
-        prepared.replace(report_path)
+        previous_video = work / "previous.mp4"
+        if out.is_file():
+            os.link(out, previous_video)
+        # Publish the verified media first. An interruption before the report
+        # rename leaves a missing or mismatched identity that check rejects.
+        candidate.replace(out)
         try:
-            candidate.replace(out)
+            prepared.replace(report_path)
         except OSError:
-            if previous_report.exists():
-                previous_report.replace(report_path)
+            if previous_video.exists():
+                previous_video.replace(out)
             else:
-                report_path.unlink()
+                out.unlink()
             raise
+        if not verify_artifact(out, json.loads(report_path.read_text()))["pass"]:
+            raise ValueError("published MP4 does not match finish report")
     return report
 
 
