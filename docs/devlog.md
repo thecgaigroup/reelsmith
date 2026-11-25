@@ -1,5 +1,22 @@
 # Development Log
 
+## 2026-11-25 (Opt-in finish pass)
+
+**What changed**
+- Added a local finish pass for baked masters with verified CC0 sound cues, one audio mastering stage, layout-based anchor relocation, title depth of field and bloom, and a replacement opening cover.
+- Keyed the relocated pill and captions per frame so their backing follows the visible text and empty bands leave the destination picture clear.
+- Routed approved exports through the pass only when `REELSMITH_FINISH_PASS` is enabled and added regression tests to the CI list.
+
+**State**
+- The reference Signal master passes the cover, safe-zone, encoded audio, and timeline gates. Flag-off Reels export and thumbnail match the local `origin/main` results byte for byte.
+- The local CI run has the known stream-highlights integration failure because this FFmpeg build lacks libass.
+
+**Where we left off**
+- The author changes are in the assigned feature worktree. The local build report records measurements and suggested commit groupings.
+
+**Open**
+- The Signal caption band intersects TikTok's right-rail advisory region. The release and independent review workflows are outside this author pass.
+
 ## 2026-11-21 (Reelsmith 5.4.1: CI smoke test)
 
 **What changed**

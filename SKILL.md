@@ -81,7 +81,7 @@ Tell me what you need — aspect ratio, length, platform, and brand — and I'll
 | Diagrams / math, Lottie, cut user footage, transcribe | Manim, Lottie, auto-editor, parakeet | helpers.md |
 | Script or VO lines | 2–3 options + `script_lint.py` | scriptwriting.md, voiceover.md |
 | Captions (SRT/VTT/ASS, burn-in) | `captions.py` | captions.md |
-| Platform specs, safe zones, delivery files | `export.py`, `presets.json` | platform-specs.md, loudness-accessibility.md |
+| Platform specs, safe zones, delivery files | `export.py`, `presets.json`. For an optional baked-master finish, set `REELSMITH_FINISH_PASS=1` with `finish_pass.py` or `export.py run`. | platform-specs.md, loudness-accessibility.md, finish-pass.md |
 | AI b-roll, images, avatars, AI music (paid) | Fal / Higgsfield, quote first | ai-generation.md |
 
 ## Pick the engine

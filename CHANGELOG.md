@@ -5,6 +5,12 @@ All notable changes to Reelsmith will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Optional offline finish pass for baked masters, enabled with `REELSMITH_FINISH_PASS=1`. It adds verified CC0 sound cues, masters the mix to −14 LUFS with a −1 dBTP ceiling, and uses a layout to protect titles and relocate anchors. It selects a stable opening cover and verifies the finished MP4.
+
 ## [5.5.1] - 2026-11-22
 
 ### Fixed
