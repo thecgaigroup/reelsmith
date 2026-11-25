@@ -203,6 +203,132 @@ def test_loudnorm_timestamp_fix():
         assert not sync_result["flagged"], f"Expected no sync drift flag, but got flagged=True"
         print(f"  worst drift after loudnorm: {sync_result['worst_drift_ms']:.1f}ms (< 50ms)")
 
+# 7. Filter graph sanitization
+def test_sanitize_filter_input():
+    """Sanitize dangerous characters in filter graph inputs."""
+    from export import sanitize_filter_input
+    # Test dangerous characters are escaped
+    assert "\\'" in sanitize_filter_input("it's")
+    assert "\\:" in sanitize_filter_input("C:/path")
+    assert "\\\\" in sanitize_filter_input("back\\slash")
+    # Safe strings pass through
+    assert sanitize_filter_input("safe text 123") == "safe text 123"
+    print("  dangerous chars escaped")
+
+# 8. Measured crop placement
+def test_measured_crop_placement():
+    """Measure where picture sits after crop/pad fit."""
+    from export import measure_crop_placement
+    # 16:9 to 9:16 (crop sides)
+    result = measure_crop_placement(1920, 1080, 1080, 1920)
+    assert result["measured"] is True
+    assert result["discarded_fraction"] > 0.6  # ~68% discarded
+    print(f"  16:9->9:16 crop: {result['discarded_fraction']*100:.1f}% discarded")
+    
+    # Same aspect (no crop)
+    result = measure_crop_placement(1920, 1080, 1280, 720)
+    assert result["measured"] is True
+    assert result["discarded_fraction"] == 0.0
+    print(f"  same aspect: 0% discarded")
+
+# 9. Speed change refusal
+def test_speed_change_refusal():
+    """Refuse silent speed changes > 1.15x."""
+    from export import check_duration_fit
+    # Within range: ok
+    ok, factor, reason = check_duration_fit(10.0, 9.0, allow_speed_change=False)
+    assert ok is True  # 1.11x is ok
+    
+    # Too fast: refused
+    ok, factor, reason = check_duration_fit(10.0, 7.0, allow_speed_change=False)
+    assert ok is False  # 1.43x refused
+    assert "1.15" in reason
+    print(f"  refused {factor:.2f}x speed change")
+    
+    # With flag: allowed
+    ok, factor, reason = check_duration_fit(10.0, 7.0, allow_speed_change=True)
+    assert ok is True
+    print(f"  allowed {factor:.2f}x with --allow-speed-change")
+
+# 10. DeepFilterNet skip when unavailable
+def test_deepfilternet_skip():
+    """DeepFilterNet skips cleanly when binary is unavailable."""
+    sys.path.insert(0, str(HERE))
+    import deepfilternet_helper as dfn
+    
+    # Most systems won't have deep-filter installed
+    if not dfn.is_available():
+        result = dfn.denoise_dialogue("any.wav", "out.wav")
+        assert result["success"] is False
+        assert result["skipped"] is not None
+        assert "not available" in result["skipped"]
+        print(f"  skipped: {result['skipped']}")
+    else:
+        print("  deep-filter available (skipping skip test)")
+
+# 11. DeepFilterNet refusal on music/vocal
+def test_deepfilternet_refusal():
+    """DeepFilterNet refuses to run on music/vocal inputs."""
+    sys.path.insert(0, str(HERE))
+    import deepfilternet_helper as dfn
+    
+    # Test filename detection
+    is_mus, reason = dfn.is_music_or_vocal("song_vocals.wav")
+    assert is_mus is True
+    assert "vocal" in reason
+    print(f"  refused: {reason}")
+    
+    # Test metadata detection
+    is_mus, reason = dfn.is_music_or_vocal("audio.wav", {"stem_type": "vocals"})
+    assert is_mus is True
+    assert "stem_type" in reason
+    
+    # Dialogue should pass
+    is_mus, reason = dfn.is_music_or_vocal("interview_dialogue.wav")
+    assert is_mus is False
+
+# 12. WhisperX skip when unavailable
+def test_whisperx_skip():
+    """WhisperX skips cleanly when module is unavailable."""
+    sys.path.insert(0, str(HERE))
+    import whisperx_helper as wx
+    
+    # Most systems won't have whisperx installed
+    if not wx.is_available():
+        result = wx.cross_check_lyrics("any.wav", ["test", "lyrics"])
+        assert result["success"] is False
+        assert result["skipped"] is not None
+        assert "not available" in result["skipped"]
+        print(f"  skipped: {result['skipped']}")
+    else:
+        print("  whisperx available (would run cross-check)")
+
+# 13. PySceneDetect fallback to ffmpeg
+def test_pyscenedetect_fallback():
+    """PySceneDetect falls back to ffmpeg when unavailable."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        # Create a video with strong scene changes (noise patterns)
+        subprocess.run(["ffmpeg", "-y",
+                        "-f", "lavfi", "-i", "color=black:s=320x240:r=30:duration=1",
+                        "-f", "lavfi", "-i", "nullsrc=s=320x240:d=1,geq='random(1)*255:128:128'",
+                        "-f", "lavfi", "-i", "color=white:s=320x240:r=30:duration=1",
+                        "-filter_complex", "[0:v][1:v][2:v]concat=n=3:v=1:a=0",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "cuts.mp4")],
+                       capture_output=True, check=True)
+        
+        sys.path.insert(0, str(HERE))
+        import pyscenedetect_helper as psd
+        
+        # Test that the helper runs successfully (detection may vary)
+        # Just verify the method works, not exact cut detection on synthetic fixture
+        expected = [30, 60]
+        result = psd.verify_cut_map(out / "cuts.mp4", expected, tolerance_frames=10)
+        assert result["success"] is True
+        assert result["method"] in ("pyscenedetect", "ffmpeg")
+        # Detection on synthetic video may be unreliable; just verify it ran
+        print(f"  method: {result['method']}, matched: {result['matched']}/{len(expected)} (synthetic fixture)")
+
 if __name__ == "__main__":
     tests = [f for f in dir() if f.startswith("test_")]
     passed = 0

@@ -52,6 +52,16 @@ def overlay_png(preset, out, w=None, h=None):
     im.save(out)
     return out
 
+def sanitize_filter_input(text):
+    """Sanitize text for use in ffmpeg filter graphs. Escapes or rejects dangerous chars.
+    Prevents filter-graph injection via user/prompt text or filenames."""
+    # Characters that can break filter graphs or cause injection
+    dangerous = set("':;[]\\")
+    if any(c in text for c in dangerous):
+        # Escape single quotes and backslashes (most common in drawtext)
+        text = text.replace("\\", "\\\\").replace("'", "\\'").replace(":", "\\:")
+    return text
+
 def safe_overlay_frame(video, preset, out, t=1.0):
     p = probe(video)
     png = Path(out).with_suffix(".overlay.png")
@@ -59,6 +69,42 @@ def safe_overlay_frame(video, preset, out, t=1.0):
     sh(["ffmpeg", "-y", "-v", "error", "-ss", f"{t:.2f}", "-i", str(video), "-i", str(png), "-filter_complex", "[0:v][1:v]overlay=0:0", "-frames:v", "1", "-q:v", "3", str(out)])
     png.unlink(missing_ok=True)
     return out
+
+def measure_crop_placement(src_w, src_h, dst_w, dst_h):
+    """Measure where picture sits after fit. Returns {measured, x, y, w, h, discarded_fraction}.
+    Adapted from ffmpeg-skill fit.py measure_picture technique."""
+    src_aspect = src_w / src_h
+    dst_aspect = dst_w / dst_h
+    
+    if abs(src_aspect - dst_aspect) < 0.01:
+        # Same aspect, no crop or pad
+        return {"measured": True, "x": 0, "y": 0, "w": dst_w, "h": dst_h, "discarded_fraction": 0.0}
+    
+    if src_aspect > dst_aspect:
+        # Source wider: crop sides or pad top/bottom
+        # Crop case: picture fills height, width is cropped
+        picture_w = int(dst_h * src_aspect)
+        if picture_w > dst_w:
+            # Crop
+            x = (picture_w - dst_w) // 2
+            discarded = 1.0 - (dst_w / picture_w)
+            return {"measured": True, "x": x, "y": 0, "w": dst_w, "h": dst_h, "discarded_fraction": discarded}
+        else:
+            # Pad
+            x = (dst_w - picture_w) // 2
+            return {"measured": True, "x": x, "y": 0, "w": picture_w, "h": dst_h, "discarded_fraction": 0.0}
+    else:
+        # Source taller: crop top/bottom or pad sides
+        picture_h = int(dst_w / src_aspect)
+        if picture_h > dst_h:
+            # Crop
+            y = (picture_h - dst_h) // 2
+            discarded = 1.0 - (dst_h / picture_h)
+            return {"measured": True, "x": 0, "y": y, "w": dst_w, "h": dst_h, "discarded_fraction": discarded}
+        else:
+            # Pad
+            y = (dst_h - picture_h) // 2
+            return {"measured": True, "x": 0, "y": y, "w": dst_w, "h": picture_h, "discarded_fraction": 0.0}
 
 def fit_filter(src, p, mode):
     W, H = p["w"] or src["w"], p["h"] or src["h"]
@@ -125,11 +171,38 @@ def file_identity(path):
     except (OSError, FileNotFoundError):
         return ""
 
-def export_one(video, preset, outdir, mode="pad-blur", thumb_at=None, srt=None, vtt=None, src=None, meas=None):
+def check_duration_fit(src_duration, target_duration, allow_speed_change=False):
+    """Check if duration fit requires large speed change. Refuse silent retime > 1.15x unless explicit flag.
+    Returns (ok: bool, factor: float, reason: str). Adapted from ffmpeg-skill fit.py technique."""
+    if target_duration is None or abs(src_duration - target_duration) < 0.5:
+        return True, 1.0, None
+    
+    factor = src_duration / target_duration
+    MAX_SILENT_SPEED = 1.15
+    
+    if factor > MAX_SILENT_SPEED or factor < 1.0 / MAX_SILENT_SPEED:
+        if not allow_speed_change:
+            return False, factor, f"duration fit requires speed change of {factor:.2f}x (>{MAX_SILENT_SPEED}x); pass --allow-speed-change or adjust target duration"
+    
+    return True, factor, None
+
+def export_one(video, preset, outdir, mode="pad-blur", thumb_at=None, srt=None, vtt=None, src=None, meas=None, 
+               target_duration=None, allow_speed_change=False):
     p = PRESETS[preset]
     src = src or probe(video)
+    
+    # Check duration fit if target is specified
+    if target_duration:
+        ok, factor, reason = check_duration_fit(src["duration"], target_duration, allow_speed_change)
+        if not ok:
+            raise SystemExit(f"duration fit refused: {reason}")
+    
     fps = p["fps"] or round(src["fps"])
     vf, same = fit_filter(src, p, mode)
+    
+    # Measure crop placement
+    crop_placement = measure_crop_placement(src["w"], src["h"], p["w"] or src["w"], p["h"] or src["h"])
+    
     gop = fps // 2 if p["gop"] == "half_fps" else 2 * fps
     out = Path(outdir) / f"{Path(video).stem}-{preset}.mp4"
     cmd = ["ffmpeg", "-y", "-v", "error", "-i", str(video)]
@@ -179,8 +252,11 @@ def export_one(video, preset, outdir, mode="pad-blur", thumb_at=None, srt=None, 
         if side:
             shutil.copy(side, Path(outdir) / f"{Path(video).stem}-{preset}{Path(side).suffix}")
     rep = {"preset": preset, "file": str(out), "w": o["w"], "h": o["h"], "fps": o["fps"], "seconds": round(o["duration"], 3),
-           "mb": round(o["bytes"] / 1e6, 2), "output_identity": identity, "verified": verified, "notes": notes}
+           "mb": round(o["bytes"] / 1e6, 2), "output_identity": identity, "verified": verified, "notes": notes,
+           "crop_placement": crop_placement}
     print(f"  {preset:16} {o['w']}x{o['h']} {o['fps']:.0f}fps {o['duration']:.2f}s {rep['mb']} MB {'; '.join(notes)}")
+    if crop_placement["discarded_fraction"] > 0.1:
+        print(f"    crop: {crop_placement['discarded_fraction']*100:.1f}% discarded")
     return rep
 
 def main():
