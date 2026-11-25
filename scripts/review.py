@@ -23,6 +23,27 @@ HERE = Path(__file__).resolve().parent
 def sh(cmd, **kw):
     return subprocess.run(cmd, capture_output=True, text=True, **kw)
 
+def file_identity(path):
+    """Return 'size:mtime_ns:sha256' identity string for a file (empty if missing/inaccessible).
+    Uses content digest (sha256) with size:mtime_ns as quick pre-check."""
+    import hashlib
+    try:
+        st = Path(path).stat()
+        sha = hashlib.sha256()
+        with open(path, 'rb') as f:
+            while chunk := f.read(8192):
+                sha.update(chunk)
+        return f"{st.st_size}:{st.st_mtime_ns}:{sha.hexdigest()}"
+    except (OSError, FileNotFoundError):
+        return ""
+
+def sanitize_filter_input(text):
+    """Sanitize text for ffmpeg filter graphs. Escapes dangerous chars to prevent injection."""
+    text = text.replace("\\", "\\\\").replace("'", "\\'")
+    text = text.replace(":", "\\:").replace(",", "\\,").replace(";", "\\;")
+    text = text.replace("[", "\\[").replace("]", "\\]")
+    return text
+
 def probe(v):
     r = sh(["ffprobe", "-v", "error", "-show_entries", "stream=codec_type,codec_name,width,height,r_frame_rate,pix_fmt,profile:format=duration,size",
             "-of", "json", str(v)])

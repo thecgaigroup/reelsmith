@@ -27,6 +27,20 @@ def probe(v):
     return {"w": vs["width"], "h": vs["height"], "fps": int(n) / int(d), "duration": float(js["format"]["duration"]),
             "bytes": int(js["format"]["size"]), "audio": has_a}
 
+def file_identity(path):
+    """Return 'size:mtime_ns:sha256' identity string for a file (empty if missing/inaccessible).
+    Uses content digest (sha256) with size:mtime_ns as quick pre-check."""
+    import hashlib
+    try:
+        st = Path(path).stat()
+        sha = hashlib.sha256()
+        with open(path, 'rb') as f:
+            while chunk := f.read(8192):
+                sha.update(chunk)
+        return f"{st.st_size}:{st.st_mtime_ns}:{sha.hexdigest()}"
+    except (OSError, FileNotFoundError):
+        return ""
+
 def overlay_png(preset, out, w=None, h=None):
     from PIL import Image, ImageDraw
     p = PRESETS[preset]
