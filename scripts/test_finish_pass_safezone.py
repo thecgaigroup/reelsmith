@@ -12,7 +12,12 @@ def test_signal_placement():
     assert plan["targets"]["badge"].x0 == plan["safe"].x0
     assert plan["targets"]["pill"].x1 == plan["safe"].x1
     assert plan["targets"]["captions"].y1 == plan["safe"].y1
-    assert {"captions"} <= set(plan["right_rail_overlap"])
+    caption = plan["targets"]["captions"]
+    source = plan["sources"]["captions"]
+    assert caption.x0 == plan["safe"].x0
+    assert caption.x1 < 1080 * 0.722
+    assert min(caption.width / source.width, caption.height / source.height) >= 0.7
+    assert not plan["right_rail_overlap"]
 
 
 def test_relocates_pixels_and_erases_edges(monkeypatch, tmp_path):
@@ -101,8 +106,7 @@ def test_caption_and_pill_mask_follow_ink_instead_of_background(monkeypatch, tmp
         # The scenery at both ends of the crop should still be the destination scenery.
         assert np.abs(with_ink[:, :12].astype(float) - area.crop(baseline[ink])[:, :12]).mean() < 3, name
     original_strip = plan["sources"]["captions"].crop(actual[blank])
-    for x in (5, original_strip.shape[1] - 10):
-        assert original_strip[8:14, x:x + 5].mean() > 180
+    assert original_strip.max() < 120
 
 
 
@@ -122,8 +126,9 @@ def test_checker_detects_missing_caption_independently_of_compositing_mask(monke
 
 
 
-@pytest.mark.parametrize("text", ["A", "OK"])
-def test_short_caption_relocates_and_missing_ink_fails_check(monkeypatch, tmp_path, text):
+@pytest.mark.parametrize(("text", "font_scale"), [("A", 0.45), ("OK", 0.45),
+                                                   ("A", 0.55), ("HI", 0.55)])
+def test_short_caption_relocates_and_missing_ink_fails_check(monkeypatch, tmp_path, text, font_scale):
     import cv2
     import numpy as np
 
@@ -135,10 +140,10 @@ def test_short_caption_relocates_and_missing_ink_fails_check(monkeypatch, tmp_pa
     frame = np.full((h, w), 56, dtype=np.uint8)
     frame[190:365] = 184
     font = cv2.FONT_HERSHEY_SIMPLEX
-    (tw, th), _ = cv2.getTextSize(text, font, 0.45, 1)
+    (tw, th), _ = cv2.getTextSize(text, font, font_scale, 1)
     cv2.putText(frame, text, ((source.x0 + source.x1 - tw) // 2,
                              (source.y0 + source.y1 + th) // 2),
-                font, 0.45, 240, 1, cv2.LINE_8)
+                font, font_scale, 240, 1, cv2.LINE_8)
     still = tmp_path / "caption.pgm"
     still.write_bytes(f"P5\n{w} {h}\n255\n".encode() + frame.tobytes())
     fp.ffmpeg("-v", "error", "-loop", "1", "-framerate", 12, "-i", still,
@@ -148,11 +153,62 @@ def test_short_caption_relocates_and_missing_ink_fails_check(monkeypatch, tmp_pa
     decoded = fp.gray_frames(out, w, h, 2)
     assert all(np.count_nonzero(target.crop(frame) > 170) >= 8 for frame in decoded)
     assert all(source.crop(frame).max() < 120 for frame in decoded)
-    assert report["safe_zone"]["frame0_anchor_checks"]["captions"]["present"]
     reference = fp.gray_frames(src, w, h, 1)[0]
+    crop = source.crop(reference)
+    if font_scale == 0.55:
+        assert np.count_nonzero((crop > 170).any(axis=1)) >= 13
+    assert fp.text_alpha(crop, "captions", w).max() > 0
+    assert report["safe_zone"]["frame0_anchor_checks"]["captions"]["present"]
     blank = decoded[0].copy()
     monkeypatch.setattr(fp, "text_alpha", lambda gray, *args: np.zeros_like(gray))
     for level in (56, 240):
         target.crop(blank)[:] = level
         result = fp.anchor_checks(plan, reference, blank)["captions"]
         assert result["present"] and not result["pass"]
+
+
+def test_erases_caption_backing_and_pill_outline_through_reveal(monkeypatch, tmp_path):
+    import cv2
+    import numpy as np
+
+    monkeypatch.setenv("REELSMITH_FINISH_PASS", "1")
+    src, out = (tmp_path / name for name in ("source.mp4", "finished.mp4"))
+    w, h, fps = 360, 640, 12
+    plan = fp.plan_layout(fp.DEFAULT_LAYOUT, w, h)
+    pill, caption = (plan["sources"][name] for name in ("pill", "captions"))
+    bg = np.full((h, w), 82, dtype=np.uint8)
+    bg[192:365] = 175
+    bg[caption.y0 - 14:caption.y1 + 14] = np.arange(52, 52 + caption.height + 28)[:, None]
+    frames = []
+    for i in range(2 * fps):
+        frame = bg.copy()
+        for rect, level, inset in ((pill, 108, 2), (caption, 27, 1)):
+            cx = (rect.x0 + rect.x1) // 2
+            cy = (rect.y0 + rect.y1) // 2
+            axes = (rect.width // 2 - inset, rect.height // 2 - inset)
+            cv2.ellipse(frame, (cx, cy), axes, 0, 0, 360, level, 1 if rect == pill else -1)
+        if i >= 3:
+            text = "REVEAL"[:min(6, i - 2)]
+            cv2.putText(frame, text, (w // 2 - 14, caption.y1 - 7),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.4, 240, 1, cv2.LINE_8)
+        frames.append(frame)
+    raw = tmp_path / "frames.gray"
+    raw.write_bytes(np.stack(frames).tobytes())
+    fp.ffmpeg("-v", "error", "-f", "rawvideo", "-pixel_format", "gray", "-video_size", f"{w}x{h}",
+              "-framerate", fps, "-i", raw, "-f", "lavfi", "-i", "sine=f=360:r=48000:d=2",
+              "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", src)
+    report = fp.run(src, out)
+    decoded = fp.gray_frames(out, w, h, 2 * fps)
+    for i, frame in enumerate(decoded):
+        for name, rect in (("pill", pill), ("captions", caption)):
+            # The clean field is flat at the pill and ramps behind the caption.
+            expected = rect.crop(bg).astype(float)
+            assert np.abs(rect.crop(frame).astype(float) - expected).max() <= 5, (i, name)
+    assert report["leftovers"]["pass"]
+    assert fp.check(out, src)["leftovers"]["pass"]
+
+    # Feed the checker the same encoded footage with the baked anchors intact.
+    baked = fp.check(src, src, cover_frame=0)["leftovers"]
+    assert not baked["pass"]
+    assert any(not sample["anchors"]["captions"]["pass"] for sample in baked["samples"])
+    assert any(not sample["anchors"]["pill"]["pass"] for sample in baked["samples"])

@@ -126,10 +126,15 @@ def plan_layout(layout, width, height):
                                               (slot[1] - slot[0]) / caption.height))
     cw, ch = fit(caption, safe.width, hi - lo)
     cx = safe.x0 + even_down((safe.width - cw) / 2)
-    targets["captions"] = Rect(cx, hi - ch, cx + cw, hi)
-
     rail = tiktok["right_rail"]
     right_rail = Rect(math.floor(width * rail["x"]), math.floor(height * rail["y"]), width, height)
+    # Prefer the rail-free slot when it retains at least 70% on both axes.
+    rail_width = even_down(right_rail.x0 - max(2, even_up(width * 0.006))) - safe.x0
+    if hi > right_rail.y0 and rail_width >= 0.7 * caption.width and cx + cw > right_rail.x0:
+        rw, rh = fit(caption, min(safe.width, rail_width), hi - lo)
+        if min(rw / caption.width, rh / caption.height) >= 0.7:
+            cx, cw, ch = safe.x0, rw, rh
+    targets["captions"] = Rect(cx, hi - ch, cx + cw, hi)
     plan = {"sources": sources, "targets": targets, "safe": safe,
             "right_rail_overlap": [k for k, rect in targets.items() if rect.overlaps(right_rail)]}
     if not placement_passes(plan):
@@ -274,24 +279,31 @@ def write_mask(path, outer, inner):
     path.write_bytes(f"P5\n{outer.width} {outer.height}\n255\n".encode() + alpha.astype("uint8").tobytes())
 
 
-def text_alpha(gray, name, width):
-    """Retain the backing around a horizontal run of nearby, aligned glyphs."""
+def text_runs(gray, name, width):
+    """Locate bright, aligned strokes against the backing of the text band."""
     import cv2
     import numpy as np
 
     scale = width / 1080
-    edge = np.concatenate((gray[0], gray[-1], gray[:, 0], gray[:, -1]))
-    hist = np.bincount(edge, minlength=256)
-    background = np.searchsorted(hist.cumsum(), edge.size * 0.75)
-    ink = gray >= max(112, background + 45)
+    if name == "captions":
+        # A tall letter can fill the band. Measure contrast against nearby
+        # darker backing without treating the height as a classifier.
+        span = max(3, round(12 * scale)) | 1
+        backing = cv2.erode(gray, np.ones((span, span), dtype=np.uint8))
+        ink = (gray >= 112) & (gray.astype(np.int16) - backing >= 48)
+    else:
+        edge = np.concatenate((gray[0], gray[-1], gray[:, 0], gray[:, -1]))
+        hist = np.bincount(edge, minlength=256)
+        background = np.searchsorted(hist.cumsum(), edge.size * 0.75)
+        ink = gray >= max(112, background + 45)
     if not ink.any():
-        return np.zeros_like(gray)
+        return ink, (), (), 0
     _, _, components, _ = cv2.connectedComponentsWithStats(ink.astype(np.uint8), connectivity=8)
     glyphs = sorted((int(x), int(y), int(w), int(h)) for x, y, w, h, area in components[1:]
-                    if max(3, 9 * scale) <= h <= max(7, 35 * scale)
+                    if (name == "captions" or max(3, 9 * scale) <= h <= max(7, 35 * scale))
                     and w <= 1.65 * h and area >= max(4, 12 * scale ** 2))
     if not glyphs:
-        return np.zeros_like(gray)
+        return ink, (), (), 0
 
     # Use the densest baseline band. Glyphs with descenders may extend a
     # little below the line. Separate runs never borrow each other's backing.
@@ -311,19 +323,31 @@ def text_alpha(gray, name, width):
         run.append(glyph)
     bounds.append(run)
 
-    alpha = np.zeros(gray.shape, dtype=np.float32)
+    boxes = []
     for run in bounds:
         x0, y0 = min(x for x, _, _, _ in run), min(y for _, y, _, _ in run)
         x1, y1 = max(x + w for x, _, w, _ in run), max(y + h for _, y, _, h in run)
         if len(run) < 3 and (
             name != "captions"
             or abs((x0 + x1) / 2 - gray.shape[1] / 2) > gray.shape[1] / 6
-            or abs((y0 + y1) / 2 - gray.shape[0] / 2) > gray.shape[0] / 6
+            or abs((y0 + y1) / 2 - gray.shape[0] / 2) > gray.shape[0] / 4
         ):
             continue
+        boxes.append((x0, y0, x1, y1))
+    return ink, boxes, components[1:], height
+
+
+def text_alpha(gray, name, width):
+    """Retain the backing around a horizontal run of nearby, aligned glyphs."""
+    import numpy as np
+
+    scale = width / 1080
+    _, boxes, components, height = text_runs(gray, name, width)
+    alpha = np.zeros(gray.shape, dtype=np.float32)
+    for x0, y0, x1, y1 in boxes:
         pad_x, pad_y = min(20 * scale, 0.7 * height), 18 * scale
         if name == "pill":
-            for x, y, w, h, area in components[1:]:
+            for x, y, w, h, area in components:
                 if (0 < x0 - x <= 1.8 * height and 0 < x + w - x1 <= 1.8 * height
                         and y < y0 < y1 < y + h and h <= 3.5 * height and area < 0.25 * w * h):
                     x0, y0, x1, y1 = x, y, x + w, y + h
@@ -399,6 +423,16 @@ def bloom_key(path):
         np.savetxt(handle, colors, fmt="%.6f")
 
 
+def erase_geometry(rect, width, height):
+    def pad(amount):
+        return Rect(max(0, rect.x0 - amount), max(0, rect.y0 - amount),
+                    min(width, rect.x1 + amount), min(height, rect.y1 + amount))
+
+    shadow = max(2, even_up(width * 0.01))
+    feather = max(4, even_up(width * 0.01))
+    return pad(shadow), pad(shadow + feather), feather
+
+
 def video_graph(width, height, plan, cover, hold, work, matrix, fps):
     # Framesync repeats the selected source frame on the opening frames only.
     graph = ["[0:v:0]setpts=PTS-STARTPTS[base]",
@@ -412,8 +446,7 @@ def video_graph(width, height, plan, cover, hold, work, matrix, fps):
         inputs.append(["-f", "rawvideo", "-pixel_format", "gray", "-video_size",
                        f"{source.width}x{source.height}", "-framerate", str(fps),
                        "-i", work / f"{name}.gray"])
-        graph.append(f"[{len(inputs) + 1}:v:0]split[{name}erase][{name}paste]")
-        label = f"[{name}paste]"
+        label = f"[{len(inputs) + 1}:v:0]"
         if (source.width, source.height) != (target.width, target.height):
             graph.append(f"{label}{scale(target.width, target.height, 'bilinear')},format=gray[{name}mask]")
             label = f"[{name}mask]"
@@ -449,31 +482,30 @@ def video_graph(width, height, plan, cover, hold, work, matrix, fps):
     text_masks = {name: text_input(name, plan["sources"][name], plan["targets"][name])
                   for name in TEXT_ANCHORS}
     for name in ANCHORS:
-        rect = plan["sources"][name]
-        border = max(4, even_up(width * 0.009))
-        outer = pad(rect, border)
-        # Stretch the nearby clean bands, then blur away the interpolation seam.
-        # Sampling outside the crop keeps the fill free of the original lettering.
+        inner, outer, border = erase_geometry(plan["sources"][name], width, height)
+        # Average clean strips into two rows. FFmpeg's area upscale gives
+        # a linear ramp in the middle half, even for a two-row input.
         top = min(border, outer.y0)
         bottom = min(border, height - outer.y1)
         if top and bottom:
             above = Rect(outer.x0, outer.y0 - top, outer.x1, outer.y0)
             below = Rect(outer.x0, outer.y1, outer.x1, outer.y1 + bottom)
+            row = scale(outer.width, 1, "area")
             graph.extend([f"[{name}fill]split[{name}above][{name}below]",
-                          f"[{name}above]{above.filter()}[{name}a]",
-                          f"[{name}below]{below.filter()}[{name}b]",
-                          f"[{name}a][{name}b]vstack=inputs=2[{name}bands]"])
+                          f"[{name}above]{above.filter()},{row}[{name}a]",
+                          f"[{name}below]{below.filter()},{row}[{name}b]",
+                          f"[{name}a][{name}b]vstack=inputs=2,"
+                          f"{scale(outer.width, 2 * outer.height, 'area')},"
+                          f"crop={outer.width}:{outer.height}:0:{outer.height // 2}[{name}bands]"])
         elif top or bottom:
             band = (Rect(outer.x0, outer.y0 - top, outer.x1, outer.y0) if top else
                     Rect(outer.x0, outer.y1, outer.x1, outer.y1 + bottom))
-            graph.append(f"[{name}fill]{band.filter()}[{name}bands]")
+            graph.append(f"[{name}fill]{band.filter()},{scale(outer.width, 1, 'area')},"
+                         f"{scale(outer.width, outer.height, 'bilinear')}[{name}bands]")
         else:
             raise ValueError(f"no neighbouring background to fill {name}")
-        fill = rect if name in TEXT_ANCHORS else outer
-        graph.append(f"[{name}bands]{scale(fill.width, fill.height, 'bilinear')},"
-                     f"gblur=sigma={border*1.4:.2f}:steps=3[{name}patch]")
-        erase = f"[{name}erase]" if name in TEXT_ANCHORS else mask(outer, rect, name)
-        base = composite(base, f"[{name}patch]", fill, f"{name}erased", erase)
+        graph.append(f"[{name}bands]gblur=sigma={border*0.6:.2f}:steps=2[{name}patch]")
+        base = composite(base, f"[{name}patch]", outer, f"{name}erased", mask(outer, inner, name))
 
     title = plan["sources"]["title"]
     outer = pad(title, max(6, even_up(width * 0.02)))
@@ -553,9 +585,22 @@ def anchor_checks(plan, reference, delivered):
         expected = patch[np.ix_(y, x)].astype(np.float32)
         actual = target.crop(delivered).astype(np.float32)
         solid = np.ones(expected.shape, dtype=bool)
-        if name in TEXT_ANCHORS:
-            # Independently look for bright strokes across individual scanlines.
-            # Exclude the crop ends and outer rows where a pill border can sit.
+        if name == "captions":
+            import cv2
+
+            # Detect source strokes without consulting the relocation alpha.
+            # Resample the source luma as well as the ink locations to account
+            # for thin strokes losing peak brightness during downscaling.
+            ink, boxes, _, _ = text_runs(patch, name, reference.shape[1])
+            strokes = np.zeros_like(ink)
+            for x0, y0, x1, y1 in boxes:
+                strokes[y0:y1, x0:x1] = ink[y0:y1, x0:x1]
+            solid = strokes[np.ix_(y, x)]
+            if patch.shape != expected.shape:
+                expected = cv2.resize(patch.astype(np.float32), (target.width, target.height),
+                                      interpolation=cv2.INTER_LINEAR)
+        elif name == "pill":
+            # Check for aligned bright strokes across individual scanlines.
             ink = expected >= max(120, float(np.median(expected)) + 55)
             solid.fill(False)
             left, right = target.width // 18, target.width - target.width // 18
@@ -567,35 +612,9 @@ def anchor_checks(plan, reference, delivered):
                 for first, second, third in zip(runs, runs[1:], runs[2:]):
                     if second[0] - first[1] <= gap and third[0] - second[1] <= gap:
                         solid[row, first[0]:third[1]] = ink[row, first[0]:third[1]]
-            if name == "captions":
-                # A short centred caption may have only one bright stroke on
-                # each scanline. Inspect vertical ink extent without using the
-                # compositor's connected components or relocation alpha.
-                left, right = target.width // 3, 2 * target.width // 3
-                center = ink[:, left:right]
-                edges = np.flatnonzero(np.diff(center.any(axis=0), prepend=False, append=False))
-                scale = reference.shape[1] / 1080 * target.height / source.height
-                for start, stop in edges.reshape(-1, 2):
-                    strokes = center[:, start:stop]
-                    rows = np.flatnonzero(strokes.any(axis=1))
-                    height = rows[-1] - rows[0] + 1
-                    if (max(3, 9 * scale) <= height <= max(7, 35 * scale)
-                            and stop - start <= 1.65 * height
-                            and abs((rows[0] + rows[-1] + 1) / 2 - target.height / 2) <= target.height / 6):
-                        solid[:, left + start:left + stop] |= strokes
         if not solid.any():
             checks[name] = {"present": False, "mean_abs_error": None, "bright_pixel_retention": None, "pass": True}
             continue
-        if name == "captions" and patch.shape != expected.shape:
-            import cv2
-
-            # Nearest-neighbour locates the source ink above, but overstates
-            # the expected brightness of thin strokes after interpolation.
-            resized = cv2.resize(patch.astype(np.float32), (target.width, target.height),
-                                 interpolation=cv2.INTER_LINEAR)
-            strong = solid & (resized >= max(120, float(np.median(resized)) + 55))
-            if strong.any():
-                expected, solid = resized, strong
         error = np.abs(expected[solid] - actual[solid])
         mae = float(error.mean())
         # Bright anchor pixels must still be bright even when the rest of the crop
@@ -611,6 +630,60 @@ def anchor_checks(plan, reference, delivered):
                         "bright_pixel_retention": None if visible is None else round(visible, 3),
                         "pass": (name in TEXT_ANCHORS or mae <= 12) and (visible is None or visible >= 0.72)}
     return checks
+
+
+def leftover_checks(path, info, plan):
+    """Sample the encoded picture for anchor edges and backing left at source."""
+    import numpy as np
+
+    width, height = info["width"], info["height"]
+    last = info["frames"] - 1
+    times = [n / 10 for n in range(16)] + [3, 20, 45]
+    indices = sorted({min(last, round(time * info["fps"])) for time in times})
+    select = "+".join(f"eq(n,{index})" for index in indices)
+    raw = ffmpeg("-v", "error", "-i", path, "-map", "0:v:0", "-vf",
+                 f"select='{select}',format=gray", "-frames:v", len(indices),
+                 "-fps_mode", "passthrough", "-f", "rawvideo", "-").stdout
+    frames = np.frombuffer(raw, np.uint8).reshape(-1, height, width)
+    if len(frames) != len(indices):
+        raise ValueError("incomplete leftover analysis")
+
+    samples = []
+    for index, frame in zip(indices, frames):
+        anchors = {}
+        for name in ANCHORS:
+            inner, outer, border = erase_geometry(plan["sources"][name], width, height)
+            if any(outer.overlaps(rect) for rect in (*plan["targets"].values(), plan["sources"]["title"])):
+                anchors[name] = {"pass": True, "skipped": "overlaps visible artwork"}
+                continue
+            bands = [frame[lo:hi, inner.x0:inner.x1].astype(np.float32)
+                     for lo, hi in ((max(0, outer.y0 - border), outer.y0),
+                                    (outer.y1, min(height, outer.y1 + border))) if hi > lo]
+            above, below = bands[0].mean(axis=0), bands[-1].mean(axis=0)
+            weight = (np.arange(inner.y0, inner.y1) + 0.5 - outer.y0)[:, None] / outer.height
+            expected = above * (1 - weight) + below * weight
+            actual = inner.crop(frame).astype(np.float32)
+            # Ignore single-pixel codec noise, and allow natural contrast in
+            # the surrounding strips when scoring a textured background.
+            stride = max(1, round(border / 3))
+
+            def edge_energy(patch):
+                changes = (patch[stride:] - patch[:-stride], patch[:, stride:] - patch[:, :-stride])
+                return max((float(np.quantile(np.abs(diff), 0.95))
+                            for diff in changes if diff.size), default=0)
+
+            edge = edge_energy(actual)
+            background_edge = max(edge_energy(band) for band in bands)
+            residual = np.abs(actual - expected)
+            step = float(np.quantile(residual, 0.95))
+            background_step = max(float(np.quantile(np.abs(band - band.mean(axis=0)), 0.95))
+                                  for band in bands)
+            anchors[name] = {"edge": round(edge, 3), "border_edge": round(background_edge, 3),
+                             "luma_step": round(step, 3), "border_luma_step": round(background_step, 3),
+                             "pass": edge <= background_edge + 6 and step <= background_step + 12}
+        samples.append({"frame": index, "time_seconds": float(index / info["fps"]), "anchors": anchors})
+    return {"pass": all(anchor["pass"] for sample in samples for anchor in sample["anchors"].values()),
+            "samples": samples}
 
 
 def audio_passes(stats):
@@ -650,6 +723,7 @@ def check(out, reference, layout=None, cover_frame=None):
                 **serial_plan(plan), "frame0_anchor_checks": checks}
     else:
         safe = {"pass": same_size, "skipped": plan is None}
+    leftovers = leftover_checks(out, result, plan) if plan and same_size else {"pass": same_size, "skipped": True}
     frame0 = {"source": original, "output": finished, "pass": cover_passes(finished, original)}
     stats = loudness(out) if result["audio"] else None
     audio_ok = bool(stats and audio_passes(stats) and result["audio"]["codec_name"] == "aac"
@@ -672,8 +746,9 @@ def check(out, reference, layout=None, cover_frame=None):
               "pass": (sync_ok and same_size and source["fps"] == result["fps"] and
                        frame_counts[0] == frame_counts[1] and
                        abs(source["duration"] - result["duration"]) < 0.001)}
-    report = {"frame0": frame0, "safe_zone": safe, "loudness": {"after": stats, "pass": audio_ok},
-              "timing": timing, "pass": frame0["pass"] and safe["pass"] and audio_ok and timing["pass"]}
+    report = {"frame0": frame0, "safe_zone": safe, "leftovers": leftovers,
+              "loudness": {"after": stats, "pass": audio_ok}, "timing": timing,
+              "pass": frame0["pass"] and safe["pass"] and leftovers["pass"] and audio_ok and timing["pass"]}
     if artifact is not None:
         report["artifact"] = artifact
     return report
