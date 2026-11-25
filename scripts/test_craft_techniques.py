@@ -83,7 +83,7 @@ def test_dropout_detection_real_check_50ms():
         result = review.check(video, review_dir, preset="reels")
         
         # Check for dropout warning in results
-        dropout_check = next((r for r in result if "dropout" in r["check"]), None)
+        dropout_check = next((r for r in result["rows"] if "dropout" in r["check"]), None)
         assert dropout_check is not None, "Dropout check not found in results"
         assert dropout_check["level"] == "WARN", f"Expected WARN, got {dropout_check['level']}"
         assert "audio ends" in dropout_check["detail"] or "before video" in dropout_check["detail"], \
@@ -107,7 +107,7 @@ def test_dropout_detection_no_false_positive():
         result = review.check(video, review_dir, preset="reels")
         
         # Check dropout is PASS
-        dropout_check = next((r for r in result if "dropout" in r["check"]), None)
+        dropout_check = next((r for r in result["rows"] if "dropout" in r["check"]), None)
         assert dropout_check is not None, "Dropout check not found"
         assert dropout_check["level"] == "PASS", f"False positive: {dropout_check}"
         print(f"  no false positive on normal video")
@@ -157,7 +157,7 @@ def test_interior_silent_hole_detection():
         result = review.check(video, review_dir, preset="reels")
         
         # Check for interior silence warning
-        silence_check = next((r for r in result if "silence" in r["check"]), None)
+        silence_check = next((r for r in result["rows"] if "silence" in r["check"]), None)
         assert silence_check is not None, "Silence check not found"
         assert silence_check["level"] == "WARN", f"Expected WARN for 2.5s hole, got {silence_check['level']}"
         print(f"  interior 2.5s silent hole detected")
