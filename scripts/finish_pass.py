@@ -279,6 +279,37 @@ def write_mask(path, outer, inner):
     path.write_bytes(f"P5\n{outer.width} {outer.height}\n255\n".encode() + alpha.astype("uint8").tobytes())
 
 
+def caption_search_area(gray, width):
+    """Find a dark backing against the top and bottom of the caption band."""
+    import cv2
+    import numpy as np
+
+    height, columns = gray.shape
+    scale = width / 1080
+    strip = max(1, round(4 * scale))
+    above = gray[:strip].mean(axis=0)
+    below = gray[-strip:].mean(axis=0)
+    fraction = np.linspace(0, 1, height)[:, None]
+    background = above * (1 - fraction) + below * fraction
+    dark = (background - gray >= 12).astype(np.uint8)
+    span = max(3, round(21 * scale)) | 1
+    kernel = np.ones((max(3, round(9 * scale)) | 1, span), np.uint8)
+    dark = cv2.morphologyEx(dark, cv2.MORPH_CLOSE, kernel,
+                            borderType=cv2.BORDER_CONSTANT, borderValue=0)
+    _, _, components, _ = cv2.connectedComponentsWithStats(dark, connectivity=8)
+    pills = [(x, y, w, h, area) for x, y, w, h, area in components[1:]
+             if height * 0.35 <= h < height and w >= 1.4 * h
+             and abs(y + h / 2 - height / 2) <= height / 5 and area >= 0.55 * w * h]
+    if not pills:
+        # Off-centre text is possible, but the far edges and extreme rows
+        # of a band have little positional evidence without a backing.
+        return (columns // 16, height // 5, columns - columns // 16, height - height // 5), False
+    x, y, w, h, _ = max(pills, key=lambda component: component[4])
+    pad = max(2, round(6 * scale))
+    return (max(0, x - pad), max(0, y - pad),
+            min(columns, x + w + pad), min(height, y + h + pad)), True
+
+
 def text_runs(gray, name, width):
     """Locate bright, aligned strokes against the backing of the text band."""
     import cv2
@@ -305,14 +336,33 @@ def text_runs(gray, name, width):
     if not glyphs:
         return ink, (), (), 0
 
-    # Use the densest baseline band. Glyphs with descenders may extend a
-    # little below the line. Separate runs never borrow each other's backing.
     tolerance = max(2, round(7 * scale))
-    bottoms = np.array([y + h for _, y, _, h in glyphs])
-    histogram = np.bincount(bottoms, minlength=gray.shape[0] + 1)
-    votes = np.convolve(histogram, np.ones(2 * tolerance + 1, dtype=int), mode="same")
-    baseline = bottoms[votes[bottoms].argmax()]
-    line = [glyph for glyph, bottom in zip(glyphs, bottoms) if abs(bottom - baseline) <= tolerance]
+    if name == "captions":
+        (left, top, right, bottom), backed = caption_search_area(gray, width)
+        glyphs = [(x, y, w, h) for x, y, w, h in glyphs
+                  if left <= x + w / 2 < right and top <= y + h / 2 < bottom
+                  and (backed or h >= max(3, 9 * scale))]
+        if not glyphs:
+            return ink, (), (), 0
+        # Rank nearby, aligned glyphs before choosing a baseline. An isolated
+        # reflection cannot outvote a run elsewhere on the same row.
+        baseline = max(
+            glyphs,
+            key=lambda glyph: (
+                sum(abs(y + h - glyph[1] - glyph[3]) <= tolerance
+                    and abs(x + w / 2 - glyph[0] - glyph[2] / 2) <= 3 * max(h, glyph[3])
+                    for x, y, w, h in glyphs),
+                -abs(glyph[1] + glyph[3] / 2 - gray.shape[0] / 2),
+            ),
+        )
+        baseline = baseline[1] + baseline[3]
+    else:
+        # Keep the original baseline selection for the top pill.
+        bottoms = np.array([y + h for _, y, _, h in glyphs])
+        histogram = np.bincount(bottoms, minlength=gray.shape[0] + 1)
+        votes = np.convolve(histogram, np.ones(2 * tolerance + 1, dtype=int), mode="same")
+        baseline = bottoms[votes[bottoms].argmax()]
+    line = [(x, y, w, h) for x, y, w, h in glyphs if abs(y + h - baseline) <= tolerance]
     height = float(np.median([h for _, _, _, h in line]))
     bounds = []
     run = [line[0]]
@@ -327,14 +377,32 @@ def text_runs(gray, name, width):
     for run in bounds:
         x0, y0 = min(x for x, _, _, _ in run), min(y for _, y, _, _ in run)
         x1, y1 = max(x + w for x, _, w, _ in run), max(y + h for _, y, _, h in run)
-        if len(run) < 3 and (
-            name != "captions"
-            or abs((x0 + x1) / 2 - gray.shape[1] / 2) > gray.shape[1] / 6
-            or abs((y0 + y1) / 2 - gray.shape[0] / 2) > gray.shape[0] / 4
-        ):
+        if name == "pill" and len(run) < 3:
             continue
         boxes.append((x0, y0, x1, y1))
     return ink, boxes, components[1:], height
+
+
+def caption_reference_strokes(gray, width):
+    """Measure source strokes via local contrast and vertical ink coverage."""
+    import cv2
+    import numpy as np
+
+    (left, top, right, bottom), backed = caption_search_area(gray, width)
+    scale = width / 1080
+    span = max(3, round(21 * scale)) | 1
+    contrast = cv2.morphologyEx(gray, cv2.MORPH_TOPHAT, np.ones((1, span), np.uint8))
+    strokes = (gray >= 112) & (contrast >= 45)
+    strokes[:, :left] = strokes[:, right:] = False
+    # Keep entire strokes that cross the search area, including tall glyphs
+    # whose tops or bottoms reach past its vertical bounds.
+    _, labels, components, _ = cv2.connectedComponentsWithStats(strokes.astype(np.uint8), connectivity=8)
+    keep = np.zeros(len(components), dtype=bool)
+    for index, (_, y, w, h, area) in enumerate(components[1:], 1):
+        keep[index] = (top <= y + h / 2 < bottom and w <= 1.65 * h
+                       and h >= (2 if backed else max(3, 9 * scale))
+                       and area >= max(4, 12 * scale ** 2))
+    return keep[labels]
 
 
 def text_alpha(gray, name, width):
@@ -591,10 +659,7 @@ def anchor_checks(plan, reference, delivered):
             # Detect source strokes without consulting the relocation alpha.
             # Resample the source luma as well as the ink locations to account
             # for thin strokes losing peak brightness during downscaling.
-            ink, boxes, _, _ = text_runs(patch, name, reference.shape[1])
-            strokes = np.zeros_like(ink)
-            for x0, y0, x1, y1 in boxes:
-                strokes[y0:y1, x0:x1] = ink[y0:y1, x0:x1]
+            strokes = caption_reference_strokes(patch, reference.shape[1])
             solid = strokes[np.ix_(y, x)]
             if patch.shape != expected.shape:
                 expected = cv2.resize(patch.astype(np.float32), (target.width, target.height),
@@ -634,12 +699,15 @@ def anchor_checks(plan, reference, delivered):
 
 def leftover_checks(path, info, plan):
     """Sample the encoded picture for anchor edges and backing left at source."""
+    import cv2
     import numpy as np
 
     width, height = info["width"], info["height"]
     last = info["frames"] - 1
     times = [n / 10 for n in range(16)] + [3, 20, 45]
-    indices = sorted({min(last, round(time * info["fps"])) for time in times})
+    indices = {min(last, round(time * info["fps"])) for time in times}
+    indices.update(range(round(0.4 * info["fps"]), min(last, round(0.8 * info["fps"])) + 1))
+    indices = sorted(indices)
     select = "+".join(f"eq(n,{index})" for index in indices)
     raw = ffmpeg("-v", "error", "-i", path, "-map", "0:v:0", "-vf",
                  f"select='{select}',format=gray", "-frames:v", len(indices),
@@ -663,24 +731,27 @@ def leftover_checks(path, info, plan):
             weight = (np.arange(inner.y0, inner.y1) + 0.5 - outer.y0)[:, None] / outer.height
             expected = above * (1 - weight) + below * weight
             actual = inner.crop(frame).astype(np.float32)
-            # Ignore single-pixel codec noise, and allow natural contrast in
-            # the surrounding strips when scoring a textured background.
-            stride = max(1, round(border / 3))
-
-            def edge_energy(patch):
-                changes = (patch[stride:] - patch[:-stride], patch[:, stride:] - patch[:, :-stride])
-                return max((float(np.quantile(np.abs(diff), 0.95))
-                            for diff in changes if diff.size), default=0)
-
-            edge = edge_energy(actual)
-            background_edge = max(edge_energy(band) for band in bands)
-            residual = np.abs(actual - expected)
-            step = float(np.quantile(residual, 0.95))
-            background_step = max(float(np.quantile(np.abs(band - band.mean(axis=0)), 0.95))
-                                  for band in bands)
-            anchors[name] = {"edge": round(edge, 3), "border_edge": round(background_edge, 3),
-                             "luma_step": round(step, 3), "border_luma_step": round(background_step, 3),
-                             "pass": edge <= background_edge + 6 and step <= background_step + 12}
+            residual = actual - expected
+            # Smooth deviations from the interpolated background are expected.
+            # Require local contrast as well, then group same-polarity pixels
+            # so a small stroke can fail without counting dispersed codec noise.
+            smooth = cv2.GaussianBlur(residual, (0, 0), max(1, 4 * width / 1080))
+            detail = residual - smooth
+            min_area = max(5, round(15 * width / 1080))
+            max_area, max_contrast = 0, 0.0
+            failed = False
+            for sign in (1, -1):
+                contrast = np.minimum(sign * residual, sign * detail)
+                _, labels, components, _ = cv2.connectedComponentsWithStats(
+                    (contrast >= 8).astype(np.uint8), connectivity=8)
+                for label, (x, y, w, h, area) in enumerate(components[1:], 1):
+                    region = np.s_[y:y + h, x:x + w]
+                    strength = float(contrast[region][labels[region] == label].mean())
+                    max_area = max(max_area, int(area))
+                    max_contrast = max(max_contrast, strength)
+                    failed |= area >= min_area and strength >= 10
+            anchors[name] = {"max_component_area": max_area, "max_component_contrast": round(max_contrast, 3),
+                             "pass": not bool(failed)}
         samples.append({"frame": index, "time_seconds": float(index / info["fps"]), "anchors": anchors})
     return {"pass": all(anchor["pass"] for sample in samples for anchor in sample["anchors"].values()),
             "samples": samples}

@@ -212,3 +212,75 @@ def test_erases_caption_backing_and_pill_outline_through_reveal(monkeypatch, tmp
     assert not baked["pass"]
     assert any(not sample["anchors"]["captions"]["pass"] for sample in baked["samples"])
     assert any(not sample["anchors"]["pill"]["pass"] for sample in baked["samples"])
+
+
+@pytest.mark.parametrize(("text", "shift"), [("A", 0), ("HI", -74), ("HI", 74),
+                                              ("OK", -74), ("OK", 74)])
+def test_caption_pill_disambiguates_shifted_ink_and_scenery(monkeypatch, tmp_path, text, shift):
+    import cv2
+    import numpy as np
+
+    monkeypatch.setenv("REELSMITH_FINISH_PASS", "1")
+    src, out = (tmp_path / name for name in ("source.mp4", "finished.mp4"))
+    w, h = 360, 640
+    plan = fp.plan_layout(fp.DEFAULT_LAYOUT, w, h)
+    source, target = (plan[key]["captions"] for key in ("sources", "targets"))
+    frame = np.full((h, w), 82, dtype=np.uint8)
+    frame[190:365] = 184
+    crop = source.crop(frame)
+    cx, cy = source.width // 2 + shift, source.height // 2
+    cv2.ellipse(crop, (cx, cy), (27, 10), 0, 0, 360, 22, -1)
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    (tw, th), _ = cv2.getTextSize(text, font, 0.55, 1)
+    cv2.putText(crop, text, (cx - tw // 2, cy + th // 2), font, 0.55, 240, 1, cv2.LINE_8)
+    crop[2:7, 5:10] = crop[2:7, -10:-5] = 240
+    still = tmp_path / "caption.pgm"
+    still.write_bytes(f"P5\n{w} {h}\n255\n".encode() + frame.tobytes())
+    fp.ffmpeg("-v", "error", "-loop", "1", "-framerate", 12, "-i", still,
+              "-f", "lavfi", "-i", "sine=f=360:r=48000:d=1",
+              "-t", 1, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", src)
+    reference = fp.gray_frames(src, w, h, 1)[0]
+    blank = np.full_like(reference, 82)
+    with monkeypatch.context() as checker:
+        def unexpected_mask_detection(*args):
+            pytest.fail("the checker called the compositor's caption detector")
+
+        checker.setattr(fp, "text_runs", unexpected_mask_detection)
+        missing = fp.anchor_checks(plan, reference, blank)["captions"]
+    assert missing["present"] and not missing["pass"]
+    alpha = fp.text_alpha(source.crop(reference), "captions", w)
+    assert alpha[:, cx - tw:cx + tw].max() > 0
+    assert not alpha[:, :12].any() and not alpha[:, -12:].any()
+    report = fp.run(src, out)
+    delivered = target.crop(fp.gray_frames(out, w, h, 1)[0])
+    assert np.count_nonzero(delivered > 170) >= 8
+    assert delivered[:, :8].max() < 120 and delivered[:, -8:].max() < 120
+    assert report["safe_zone"]["frame0_anchor_checks"]["captions"]["present"]
+    assert fp.check(out, src)["safe_zone"]["pass"]
+
+
+def test_leftovers_reports_small_glyphs_in_encoded_vacated_regions(tmp_path):
+    import cv2
+    import numpy as np
+
+    w, h, fps = 360, 640, 30
+    plan = fp.plan_layout(fp.DEFAULT_LAYOUT, w, h)
+    names = ("pill", "captions")
+    frames = np.full((30, h, w), 82, dtype=np.uint8)
+    for index in (3, 6, 9, *range(15, 21)):
+        for name in names:
+            crop = plan["sources"][name].crop(frames[index])
+            cv2.putText(crop, "A", (crop.shape[1] // 2, 19),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.55, 165, 1, cv2.LINE_8)
+    raw, clip = (tmp_path / name for name in ("frames.gray", "leftovers.mp4"))
+    raw.write_bytes(frames.tobytes())
+    fp.ffmpeg("-v", "error", "-f", "rawvideo", "-pixel_format", "gray", "-video_size", f"{w}x{h}",
+              "-framerate", fps, "-i", raw, "-c:v", "libx264", "-pix_fmt", "yuv420p", clip)
+    result = fp.leftover_checks(clip, fp.probe(clip), plan)
+    assert not result["pass"]
+    for name in names:
+        failed = {sample["frame"]: sample["anchors"][name] for sample in result["samples"]
+                  if not sample["anchors"][name]["pass"]}
+        assert failed.keys() == {3, 6, 9, *range(15, 21)}
+        assert all(anchor["max_component_area"] > 0 and anchor["max_component_contrast"] > 0
+                   for anchor in failed.values())
