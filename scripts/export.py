@@ -13,6 +13,8 @@ internal tests only; never for a deliverable.
 import argparse, re, json, math, shutil, subprocess, sys
 from pathlib import Path
 
+from finish_pass_flag import enabled as finish_enabled
+
 HERE = Path(__file__).resolve().parent
 PRESETS = json.loads((HERE / "presets.json").read_text())["presets"]
 
@@ -108,7 +110,7 @@ def master_audio(src, out, lufs=-14.0, kbps=192, hz=48000, ceiling=-1.0, meas=No
         wav.unlink(missing_ok=True)
     return I, P
 
-def export_one(video, preset, outdir, mode="pad-blur", thumb_at=None, srt=None, vtt=None, src=None, meas=None):
+def export_one(video, preset, outdir, mode="pad-blur", thumb_at=None, srt=None, vtt=None, src=None, meas=None, *, mastered=False):
     p = PRESETS[preset]
     src = src or probe(video)
     fps = p["fps"] or round(src["fps"])
@@ -117,7 +119,9 @@ def export_one(video, preset, outdir, mode="pad-blur", thumb_at=None, srt=None, 
     out = Path(outdir) / f"{Path(video).stem}-{preset}.mp4"
     cmd = ["ffmpeg", "-y", "-v", "error", "-i", str(video)]
     amap = []
-    if src["audio"]:
+    if src["audio"] and mastered:
+        amap = ["-map", "0:a:0", "-c:a", "copy"]
+    elif src["audio"]:
         aud = Path(outdir) / f".{Path(video).stem}-{preset}.m4a"
         master_audio(video, aud, p.get("lufs", -14), p["audio_kbps"], p["audio_hz"], p.get("true_peak", -1.0), meas)
         cmd += ["-i", str(aud)]
@@ -130,7 +134,7 @@ def export_one(video, preset, outdir, mode="pad-blur", thumb_at=None, srt=None, 
         v += ["-crf", str(p.get("crf", 16))]
     v += ["-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-movflags", "+faststart", "-map_metadata", "-1"]
     r = sh(cmd + v + ["-shortest", str(out)])
-    if src["audio"]:
+    if src["audio"] and not mastered:
         aud.unlink(missing_ok=True)
     if r.returncode:
         raise SystemExit(f"{preset}: ffmpeg failed: {r.stderr[-400:]}")
@@ -162,6 +166,12 @@ def export_one(video, preset, outdir, mode="pad-blur", thumb_at=None, srt=None, 
     print(f"  {preset:16} {o['w']}x{o['h']} {o['fps']:.0f}fps {o['duration']:.2f}s {rep['mb']} MB {'; '.join(notes)}")
     return rep
 
+def run_exports(a, video, *, mastered=False):
+    src = probe(video)
+    meas = measure_loudness(video) if src["audio"] and not mastered else None
+    return [export_one(video, pr.strip(), a.out, a.fit, a.thumb_at, a.srt, a.vtt, src, meas, mastered=mastered)
+            for pr in a.preset.split(",")]
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sp = ap.add_subparsers(dest="cmd", required=True)
@@ -191,9 +201,19 @@ def main():
         if not a.review or not rv.exists() or not json.loads(rv.read_text()).get("approved"):
             sys.exit("Export blocked: run review.py check, show the user preview/contact sheet, then review.py approve. (--unreviewed is for internal tests only.)")
     Path(a.out).mkdir(parents=True, exist_ok=True)
-    src = probe(a.video)
-    meas = measure_loudness(a.video) if src["audio"] else None
-    reps = [export_one(a.video, pr.strip(), a.out, a.fit, a.thumb_at, a.srt, a.vtt, src, meas) for pr in a.preset.split(",")]
+    if finish_enabled():
+        import tempfile
+        from finish_pass import run as finish
+
+        with tempfile.TemporaryDirectory(prefix=".finish-export-", dir=a.out) as work:
+            video = Path(work) / (Path(a.video).stem + ".mp4")
+            try:
+                finish(a.video, video)
+            except (ValueError, OSError, ImportError) as error:
+                sys.exit(f"Export finish pass failed: {error}")
+            reps = run_exports(a, video, mastered=True)
+    else:
+        reps = run_exports(a, a.video)
     (Path(a.out) / "export-report.json").write_text(json.dumps(reps, indent=2))
     sys.exit(1 if any(n.startswith("FAIL") for r in reps for n in r["notes"]) else 0)
 
