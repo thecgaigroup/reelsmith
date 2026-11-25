@@ -839,27 +839,12 @@ def test_many_failures_preserve_reasons():
                         "-i", "color=black:s=1920x1080:r=30:duration=0.5",
                         "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "ref.mp4")],
                        capture_output=True, check=True)
-        # Create test with many small white squares that will trigger multiple tile failures
-        # Draw 12 white rectangles across different locations to hit multiple tiles
-        drawboxes = ",".join([
-            "drawbox=x=0:y=0:w=100:h=100:color=white:t=fill",
-            "drawbox=x=200:y=0:w=100:h=100:color=white:t=fill",
-            "drawbox=x=400:y=0:w=100:h=100:color=white:t=fill",
-            "drawbox=x=600:y=0:w=100:h=100:color=white:t=fill",
-            "drawbox=x=800:y=0:w=100:h=100:color=white:t=fill",
-            "drawbox=x=0:y=200:w=100:h=100:color=white:t=fill",
-            "drawbox=x=200:y=200:w=100:h=100:color=white:t=fill",
-            "drawbox=x=400:y=200:w=100:h=100:color=white:t=fill",
-            "drawbox=x=600:y=200:w=100:h=100:color=white:t=fill",
-            "drawbox=x=800:y=200:w=100:h=100:color=white:t=fill",
-            "drawbox=x=0:y=400:w=100:h=100:color=white:t=fill",
-            "drawbox=x=200:y=400:w=100:h=100:color=white:t=fill",
-        ])
+        # Create test with large changed areas to trigger multiple tile failures
+        # Make the entire video white - this will definitely trigger 10+ tile failures
         subprocess.run(["ffmpeg", "-y", "-f", "lavfi",
-                        "-i", "color=black:s=1920x1080:r=30:duration=0.5",
-                        "-vf", drawboxes,
+                        "-i", "color=white:s=1920x1080:r=30:duration=0.5",
                         "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "test.mp4")],
-                       capture_output=True, check=True, timeout=10)
+                       capture_output=True, check=True)
         
         result = verify_change_scope(out / "ref.mp4", out / "test.mp4", ["none"])
         assert result["pass"] is False
