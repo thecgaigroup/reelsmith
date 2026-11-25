@@ -133,7 +133,7 @@ def test_frame0_quality_requirements():
     # This is a dry-run test that verifies the checker script exists and can be imported
     sys.path.insert(0, str(Path(__file__).parent))
     try:
-        from test_frame0_cover import check_frame0_cover, test_frame0_luma_requirements
+        from test_frame0_cover import check_frame0_cover, check_frame0_luma_requirements
         print("✓ Frame 0 quality checker module loads correctly")
     except ImportError as e:
         print(f"✗ Failed to import frame 0 checker: {e}", file=sys.stderr)

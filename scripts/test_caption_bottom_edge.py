@@ -51,8 +51,8 @@ def test_caption_bottom_edge_in_safe_zone():
         safe_zone_bottom_y = 1920 - 672  # = 1248
         
         assert margin_v == 672, f"MarginV should be 672px, got {margin_v}px"
-        assert caption_bottom_y >= safe_zone_bottom_y, \
-            f"Caption bottom edge at y={caption_bottom_y} is below safe zone (y={safe_zone_bottom_y})"
+        assert caption_bottom_y <= safe_zone_bottom_y, \
+            f"Caption bottom edge at y={caption_bottom_y} exceeds safe zone limit (y={safe_zone_bottom_y})"
         
         print(f"✓ Caption bottom edge test passed: MarginV={margin_v}px, bottom at y={caption_bottom_y} (safe zone y >= {safe_zone_bottom_y})")
 

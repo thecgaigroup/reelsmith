@@ -135,7 +135,7 @@ def test_frame0_extraction_and_hash():
 def test_frame0_luma_on_test_video():
     """Test frame-0 luma measurement on a generated test video."""
     sys.path.insert(0, str(Path(__file__).parent))
-    from test_frame0_cover import test_frame0_luma_requirements
+    from test_frame0_cover import check_frame0_luma_requirements
     
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = Path(tmpdir)
@@ -147,7 +147,7 @@ def test_frame0_luma_on_test_video():
             print("⚠ Skipping luma test (ffmpeg video creation failed)")
             return
         
-        passed, mean, stddev, errors = test_frame0_luma_requirements(str(video))
+        passed, mean, stddev, errors = check_frame0_luma_requirements(str(video))
         
         if mean is None or stddev is None:
             print("⚠ Frame-0 luma test skipped (could not extract stats)")

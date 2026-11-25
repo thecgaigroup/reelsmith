@@ -96,36 +96,58 @@ def get_frame_luma_stats(video_path, frame_num=0):
     return pixel_mean, pixel_stddev
 
 
-def get_image_luma_mean(image_path):
-    """Get mean luma from an image file.
+def get_luma_mean_from_raw_pixels(media_path, is_video=True, frame_num=0):
+    """Get mean luma by decoding to raw grayscale pixels.
+    
+    Unified measurement function for both images and videos. Ensures consistent
+    full-range (0-255) luma values for darkening comparisons.
     
     Args:
-        image_path: Path to image file
+        media_path: Path to image or video file
+        is_video: True for video (uses frame selection), False for image
+        frame_num: Frame number for video (default 0)
         
     Returns:
         Float mean luma value (0-255) or None if extraction fails
     """
-    cmd = [
-        "ffmpeg", "-i", str(image_path),
-        "-vf", "signalstats,metadata=print:file=-",
-        "-f", "null", "-"
-    ]
+    if is_video:
+        cmd = [
+            "ffmpeg", "-i", str(media_path),
+            "-vf", f"select='eq(n,{frame_num})'",
+            "-frames:v", "1",
+            "-f", "rawvideo",
+            "-pix_fmt", "gray",
+            "-"
+        ]
+    else:
+        cmd = [
+            "ffmpeg", "-i", str(media_path),
+            "-frames:v", "1",
+            "-f", "rawvideo",
+            "-pix_fmt", "gray",
+            "-"
+        ]
     
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
-    
+    result = subprocess.run(cmd, capture_output=True, check=False)
     if result.returncode != 0:
         return None
     
-    for line in result.stdout.split('\n'):
-        line = line.strip()
-        if line.startswith('lavfi.signalstats.YAVG='):
-            return float(line.split('=')[1])
+    raw_pixels = result.stdout
+    if not raw_pixels:
+        return None
     
-    return None
+    # Compute mean from raw pixels
+    try:
+        import numpy as np
+        pixels = np.frombuffer(raw_pixels, dtype=np.uint8)
+        return float(np.mean(pixels))
+    except ImportError:
+        import statistics
+        return statistics.mean(list(raw_pixels))
 
 
-def test_frame0_luma_requirements(video_path, min_mean=16, min_stddev=12):
-    """Test that frame 0 meets luma mean and stddev requirements.
+def check_frame0_luma_requirements(video_path, min_mean=16, min_stddev=12):
+    """Check that frame 0 meets luma mean and stddev requirements.
     
     Args:
         video_path: Path to video file to test
@@ -153,8 +175,11 @@ def test_frame0_luma_requirements(video_path, min_mean=16, min_stddev=12):
     return passed, mean, stddev, errors
 
 
-def test_frame0_vs_source_brightness(video_path, source_image_path, max_darkening_pct=5):
-    """Test that frame 0 is not more than max_darkening_pct darker than source.
+def check_frame0_vs_source_brightness(video_path, source_image_path, max_darkening_pct=5):
+    """Check that frame 0 is not more than max_darkening_pct darker than source.
+    
+    Uses unified raw pixel measurement for both video and image to ensure
+    consistent full-range (0-255) comparison.
     
     Args:
         video_path: Path to video file
@@ -164,16 +189,15 @@ def test_frame0_vs_source_brightness(video_path, source_image_path, max_darkenin
     Returns:
         Tuple of (passed, video_mean, source_mean, darkening_pct, error)
     """
-    video_stats = get_frame_luma_stats(video_path, frame_num=0)
-    source_mean = get_image_luma_mean(source_image_path)
+    # Use unified measurement from raw pixels
+    video_mean = get_luma_mean_from_raw_pixels(video_path, is_video=True, frame_num=0)
+    source_mean = get_luma_mean_from_raw_pixels(source_image_path, is_video=False)
     
-    if video_stats is None:
-        return False, None, None, None, "Could not extract video frame 0 stats"
+    if video_mean is None:
+        return False, None, None, None, "Could not extract video frame 0 luma"
     
     if source_mean is None:
-        return False, None, None, None, "Could not extract source image stats"
-    
-    video_mean = video_stats[0]
+        return False, None, None, None, "Could not extract source image luma"
     
     # Calculate darkening percentage
     darkening_pct = ((source_mean - video_mean) / source_mean) * 100 if source_mean > 0 else 0
@@ -198,7 +222,7 @@ def check_frame0_cover(video_path, source_image_path=None, min_mean=16, min_stdd
     Returns:
         Dict with 'passed', 'mean', 'stddev', 'errors' keys
     """
-    passed, mean, stddev, errors = test_frame0_luma_requirements(video_path, min_mean, min_stddev)
+    passed, mean, stddev, errors = check_frame0_luma_requirements(video_path, min_mean, min_stddev)
     
     result = {
         'passed': passed,
@@ -208,7 +232,7 @@ def check_frame0_cover(video_path, source_image_path=None, min_mean=16, min_stdd
     }
     
     if source_image_path:
-        src_passed, vid_mean, src_mean, dark_pct, src_error = test_frame0_vs_source_brightness(
+        src_passed, vid_mean, src_mean, dark_pct, src_error = check_frame0_vs_source_brightness(
             video_path, source_image_path, max_darkening
         )
         result['source_comparison'] = {
