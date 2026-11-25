@@ -109,6 +109,7 @@ def probe(path):
         "fps": fps,
         "avg_fps": video["avg_frame_rate"],
         "time_base": video["time_base"],
+        "video_start_pts": video.get("start_pts"),
         "video_start": stream_start(video),
         "format_duration": duration if format_duration == "N/A" else float(format_duration),
         "audio": next((s for s in data["streams"] if s["codec_type"] == "audio"), None),
@@ -136,7 +137,9 @@ def require_supported_input(info, ticks):
     if not ticks or len(ticks) != info["frames"] or not all(type(tick) is int for tick in ticks):
         raise UnsupportedInput("missing frame presentation timestamps")
     frame_ticks = 1 / (fps * Fraction(info["time_base"]))
-    if frame_ticks.denominator != 1:
+    if frame_ticks.denominator == 1:
+        constant_rate = all(b - a == frame_ticks for a, b in zip(ticks, ticks[1:]))
+    elif fps.denominator == 1001 or (fps * 1001 / 1000).denominator == 1:
         # Floor/ceil deltas must follow one rounding phase across the clip.
         # The residuals from the exact cadence can span at most one tick.
         numerator, denominator = frame_ticks.numerator, frame_ticks.denominator
@@ -148,19 +151,25 @@ def require_supported_input(info, ticks):
             len({tick % 2 for tick, residual in zip(ticks, residuals) if residual in (low, high)}) == 1)
         constant_rate = rounded_cfr and all(a < b for a, b in zip(ticks, ticks[1:]))
     else:
-        constant_rate = all(b - a == frame_ticks for a, b in zip(ticks, ticks[1:]))
+        # Coarse timebases like 24 or 30 fps at 1/1000 and 25 fps at 1/15360
+        # require exact nearest-tick rounding (ties to even, at most half a tick off).
+        start = ticks[0]
+        constant_rate = (all(a < b for a, b in zip(ticks, ticks[1:])) and
+                         all(tick == start + round(index * frame_ticks)
+                             for index, tick in enumerate(ticks)))
     if not constant_rate:
         raise UnsupportedInput("variable frame rate")
     if info["audio"]:
-        frame_duration = 1 / float(fps)
-        video, audio = info["video_start"], stream_start(info["audio"])
-        if video is None or audio is None or not all(map(math.isfinite, (video, audio))):
-            raise UnsupportedInput("unknown audio or video start")
+        video_pts = info.get("video_start_pts")
+        audio_pts = info["audio"].get("start_pts")
+        if type(video_pts) is not int or type(audio_pts) is not int:
+            raise UnsupportedInput("missing audio or video start_pts")
+        video = Fraction(video_pts) * Fraction(info["time_base"])
+        audio = Fraction(audio_pts) * Fraction(info["audio"]["time_base"])
         delta = audio - video
-        # ffprobe reports starts rounded to microseconds.
-        if abs(delta) > frame_duration + 0.000001:
+        if abs(delta) > 1 / fps:
             first, last = ("audio", "video") if delta < 0 else ("video", "audio")
-            raise UnsupportedInput(f"{last} starts {abs(delta):.6f} s after {first}")
+            raise UnsupportedInput(f"{last} starts {abs(delta)} s after {first}")
 
 
 def write_mask(path, outer, inner):

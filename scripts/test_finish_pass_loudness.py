@@ -119,6 +119,72 @@ def test_single_tick_vfr_is_refused_without_output(monkeypatch, tmp_path):
     assert {b - a for a, b in zip(ticks, ticks[1:])} == {159999, 160000, 160001}
 
 
+def test_coarse_timebase_jitter_is_refused_without_output(monkeypatch, tmp_path):
+    monkeypatch.setenv("REELSMITH_FINISH_PASS", "1")
+    src = tmp_path / "coarse-jitter.mp4"
+    fp.ffmpeg("-v", "error", "-f", "lavfi", "-i", "testsrc2=s=96x96:r=30:d=3",
+              "-vf", r"settb=1/1000,setpts=round(N*1000/30)+eq(mod(N\,3)\,1)",
+              "-fps_mode", "passthrough", "-enc_time_base", "1:1000",
+              "-video_track_timescale", "1000", "-bf", "0", "-c:v", "libx264", src)
+    info = fp.probe(src)
+    assert info["time_base"] == "1/1000"
+    assert info["fps"] == Fraction(info["avg_fps"]) == 30
+    ticks = sfx_cues.frame_times(src)
+    assert {b - a for a, b in zip(ticks, ticks[1:])} == {33, 34}
+    assert ticks[1] == 34
+    assert_run_refused(src, tmp_path, "variable frame rate")
+
+
+@pytest.mark.parametrize("fps,timescale", [(24, 1000), (30, 1000), (25, 15360)])
+def test_deterministic_coarse_timebase_rounding_is_accepted(monkeypatch, tmp_path, fps, timescale):
+    """Accept these timebases exactly when PTS follows round() with ties to even."""
+    monkeypatch.setenv("REELSMITH_FINISH_PASS", "1")
+    src, out = (tmp_path / name for name in ("source.mp4", "out.mp4"))
+    fp.ffmpeg("-v", "error", "-f", "lavfi", "-i", f"testsrc2=s=96x96:r={fps}:d=3",
+              "-vf", f"settb=1/{timescale},setpts=round(N*{timescale}/{fps})",
+              "-fps_mode", "passthrough", "-enc_time_base", f"1:{timescale}",
+              "-video_track_timescale", str(timescale), "-bf", "0", "-c:v", "libx264", src)
+    info = fp.probe(src)
+    assert info["time_base"] == f"1/{timescale}"
+    assert info["fps"] == Fraction(info["avg_fps"]) == fps
+    assert sfx_cues.frame_times(src) == [round(Fraction(n * timescale, fps)) for n in range(3 * fps)]
+    report = fp.run(src, out)
+    assert report["timing"]["source_frames"] == report["timing"]["output_frames"] == 3 * fps
+    assert fp.check(out, src)["pass"]
+
+
+def test_start_one_tick_beyond_frame_is_refused_without_output(monkeypatch, tmp_path):
+    monkeypatch.setenv("REELSMITH_FINISH_PASS", "1")
+    src = tmp_path / "one-tick-late.mov"
+    fp.ffmpeg("-v", "error", "-f", "lavfi", "-i", "testsrc2=s=96x96:r=25:d=3",
+              "-f", "lavfi", "-i", "sine=f=440:r=48000:d=3",
+              "-vf", "settb=1/4000000,setpts=N*160000+160001",
+              "-fps_mode", "passthrough", "-enc_time_base", "1:4000000",
+              "-video_track_timescale", "4000000", "-movie_timescale", "4000000",
+              "-bf", "0", "-c:v", "libx264", "-c:a", "pcm_s16le", src)
+    info = fp.probe(src)
+    assert info["fps"] == Fraction(info["avg_fps"]) == 25
+    assert info["time_base"] == "1/4000000"
+    assert sfx_cues.frame_times(src)[0] == 160001
+    assert info["audio"]["start_pts"] == 0
+    assert_run_refused(src, tmp_path, "starts")
+
+
+@pytest.mark.parametrize("missing_stream", ["video", "audio"])
+def test_guard_requires_start_pts_for_both_streams(missing_stream):
+    info = {"fps": Fraction(25), "avg_fps": "25/1", "frames": 2,
+            "time_base": "1/4000000", "video_start_pts": 160000, "video_start": 0.04,
+            "audio": {"time_base": "1/48000", "start_pts": 0, "start_time": "0.000000"}}
+    ticks = [160000, 320000]
+    fp.require_supported_input(info, ticks)
+    if missing_stream == "video":
+        del info["video_start_pts"]
+    else:
+        del info["audio"]["start_pts"]
+    with pytest.raises(fp.UnsupportedInput, match="missing audio or video start_pts"):
+        fp.require_supported_input(info, ticks)
+
+
 @pytest.mark.parametrize("delayed_stream", ["video", "audio"])
 @pytest.mark.parametrize("delay", ["0.375", "0.033333"])
 def test_alignment_limit(monkeypatch, tmp_path, delayed_stream, delay):
