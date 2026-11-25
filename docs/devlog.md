@@ -1,5 +1,20 @@
 # Development Log
 
+## 2026-11-25 (Reelsmith 5.6.0 round 3)
+
+**What changed**
+- Planned cues from frame timestamps, retained full early cues in the default mix, and reported rendered and skipped cues.
+- Extended encoded mastering retries and added explicit diagnostics for short pictures and silent mixes.
+
+**State**
+- Local fixes for PR #48 on `feat/finish-pass-slim-r3`.
+
+**Where we left off**
+- Regression, CI-list and Signal render evidence is in `.finish-slim/FIX3_REPORT.md`.
+
+**Open**
+- Independent review and hosted CI are pending.
+
 ## 2026-11-25 (Reelsmith 5.6.0 review fixes)
 
 **What changed**

@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Optional offline finish pass for ducked CC0 sound cues through the end of the picture, encoded AAC loudness verification, and title depth of field and bloom. The bundled 9:16 layout keeps the top and bottom strips sharp. Enable it per run with `REELSMITH_FINISH_PASS=1`. See [Offline finish pass](references/finish-pass.md).
 
+### Fixed
+
+- Use frame presentation timestamps for motion cues and preserve full cue attacks before delayed programme audio. Report rendered and skipped cues, converge on encoded loudness targets for sparse mixes, and give explicit diagnostics for short or silent inputs.
+
 ## [5.6.0] - 2026-11-25
 
 ### Added

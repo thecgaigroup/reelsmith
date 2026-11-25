@@ -65,3 +65,33 @@ def test_changed_wav_is_refused(tmp_path):
     wav.write_bytes(wav.read_bytes() + b"changed")
     with pytest.raises(ValueError, match="sha256"):
         load_sounds(library)
+
+
+@pytest.mark.parametrize("variable", [False, True])
+def test_motion_and_cut_strength_follow_presentation_time(tmp_path, variable):
+    from sfx_cues import cue_events, ffmpeg
+
+    clip = tmp_path / "motion.mp4"
+    timing = "setpts='if(lt(N,6),15*N,N+84)'," if variable else ""
+    ffmpeg("-v", "error", "-f", "lavfi", "-i", "color=black:s=96x96:r=30:d=9",
+           "-vf", timing + "drawbox=c=white:t=fill:enable='gte(t,2)'",
+           "-fps_mode", "passthrough", "-c:v", "libx264", "-output_ts_offset", "0.375", clip)
+    scenes = tmp_path / "scenes.csv"
+    scenes.write_text("Timecode List:\n")
+    events = cue_events(clip, 9, 30, scenes)
+    clicks = [cue.time for cue in plan_cues(**events) if cue.sound == "click"]
+    assert clicks == [pytest.approx(2, abs=1/30)]
+
+    scenes.write_text("Timecode List:,00:00:01.990\n")
+    events = cue_events(clip, 9, 30, scenes)
+    assert events["cuts"][0][1] > 200
+
+
+def test_motion_analysis_rejects_timestamp_count_mismatch(monkeypatch):
+    import sfx_cues
+
+    monkeypatch.setattr(sfx_cues, "cut_times", lambda *args: [])
+    monkeypatch.setattr(sfx_cues, "motion_deltas", lambda *args: [0, 1, 0])
+    monkeypatch.setattr(sfx_cues, "frame_times", lambda *args: [0, 0.5], raising=False)
+    with pytest.raises(ValueError, match="decoded 3 frames but found 2 frame timestamps"):
+        sfx_cues.cue_events(None, 1, 30)

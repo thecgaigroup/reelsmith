@@ -100,6 +100,7 @@ def probe(path):
         "video_start": stream_start(video),
         "format_duration": float(data["format"]["duration"]),
         "audio": next((s for s in data["streams"] if s["codec_type"] == "audio"), None),
+        "audio_tracks": [s for s in data["streams"] if s["codec_type"] == "audio"],
         "matrix": {"bt709": "bt709", "bt470bg": "bt601", "smpte170m": "bt601",
                    "smpte240m": "smpte240m", "bt2020nc": "bt2020"}.get(
                        video.get("color_space"), "bt601"),
@@ -260,7 +261,26 @@ def verify_artifact(path, recorded):
 
 def audio_passes(stats):
     peak = stats["TP_dBTP"]
-    return abs(stats["I_LUFS"] + 14) <= 0.5 and peak is not None and peak <= -1.0
+    level = stats["I_LUFS"]
+    return level is not None and abs(level + 14) <= 0.5 and peak is not None and peak <= -1.0
+
+
+def encode_audio(premix_path, target, gain, ceiling, *, trim=0, duration=None):
+    from sfx_cues import mastering_filter
+
+    audio_filter = mastering_filter(gain, ceiling)
+    if trim:
+        audio_filter += f",atrim=start={trim:.9f},asetpts=PTS-STARTPTS"
+    limit = ["-t", f"{duration:.9f}"] if duration is not None else []
+    ffmpeg("-v", "error", "-y", "-i", premix_path, "-af", audio_filter,
+           "-c:a", "aac", "-b:a", "256k", "-ar", "48000", *limit, target)
+
+
+def without_priming(encoded):
+    # Away from zero, MP4 would otherwise present the AAC priming packet.
+    trimmed = encoded.with_name(f"{encoded.stem}-without-priming.m4a")
+    ffmpeg("-v", "error", "-y", "-i", encoded, "-ss", 0, "-c:a", "copy", trimmed)
+    return trimmed
 
 
 def master(picture, premix_path, output, before, starts):
@@ -269,49 +289,92 @@ def master(picture, premix_path, output, before, starts):
     gain = -14 - before["I_LUFS"]
     ceiling = -1.45
     video_start, audio_start = starts
+    best = None
+    saved = output.with_name("best.mp4")
+    previous_error = None
     # Each attempt starts from the unmastered mix. The video is stream-copied.
-    for attempt in range(1, 5):
+    for attempt in range(1, 11):
         encode = ["-af", mastering_filter(gain, ceiling), "-c:a", "aac",
                   "-b:a", "256k", "-ar", "48000"]
         audio_input = premix_path
         if audio_start:
-            # MP4 skips the encoded priming packet with a zero-based edit.
-            # Remove that packet before moving this track away from zero,
-            # where it would otherwise be presented as early audio.
             encoded = premix_path.with_name("encoded.m4a")
-            audio_input = premix_path.with_name("without-priming.m4a")
-            ffmpeg("-v", "error", "-y", "-i", premix_path, *encode, encoded)
-            ffmpeg("-v", "error", "-y", "-i", encoded, "-ss", 0, "-c:a", "copy", audio_input)
+            encode_audio(premix_path, encoded, gain, ceiling)
+            audio_input = without_priming(encoded)
             encode = ["-c:a", "copy"]
         ffmpeg("-v", "error", "-y", "-copyts",
                "-itsoffset", f"{video_start:.9f}", "-i", picture,
                "-itsoffset", f"{audio_start:.9f}", "-i", audio_input, "-map", "0:v:0", "-map", "1:a:0",
                "-c:v", "copy", *encode, "-movflags", "+faststart", output)
         measured = loudness(output)
-        if audio_passes(measured) or attempt == 4:
-            break
+        level = measured["I_LUFS"]
+        error = -14 - level if level is not None else 56.0
         peak = measured["TP_dBTP"]
-        if peak is not None and peak > -1:
+        passes = audio_passes(measured)
+        settings = {"static_gain_db": round(gain, 4), "limiter_ceiling_db": round(ceiling, 4)}
+        if passes and abs(error) <= 0.2 + 1e-9:
+            return {"attempts": attempt, **settings}
+        overshoot = max(0, peak + 1) if peak is not None else math.inf
+        score = (not passes, abs(error) + overshoot)
+        if best is None or score < best[0]:
+            best = score, measured, settings
+            if passes:
+                output.replace(saved)
+        if 0 < overshoot < math.inf:
             ceiling -= peak + 1.2
-        if abs(measured["I_LUFS"] + 14) > 0.5:
-            gain += -14 - measured["I_LUFS"]
-    return {"attempts": attempt, "static_gain_db": round(gain, 4), "limiter_ceiling_db": round(ceiling, 4)}
+        # Dampen reversals. On a limiter plateau, a larger positive step can
+        # lift quiet passages whose peaks are still below the limiter ceiling.
+        if previous_error is not None and error * previous_error < 0:
+            gain += error * 0.5
+        elif previous_error is not None and error > 0 and previous_error - error < 0.25:
+            gain += max(2, error)
+        else:
+            gain += error
+        previous_error = error
+    if saved.exists():
+        saved.replace(output)
+        return {"attempts": attempt, **best[2]}
+    level, peak = best[1]["I_LUFS"], best[1]["TP_dBTP"]
+    raise ValueError(f"cannot reach encoded loudness target after {attempt} attempts "
+                     f"(best: {level} LUFS, {peak} dBTP)")
 
 
-def measure(out, reference):
+def retain_programme_start(candidate, premix_path, mastering, audio_start, duration):
+    """Keep the source-aligned track first and select the complete mix by default."""
+    aligned = candidate.with_name("aligned.m4a")
+    encode_audio(premix_path, aligned, mastering["static_gain_db"], mastering["limiter_ceiling_db"],
+                 trim=audio_start, duration=duration)
+    combined = candidate.with_name("combined.mp4")
+    audio_input = without_priming(aligned) if audio_start else aligned
+    ffmpeg("-v", "error", "-y", "-copyts", "-i", candidate, "-itsoffset", f"{audio_start:.9f}",
+           "-i", audio_input, "-map", "0:v:0", "-map", "1:a:0", "-map", "0:a:0",
+           "-disposition:a:0", "0", "-disposition:a:1", "default",
+           "-c", "copy", "-movflags", "+faststart", combined)
+    combined.replace(candidate)
+
+
+def measure(out, reference, *, mix_start=None, mix_length=None):
     from sfx_cues import loudness
 
     source, result = probe(reference), probe(out)
     source_starts, result_starts = stream_offsets(source), stream_offsets(result)
     source_offset, result_offset = (video - audio for video, audio in (source_starts, result_starts))
-    stats = loudness(out) if result["audio"] else None
-    audio_ok = bool(stats and audio_passes(stats) and result["audio"]["codec_name"] == "aac"
-                    and result["audio"]["sample_rate"] == "48000")
+    tracks = result["audio_tracks"]
+    mix_index = next((i for i, track in enumerate(tracks) if track["disposition"]["default"]), 0)
+    mix = tracks[mix_index] if tracks else None
+    stats = loudness(out, mix_index) if mix else None
+    audio_ok = bool(stats and audio_passes(stats) and mix["codec_name"] == "aac"
+                    and mix["sample_rate"] == "48000")
     # MP4 edits and AAC framing can quantize the normalized starts and audio length.
     start_tolerance = 0.002
     duration_tolerance = AUDIO_DURATION_TOLERANCE
     expected_audio_length = mix_duration(source, source_starts)
+    mix_start = source_starts[1] if mix_start is None else mix_start
+    mix_length = expected_audio_length if mix_length is None else mix_length
+    if mix_index == 0:
+        expected_audio_length = mix_length
     expected_end = max(source_starts[0] + source["duration"], source_starts[1] + expected_audio_length)
+    expected_end = max(expected_end, mix_start + mix_length)
     sync_ok = bool(result["audio"]) and abs(source_starts[0] - result_starts[0]) <= start_tolerance
     if source["audio"] and result["audio"]:
         sync_ok = (sync_ok and abs(source_offset - result_offset) <= start_tolerance and
@@ -320,11 +383,15 @@ def measure(out, reference):
         result_audio_length = result["audio"].get("duration")
         if result_audio_length not in (None, "N/A"):
             sync_ok = sync_ok and abs(expected_audio_length - float(result_audio_length)) <= duration_tolerance
+    if mix:
+        sync_ok = (sync_ok and abs(stream_start(mix) - mix_start) <= start_tolerance and
+                   abs(float(mix["duration"]) - mix_length) <= duration_tolerance)
 
     source_size, result_size = ([item["width"], item["height"]] for item in (source, result))
     timing = {
         "source_video_start": source["video_start"], "output_video_start": result["video_start"],
         "source_audio_start": stream_start(source["audio"]), "output_audio_start": stream_start(result["audio"]),
+        "mix_audio_start": stream_start(mix),
         "source_av_offset": source_offset if source["audio"] else None,
         "output_av_offset": result_offset if result["audio"] else None,
         "source_frames": source["frames"], "output_frames": result["frames"],
@@ -347,10 +414,16 @@ def check(out, reference):
     metadata = sidecar(out)
     if not metadata.is_file():
         return {"artifact": {"pass": False, "error": "missing finish report"}, "pass": False}
-    artifact = verify_artifact(out, json.loads(metadata.read_text()))
+    recorded = json.loads(metadata.read_text())
+    artifact = verify_artifact(out, recorded)
     if not artifact["pass"]:
         return {"artifact": artifact, "pass": False}
-    return {"artifact": artifact, **measure(out, reference)}
+    rendered = Counter(cue["sound"] for cue in recorded.get("cues_rendered", []))
+    counts = {name: rendered[name] for name in recorded["cue_counts"]}
+    cues_ok = counts == recorded["cue_counts"] and sum(counts.values()) == sum(rendered.values())
+    result = measure(out, reference, **recorded.get("mix_timeline", {}))
+    return {"artifact": artifact, "cue_counts": counts, "cue_counts_pass": cues_ok,
+            **result, "pass": result["pass"] and cues_ok}
 
 
 def render_picture(video, work, info, title, keep_sharp):
@@ -372,7 +445,7 @@ def run(video, out, *, layout=None, scenes=None):
         print(DISABLED, file=sys.stderr)
         return None
 
-    from sfx_cues import cue_events, load_sounds, local_file, loudness, plan_cues, premix, render_stem
+    from sfx_cues import SR, cue_events, load_sounds, local_file, loudness, plan_cues, premix, render_stem
 
     video, out = local_file(video), Path(out).resolve()
     scenes = local_file(scenes) if scenes else None
@@ -383,6 +456,8 @@ def run(video, out, *, layout=None, scenes=None):
     width, height = info["width"], info["height"]
     if min(width, height) < 8 or width % 2 or height % 2 or not info["fps"] or not info["duration"] > 0:
         raise ValueError("finish pass needs even video dimensions and a valid frame rate and duration")
+    if info["duration"] < 1.0:
+        raise ValueError("finish pass needs at least 1.0 s of picture")
     starts = stream_offsets(info)
     layout = layout_path(info, layout)
     if layout is None:
@@ -395,23 +470,43 @@ def run(video, out, *, layout=None, scenes=None):
         work = Path(temporary)
         stem, mix, candidate = (work / name for name in ("stem.f32", "premix.wav", "finished.mp4"))
         cue_path = work / "cues.json"
-        cue_path.write_text(json.dumps({"cues": [asdict(cue) for cue in cues]}))
-        cue_offset = starts[0] - starts[1]
-        render_stem(stem, info["duration"] + max(0, cue_offset), cue_path, sounds, offset=cue_offset)
-        premix(video, stem, mix, bool(info["audio"]), mix_duration(info, starts))
+        planned = [asdict(cue) for cue in cues]
+        cue_path.write_text(json.dumps({"cues": planned}))
+        video_start, audio_start = starts
+        duration = info["duration"]
+        in_picture = [cue for cue in cues if cue.time < duration]
+        early = any(video_start + max(0, cue.time) < audio_start for cue in in_picture)
+        mix_start = min(starts) if early else audio_start
+        cue_offset = video_start - mix_start
+        programme_length = mix_duration(info, starts)
+        programme_end = audio_start - mix_start + programme_length
+        picture_end = duration + cue_offset
+        cue_ends = (round((max(0, cue.time) + cue_offset) * SR) + len(sounds[cue.sound].samples)
+                    for cue in in_picture)
+        mix_length = max(round(max(programme_end, picture_end) * SR), max(cue_ends, default=0)) / SR
+        rendered, skipped = render_stem(stem, mix_length, cue_path, sounds,
+                                        picture_duration=duration, offset=cue_offset)
+        premix(video, stem, mix, bool(info["audio"]), mix_length, programme_delay=audio_start - mix_start)
         before = loudness(mix)
-        if before["TP_dBTP"] is None:
-            raise ValueError("cannot master a silent mix")
+        if before["I_LUFS"] is None or before["I_LUFS"] <= -70:
+            raise ValueError("cannot master a silent mix: no loudness blocks above the -70 LUFS gate")
         picture, filters = render_picture(video, work, info, title, keep_sharp)
-        mastering = master(picture, mix, candidate, before, starts)
-        report = measure(candidate, video)
-        counts = Counter(cue.sound for cue in cues)
+        mastering = master(picture, mix, candidate, before, (video_start, mix_start))
+        if video_start != audio_start and (early or mix_length > programme_length + 1 / SR):
+            retain_programme_start(candidate, mix, mastering, audio_start, programme_length)
+        mix_timeline = {"mix_start": mix_start, "mix_length": mix_length}
+        report = measure(candidate, video, **mix_timeline)
+        counts = Counter(cue["sound"] for cue in rendered)
         report.update({
             "artifact": artifact_identity(candidate),
             "flag": os.environ["REELSMITH_FINISH_PASS"],
             "layout": str(layout) if layout else None,
             "filters": filters,
+            "mix_timeline": mix_timeline,
             "cue_counts": {name: counts[name] for name in sounds},
+            "cues_planned": planned,
+            "cues_rendered": rendered,
+            "cues_skipped": skipped,
             "sound_sha256": {sound.file: sound.sha256 for sound in sounds.values()},
         })
         report["loudness"].update({"before": before,
