@@ -5,6 +5,30 @@ All notable changes to Reelsmith will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.6.0] - 2026-11-25
+
+### Added
+
+- **Safe layout caption flag** — Opt-in `--safe-layout` flag for `captions.py build` positions burned-in captions inside documented safe zones for vertical 9:16 Reels, TikTok, and YouTube Shorts. When enabled:
+  - Captions at 672px from bottom (keeps bottom 35% clear, per platform specs)
+  - Horizontal caption band: 120–770px (650px usable, clears TikTok right rail)
+  - Left margin: 120px (11.1%), right margin: 310px (28.7%)
+  - Only affects 9:16 aspect; 16:9, 1:1, 4:5 unchanged
+- **Safe zones module** (`templates/_shared/safe_zones.py`) — `SafeZones` class and convenience functions (`get_safe_margins`, `get_caption_vpos`) calculate platform-safe positioning for 9:16 content. Returns margins (220/672/120/310 px), caption bands, badge/pill positions. When disabled (default), all margins are zero.
+- **Frame-0 quality checker** (`scripts/test_frame0_cover.py`) — CLI tool and importable API validates frame 0 meets luma mean ≥ 16, stddev ≥ 12, and ≤ 5% darker than source. Uses ffmpeg signalstats filter and raw pixel analysis. Thresholds are full-range 0-255 luma. Computes real population stddev from decoded grayscale frame.
+- **Safe layout tests** — Unit tests for safe zone calculations, caption positioning, and byte-identical backward compatibility (flag-off hash matches default). Frame-0 quality tests with real generated clips (dark, flat, good, darker-than-source, slightly-darker, gradient).
+- **Safe layout reference** (`references/safe-layout.md`) — Short guide covering caption flag usage, safe zone numbers, and backward compatibility.
+
+### Changed
+
+- **captions.py** — Added `--safe-layout` flag to `build` command. Only affects 9:16 aspect.
+
+### Backward Compatibility
+
+**Default is OFF.** When `--safe-layout` is absent:
+- Captions use legacy positioning (691px from bottom for 9:16)
+- Output is byte-for-byte identical to 5.5.2
+
 ## [5.5.2] - 2026-11-25
 
 ### Added

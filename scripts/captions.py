@@ -105,15 +105,33 @@ def ass_color(hexc, alpha=0):
     h = hexc.lstrip("#")
     return f"&H{alpha:02X}{h[4:6]}{h[2:4]}{h[0:2]}".upper()
 
-def to_ass(cues, aspect, style, brand=None):
+def to_ass(cues, aspect, style, brand=None, safe_layout=False):
     W, H = {"16:9": (1920, 1080), "9:16": (1080, 1920), "1:1": (1080, 1080), "4:5": (1080, 1350)}[aspect]
     c = (brand or {}).get("colors", {})
     fg, accent, box = c.get("fg", "#FFFFFF"), c.get("accent") or c.get("primary", "#FFD400"), c.get("surface") or c.get("bg", "#000000")
     font = ((brand or {}).get("fonts", {}).get("heading") or {}).get("family", "Inter")
     size = int(min(W, H) * (0.058 if aspect != "16:9" else 0.05))
-    # vertical: sit above the bottom ~35% that Reels/TikTok/Shorts UI covers
-    margin_v = int(H * (0.36 if aspect in ("9:16",) else 0.12 if aspect == "4:5" else 0.08))
+    # vertical: sit above the bottom ~35% that Reels/TikTok/Shorts UI covers (legacy)
+    # or use safe_layout margins (480px bottom + 60px = 540px on 1920)
+    if safe_layout and aspect == "9:16":
+        # Import here to avoid circular dependency
+        sys.path.insert(0, str(Path(__file__).parent.parent / "templates" / "_shared"))
+        from safe_zones import get_caption_vpos
+        margin_v = get_caption_vpos(H, enabled=True)
+    else:
+        margin_v = int(H * (0.36 if aspect in ("9:16",) else 0.12 if aspect == "4:5" else 0.08))
     border, outline, shadow, back = (3, 18, 0, ass_color(box, 0x30)) if style == "boxed" else (1, max(3, size // 14), 2, "&H80000000")
+    # Horizontal margins: use safe_layout band for 9:16 when enabled
+    if safe_layout and aspect == "9:16":
+        from safe_zones import SafeZones
+        zones = SafeZones(W, H, enabled=True)
+        x_min, x_max = zones.get_caption_band()
+        margin_l = x_min
+        margin_r = W - x_max
+    else:
+        margin_l = int(W * 0.08)
+        margin_r = int(W * 0.08)
+    
     head = f"""[Script Info]
 ScriptType: v4.00+
 PlayResX: {W}
@@ -123,7 +141,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,{font},{size},{ass_color(fg)},{ass_color(accent)},{ass_color(box) if style == 'boxed' else '&H00101010'},{back},-1,0,0,0,100,100,0,0,{border},{outline},{shadow},2,{int(W*0.08)},{int(W*0.08)},{margin_v},1
+Style: Default,{font},{size},{ass_color(fg)},{ass_color(accent)},{ass_color(box) if style == 'boxed' else '&H00101010'},{back},-1,0,0,0,100,100,0,0,{border},{outline},{shadow},2,{margin_l},{margin_r},{margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -184,6 +202,7 @@ def main():
     p = sp.add_parser("build"); p.add_argument("--words", required=True); p.add_argument("-o", "--out", required=True)
     p.add_argument("--profile", default=None, choices=list(PROFILES)); p.add_argument("--aspect", default="16:9")
     p.add_argument("--style", default="clean", choices=["clean", "boxed", "karaoke", "pop"]); p.add_argument("--brand"); p.add_argument("--offset", type=float, default=0)
+    p.add_argument("--safe-layout", action="store_true", help="Enable safe-zone layout for vertical 9:16 (default: off)")
     p = sp.add_parser("estimate"); p.add_argument("--text", required=True); p.add_argument("--start", type=float, required=True); p.add_argument("--end", type=float, required=True)
     p = sp.add_parser("burn"); p.add_argument("video"); p.add_argument("ass"); p.add_argument("-o", "--out", required=True); p.add_argument("--fontsdir")
     a = ap.parse_args()
@@ -199,9 +218,11 @@ def main():
     base = Path(a.out); base.parent.mkdir(parents=True, exist_ok=True)
     Path(f"{base}.srt").write_text(to_srt(sidecar))
     Path(f"{base}.vtt").write_text(to_vtt(sidecar))
-    Path(f"{base}.ass").write_text(to_ass(burned, a.aspect, a.style, brand))
+    safe_layout = getattr(a, 'safe_layout', False)
+    Path(f"{base}.ass").write_text(to_ass(burned, a.aspect, a.style, brand, safe_layout=safe_layout))
     cps = max((len(c["text"]) / max(0.01, c["end"] - c["start"]) for c in sidecar), default=0)
-    print(f"{len(sidecar)} sidecar cues (max {cps:.1f} cps), {len(burned)} burn-in cues ({prof}, {a.style}) -> {base}.srt/.vtt/.ass")
+    suffix = " [safe-layout]" if safe_layout else ""
+    print(f"{len(sidecar)} sidecar cues (max {cps:.1f} cps), {len(burned)} burn-in cues ({prof}, {a.style}){suffix} -> {base}.srt/.vtt/.ass")
 
 if __name__ == "__main__":
     main()
