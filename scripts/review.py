@@ -547,8 +547,9 @@ def verify_change_scope(ref, test, regions):
         p1.wait()
         p2.wait()
         
-        # Check for decode errors
-        if p1.returncode != 0 or p2.returncode != 0:
+        # Check for decode errors (but not if we already detected frame count mismatch)
+        has_frame_mismatch = any("frame count mismatch" in str(f) for f in failures)
+        if not has_frame_mismatch and (p1.returncode != 0 or p2.returncode != 0):
             return {"pass": False, "failures": [(0, 0, 0, 0, 0, "decode failed")], "brightness_lift": None}
     
     # Check minimum frame count
