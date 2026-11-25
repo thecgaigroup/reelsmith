@@ -45,27 +45,26 @@ def create_demo_frame(safe_layout=False):
     # Draw hero background (lighter slate)
     draw.rectangle([(0, 0), (W, H)], fill=(30, 41, 59))
     
-    # Draw safe zone indicators if enabled
+    # Draw content if enabled
     if safe_layout:
-        # Safe zone boundaries
+        # Safe zone boundaries (DO NOT DRAW - clean deliverable)
         top, bottom, left, right = 220, 480, 120, 310
-        
-        # Draw safe zone lines
-        draw.rectangle([(left, top), (W - right, H - bottom)], outline=(34, 211, 238), width=4)  # Cyan
         
         # Badge position (144, 244)
         badge_x, badge_y = 144, 244
         badge_size = 80
         draw.ellipse([(badge_x, badge_y), (badge_x + badge_size, badge_y + badge_size)], 
                     fill=(255, 200, 0), outline=(255, 255, 255), width=3)
-        draw.text((badge_x + 40, badge_y + 30), "B", fill=(0, 0, 0), font=font_medium, anchor="mm")
+        draw.text((badge_x + 40, badge_y + 30), "⚡", fill=(0, 0, 0), font=font_medium, anchor="mm")
         
-        # Pill position (746, 244)
-        pill_x, pill_y = 746 - 150, 244  # Adjust for width
-        pill_w, pill_h = 300, 50
+        # Pill position - RIGHT ALIGNED to end at x=770 (safe zone right edge)
+        # Pill width ~200px, so start at 770-200=570
+        pill_w, pill_h = 200, 50
+        pill_x = 770 - pill_w  # Right-align to safe zone edge
+        pill_y = 244
         draw.rounded_rectangle([(pill_x, pill_y), (pill_x + pill_w, pill_y + pill_h)], 
                               radius=25, fill=(34, 211, 238))
-        draw.text((pill_x + pill_w//2, pill_y + pill_h//2), "THE CGAI SIGNAL", 
+        draw.text((pill_x + pill_w//2, pill_y + pill_h//2), "THE SIGNAL", 
                  fill=(0, 0, 0), font=font_small, anchor="mm")
         
         # Caption band (120-770)
@@ -144,14 +143,54 @@ def create_demo_frame(safe_layout=False):
     return img
 
 
+def create_safe_zone_overlay():
+    """Create a transparent overlay showing safe zone boundaries."""
+    W, H = 1080, 1920
+    
+    # Create transparent image
+    img = Image.new('RGBA', (W, H), color=(0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    
+    # Try to use a system font
+    try:
+        font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)
+    except:
+        font_small = None
+    
+    # Safe zone boundaries
+    top, bottom, left, right = 220, 480, 120, 310
+    
+    # Draw safe zone rectangle
+    draw.rectangle([(left, top), (W - right, H - bottom)], 
+                  outline=(34, 211, 238, 255), width=4)
+    
+    # Label margins
+    draw.text((W//2, top - 50), f"Top safe: {top}px", fill=(34, 211, 238, 255), 
+             font=font_small, anchor="mm")
+    draw.text((W//2, H - bottom + 50), f"Bottom safe: {bottom}px", fill=(34, 211, 238, 255), 
+             font=font_small, anchor="mm")
+    draw.text((left - 60, H//2), f"L:{left}", fill=(34, 211, 238, 255), 
+             font=font_small, anchor="mm", angle=90)
+    draw.text((W - right + 60, H//2), f"R:{right}", fill=(34, 211, 238, 255), 
+             font=font_small, anchor="mm", angle=270)
+    
+    # Caption band markers
+    cap_y = H - 540
+    draw.line([(120, cap_y), (770, cap_y)], fill=(167, 139, 250, 255), width=3)
+    draw.text((445, cap_y - 30), "Caption band: 120-770px", fill=(167, 139, 250, 255), 
+             font=font_small, anchor="mm")
+    
+    return img
+
+
 if __name__ == "__main__":
     print("Generating safe layout demonstration frames...")
     
-    # Generate frame with safe layout ON
+    # Generate frame with safe layout ON (clean, no guide boxes)
     img_on = create_demo_frame(safe_layout=True)
     out_on = Path("/opt/cursor/artifacts/signal-short-frame0-safe-on.png")
     img_on.save(out_on, "PNG")
-    print(f"✓ Generated {out_on} (1080x1920, safe layout ON)")
+    print(f"✓ Generated {out_on} (1080x1920, safe layout ON, clean)")
     
     # Generate frame with safe layout OFF
     img_off = create_demo_frame(safe_layout=False)
@@ -159,8 +198,14 @@ if __name__ == "__main__":
     img_off.save(out_off, "PNG")
     print(f"✓ Generated {out_off} (1080x1920, safe layout OFF)")
     
+    # Generate safe zone overlay (separate reference)
+    img_overlay = create_safe_zone_overlay()
+    out_overlay = Path("/opt/cursor/artifacts/safe-zone-overlay-9x16.png")
+    img_overlay.save(out_overlay, "PNG")
+    print(f"✓ Generated {out_overlay} (overlay showing safe zone boundaries)")
+    
     print("\nDemonstration frames show:")
     print("  - Badge and pill positioning")
     print("  - Caption band horizontal limits")
-    print("  - Safe zone boundaries (ON) vs TikTok right rail (OFF)")
     print("  - Frame 0 strong cover (ON) vs mid-reveal (OFF)")
+    print("  - Separate overlay PNG shows safe zone boundaries")

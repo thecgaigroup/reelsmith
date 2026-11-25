@@ -35,15 +35,17 @@ def build(c, ctx, scenes):
     if safe_layout and ctx["vertical"]:
         zones = SafeZones(1080, 1920, enabled=True)
         badge_x, badge_y = zones.get_badge_position()
-        pill_x, pill_y = zones.get_pill_position()
+        # Pill: right-align to end at x=770 (safe zone right edge)
+        # With right margin of 310px, available right edge is 1080-310=770
+        pill_right_margin = 310  # px from right edge
     else:
         # Legacy positions (top corners, no safe margins)
         badge_x, badge_y = 40, 40
-        pill_x, pill_y = 1040, 40
+        pill_right_margin = 40  # px from right edge (legacy)
     
     # Brand elements that appear on every scene
-    40|    badge_html = f'<div class="badge" style="left: {badge_x}px; top: {badge_y}px;"><img src="{ctx.get("badge_url", "")}" alt="badge" style="width: 80px; height: 80px;"></div>' if ctx.get("badge_url") else ""
-    pill_html = f'<div class="pill" style="right: {1080 - pill_x}px; top: {pill_y}px;">{E(c.get("pill_text", "THE SIGNAL"))}</div>'
+    40|    badge_html = f'<div class="badge" style="left: {badge_x}px; top: {badge_y if safe_layout and ctx["vertical"] else 40}px;"><img src="{ctx.get("badge_url", "")}" alt="badge" style="width: 80px; height: 80px;"></div>' if ctx.get("badge_url") else ""
+    pill_html = f'<div class="pill" style="right: {pill_right_margin}px; top: {badge_y if safe_layout and ctx["vertical"] else 40}px;">{E(c.get("pill_text", "THE SIGNAL"))}</div>'
     
     for i, s in enumerate(scenes):
         sid, st, d = s["id"], s["start"], s["dur"]
@@ -94,17 +96,20 @@ def build(c, ctx, scenes):
         js += cut_js(s, i, scenes, ctx)
         out.append({"id": sid, "start": st, "dur": d, "html": h})
     
-    90|    css = f"""
+    90|    # Constrain content width in safe layout mode
+    safe_width_pct = "60%" if safe_layout and ctx["vertical"] else "100%"
+    
+    css = f"""
 .badge {{ position: absolute; z-index: 100; opacity: 0; }}
 .pill {{ position: absolute; background: linear-gradient(90deg, var(--primary), var(--secondary)); color: #111; 
         font-family: var(--font-heading); font-weight: 700; padding: 1.2vmin 2.8vmin; border-radius: 99px; 
-        font-size: var(--kicker); letter-spacing: .1em; text-transform: uppercase; opacity: 0; z-index: 100; }}
-.centerline {{ display: flex; flex-direction: column; align-items: center; gap: 2vmin; text-align: center; }}
+        font-size: var(--kicker); letter-spacing: .1em; text-transform: uppercase; opacity: 0; z-index: 100; white-space: nowrap; }}
+.centerline {{ display: flex; flex-direction: column; align-items: center; gap: 2vmin; text-align: center; max-width: {safe_width_pct}; margin: 0 auto; }}
 .bar {{ width: 50%; height: 1.2vmin; background: #FFFFFF; border-radius: 1vmin; transform-origin: center; }}
-.title {{ font-size: calc(var(--h1) * 1.2); line-height: 1.1; }}
+.title {{ font-size: calc(var(--h1) * 1.2); line-height: 1.1; word-wrap: break-word; }}
 .kw1 {{ color: #22D3EE; }}
 .kw2 {{ color: #A78BFA; }}
-   100|.keypoint {{ font-size: calc(var(--h2) * 1.1); text-align: center; }}
+   100|.keypoint {{ font-size: calc(var(--h2) * 1.1); text-align: center; max-width: {safe_width_pct}; margin: 0 auto; word-wrap: break-word; }}
 .sh2 {{ background: rgba(0,0,0,0.65); }}
 """
     return {"scenes": out, "js": "\n".join(js), "css": css}

@@ -1,36 +1,5 @@
 # Development Log
 
-## 2026-11-25 (Reelsmith 5.6.0: Safe layout for vertical 9:16 Shorts)
-
-**What changed**
-- Added opt-in `--safe-layout` flag for vertical 9:16 content (Reels, TikTok, Shorts) that positions UI elements and captions inside documented safe zones
-- Created `templates/_shared/safe_zones.py` module with `SafeZones` class and convenience functions for calculating platform-safe margins, caption bands, and badge/pill positions
-- Updated `scripts/captions.py` to support `--safe-layout` flag: when enabled for 9:16, uses safe zone margins (540px bottom, 120-770px horizontal caption band) instead of legacy positioning (691px bottom, 86-994px horizontal)
-- Added `scripts/test_frame0_cover.py` for validating frame 0 meets luma mean ≥ 16, stddev ≥ 12, and is no more than 5% darker than source hero art (uses ffmpeg signalstats filter)
-- Created `templates/signal-short/` demonstration template showing safe layout in action: title reveal with center line, cyan/purple keywords, badge (top-left), pill (top-right), key points over hero art
-- Added comprehensive test suite: `test_safe_zones.py` (calculations), `test_safe_layout_captions.py` (caption positioning), `test_safe_layout_integration.py` (flag behavior and backward compatibility)
-- Created `references/safe-layout.md` complete guide covering usage, platform requirements, testing, and backward compatibility
-- Generated demonstration artifacts: `signal-short-frame0-safe-on.png` and `signal-short-frame0-safe-off.png` showing UI element positioning differences
-- Bumped VERSION to 5.6.0 and updated CHANGELOG with complete feature description
-
-**State**
-- Working: all 7 new tests pass (safe zones, captions, integration), all existing tests unchanged
-- Default is OFF for backward compatibility: output is byte-for-byte identical to 5.5.1 when flag is absent
-- Safe zone numbers: top 220px, bottom 480px, left 120px, right 310px (strictest combination of Reels/TikTok/Shorts)
-- Caption band: 120-770px horizontal (650px usable, clears TikTok right rail)
-- Frame 0 strong cover requirement enforced when flag is on
-
-**Where we left off**
-- Branch: cursor/safe-layout-vertical-shorts-f7c0
-- Ready for PR: all changes committed, tests pass, documentation complete
-- Artifacts saved to /opt/cursor/artifacts/ (frame-0 stills showing safe vs legacy layout)
-- Next: open PR, run CI, do NOT merge
-
-**Open**
-- Need CI validation on PR
-- Frame-0 quality checker works with ffmpeg signalstats; actual video rendering not tested in this branch (would need HyperFrames full setup)
-- Signal Short template is demonstration only; real production templates would adapt the safe_layout flag in their build.py
-
 ## 2026-11-21 (Reelsmith 5.4.1: CI smoke test)
 
 **What changed**
