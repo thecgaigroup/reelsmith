@@ -1,5 +1,20 @@
 # Development Log
 
+## 2026-11-25 (Finish pass review round 3)
+
+**What changed**
+- Gated preset delivery on the encoded opening frame, retained centered one- and two-glyph captions, and tied source fill to the pixels actually relocated.
+- Bound the finish report to the MP4 by SHA-256 and byte size. The MP4 is renamed first and the report follows.
+
+**State**
+- The round 3 patch is in the assigned worktree for PR #46.
+
+**Where we left off**
+- The local build report maps each finding to its regression and records the verification results.
+
+**Open**
+- The round 3 patch awaits independent review. Local stream-highlights integration requires FFmpeg with libass.
+
 ## 2026-11-25 (Finish pass review round 1)
 
 **What changed**
@@ -11,7 +26,7 @@
 - The local Signal render and checker pass with 23 cues, −14.0 LUFS and −1.3 dBTP. Flag-off audio-bearing Reels export and thumbnail match the local `origin/main` results byte for byte.
 
 **Where we left off**
-- The local build report maps the six review findings to fixes and regression evidence. The worktree contains the uncommitted patch.
+- The local build report maps the six review findings to fixes and regression evidence. The round 1 patch is committed on `feat/finish-pass-flag`.
 
 **Open**
 - The updated patch awaits independent review. The local stream-highlights integration test requires an FFmpeg build with libass.
