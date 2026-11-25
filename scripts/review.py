@@ -23,20 +23,6 @@ HERE = Path(__file__).resolve().parent
 def sh(cmd, **kw):
     return subprocess.run(cmd, capture_output=True, text=True, **kw)
 
-def file_identity(path):
-    """Return 'size:mtime_ns:sha256' identity string for a file (empty if missing/inaccessible).
-    Uses content digest (sha256) with size:mtime_ns as quick pre-check."""
-    import hashlib
-    try:
-        st = Path(path).stat()
-        sha = hashlib.sha256()
-        with open(path, 'rb') as f:
-            while chunk := f.read(8192):
-                sha.update(chunk)
-        return f"{st.st_size}:{st.st_mtime_ns}:{sha.hexdigest()}"
-    except (OSError, FileNotFoundError):
-        return ""
-
 def sanitize_filter_input(text):
     """Sanitize text for ffmpeg filter graphs. Escapes dangerous chars to prevent injection."""
     text = text.replace("\\", "\\\\").replace("'", "\\'")
@@ -300,7 +286,8 @@ def scene_frames(video, job, out, font, vertical):
     for k, sc in enumerate(job.get("scenes", [])):
         t = sc["start"] + sc["dur"] * 0.7
         f = tmp / f"{k:02d}.jpg"
-        lab = f",drawtext=fontfile='{font}':text='{k+1} {sc['id']}':x=8:y=h-th-8:fontsize=20:fontcolor=white:box=1:boxcolor=black@0.7" if font else ""
+        scene_text = sanitize_filter_input(f"{k+1} {sc['id']}")
+        lab = f",drawtext=fontfile='{font}':text='{scene_text}':x=8:y=h-th-8:fontsize=20:fontcolor=white:box=1:boxcolor=black@0.7" if font else ""
         sh(["ffmpeg", "-y", "-v", "error", "-ss", f"{t:.3f}", "-i", str(video), "-frames:v", "1", "-vf", f"scale={'270' if vertical else '480'}:-2{lab}", str(f)])
         if f.exists(): files.append(f)
     if files:
@@ -332,20 +319,25 @@ def check(video, out, preset=None, expect=None, credits=None, job=None):
         ok = L["lufs"] is not None and abs(L["lufs"] - tgt) <= 2 and (L["true_peak"] or 0) <= -0.9
         add("PASS" if ok else "WARN", "loudness", f"{L['lufs']} LUFS, TP {L['true_peak']} dBFS, LRA {L['lra']} (target {tgt} LUFS, TP <= -1)")
         sil = re.findall(r"silence_duration: ([\d.]+)", sh(["ffmpeg", "-hide_banner", "-nostats", "-i", str(video), "-af", "silencedetect=n=-50dB:d=2", "-f", "null", "-"]).stderr)
-        add("WARN" if sil else "PASS", "silence > 2s", ", ".join(f"{float(s):.1f}s" for s in sil) or "none")
+        add("WARN" if sil else "PASS", "silence > 2s", ", ".join(f"{float(s):.1f}s" for s in sil) or "none (interior holes and end dropout both checked)")
         # Check for audio dropout (audio ends before video)
         p_a = sh(["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries", "stream=duration", "-of", "json", str(video)])
         p_v = sh(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=duration", "-of", "json", str(video)])
         try:
-            a_dur = float(json.loads(p_a.stdout)["streams"][0]["duration"])
-            v_dur = float(json.loads(p_v.stdout)["streams"][0]["duration"])
-            dropout = v_dur - a_dur
-            if dropout > 0.05:
-                add("WARN", "audio dropout", f"audio ends {dropout:.2f}s before video at {a_dur:.2f}s")
+            a_data = json.loads(p_a.stdout)
+            v_data = json.loads(p_v.stdout)
+            if not a_data.get("streams") or not v_data.get("streams"):
+                add("WARN", "audio dropout", "cannot check: stream duration unavailable (may occur with mkv or other formats)")
             else:
-                add("PASS", "audio dropout", "audio continues to end")
-        except (KeyError, IndexError, ValueError):
-            pass
+                a_dur = float(a_data["streams"][0]["duration"])
+                v_dur = float(v_data["streams"][0]["duration"])
+                dropout = v_dur - a_dur
+                if dropout > 0.05:
+                    add("WARN", "audio dropout", f"audio ends {dropout:.2f}s before video at {a_dur:.2f}s")
+                else:
+                    add("PASS", "audio dropout", "audio continues to end")
+        except (KeyError, ValueError, json.JSONDecodeError) as e:
+            add("WARN", "audio dropout", f"cannot check: {type(e).__name__} (may occur with mkv or damaged files)")
     else:
         add("WARN", "audio", "no audio stream (fine for silent loops; most feeds autoplay muted)")
     blk = re.findall(r"black_start:([\d.]+) black_end:([\d.]+)", sh(["ffmpeg", "-hide_banner", "-nostats", "-i", str(video), "-vf", "blackdetect=d=0.5:pix_th=0.08", "-f", "null", "-"]).stderr)

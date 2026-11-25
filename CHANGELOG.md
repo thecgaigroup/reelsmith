@@ -9,16 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Craft techniques test coverage**: Added comprehensive test suite (`scripts/test_craft_techniques.py`) covering identity verification, audio sync detection, crop placement measurement, and filter sanitization. Integrated into CI workflow.
-- **Shared content identity format**: Both `export.py` and `review.py` now use `size:mtime_ns:sha256` format for file identity verification, providing content-digest integrity checks.
-- **Filter graph sanitization**: Added `sanitize_filter_input()` to `review.py` to escape dangerous characters (`:`, `;`, `'`, `[`, `]`, `\`) in ffmpeg filter graphs, preventing injection via user text or filenames.
+- **Craft techniques test coverage**: Added comprehensive test suite (`scripts/test_craft_techniques.py`) covering audio sync detection, crop placement measurement, and filter sanitization. Integrated into CI workflow.
+- **Filter graph sanitization**: Added `sanitize_filter_input()` to `review.py` to escape dangerous characters (`:`, `;`, `'`, `[`, `]`, `\`) in ffmpeg filter graphs. Applied to scene-id labels in `scene_frames()` to prevent injection via user text.
 
 ### Fixed
 
 - **Dropout detection accuracy**: Review dropout check now uses audio stream duration (`-select_streams a:0`) instead of container duration, correctly detecting dropouts when audio ends before video container.
 - **Loudnorm timestamp integrity**: Export audio pipeline now uses `asetpts=N/SR/TB+STARTPTS` after loudnorm to prevent ~89ms timestamp jump and end trim that could cause sync drift.
 - **Crop display precision**: Export crop percentage now only shown for `crop` mode (not `pad-blur`), accurately reflecting when actual cropping vs padding occurs.
-- **CLI rectangle parsing**: Review `--expect-changed` flag now correctly parses rect syntax `1-2@10,20,30,40` without splitting on commas inside rectangle coordinates.
 
 ## [5.5.1] - 2026-11-22
 
