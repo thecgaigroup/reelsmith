@@ -1,5 +1,20 @@
 # Development Log
 
+## 2026-11-25 (Reelsmith 5.6.0)
+
+**What changed**
+- Added an opt-in offline pass for ducked CC0 sound cues, encoded AAC loudness verification, and title depth of field and bloom.
+- Added synthetic tests to CI and documented the finish command.
+
+**State**
+- Local author patch on `feat/finish-pass-slim`, uncommitted until the orchestrator commits it.
+
+**Where we left off**
+- The local build report records the synthetic tests and Signal Short verification.
+
+**Open**
+- Orchestrator review and hosted CI are pending.
+
 ## 2026-11-21 (Reelsmith 5.4.1: CI smoke test)
 
 **What changed**

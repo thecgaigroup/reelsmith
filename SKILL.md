@@ -84,6 +84,11 @@ Tell me what you need — aspect ratio, length, platform, and brand — and I'll
 | Platform specs, safe zones, delivery files | `export.py`, `presets.json` | platform-specs.md, loudness-accessibility.md |
 | AI b-roll, images, avatars, AI music (paid) | Fal / Higgsfield, quote first | ai-generation.md |
 
+## Optional finishing
+| Job | Use | Read |
+|---|---|---|
+| Offline sound cues and title focus for a finished video | `finish_pass.py`, opt-in | [finish-pass.md](references/finish-pass.md) |
+
 ## Pick the engine
 | Engine | When |
 |---|---|
