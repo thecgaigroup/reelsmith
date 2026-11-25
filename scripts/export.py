@@ -85,11 +85,19 @@ def true_peak(f):
 def master_audio(src, out, lufs=-14.0, kbps=192, hz=48000, ceiling=-1.0, meas=None, keep_wav=None):
     """Two-pass loudnorm (linear) + an oversampled peak limiter to WAV, then AAC, then re-measure the ENCODED file.
     AAC adds 0.5-1.5 dB of true-peak overshoot on transient-heavy mixes (worse at 128k), so if the encoded file is still
-    above the ceiling, trim the gain by the overshoot + 0.2 dB and re-encode (max 3 passes). Costs at most ~1 LU."""
+    above the ceiling, trim the gain by the overshoot + 0.2 dB and re-encode (max 3 passes). Costs at most ~1 LU.
+    
+    Includes timestamp fix after loudnorm: aresample=async=1 (fills gaps from 10ms, so an 80ms gap closed doesn't
+    pull later audio early) + asetpts=N/SR/TB+STARTPTS (restamps frames to prevent the ~89ms jump and end trim
+    that loudnorm causes on FFmpeg 6.1 after a digital-silence gap). Adapted from ffmpeg-skill/loudness.py technique."""
     L = meas or measure_loudness(src)
     wav = Path(out).with_suffix(".pre.wav")
-    af = (f"loudnorm=I={lufs}:TP=-1.5:LRA=11:measured_I={L['input_i']}:measured_TP={L['input_tp']}:measured_LRA={L['input_lra']}"
+    # aresample=async=1:min_hard_comp=0.01 fills gaps from 10ms (swresample's default 100ms threshold leaves 80ms gaps)
+    # loudnorm can jump timestamps ~89ms and trim that from the end; asetpts=N/SR/TB+STARTPTS fixes the restamp
+    af = (f"aresample=async=1:min_hard_comp=0.01,"
+          f"loudnorm=I={lufs}:TP=-1.5:LRA=11:measured_I={L['input_i']}:measured_TP={L['input_tp']}:measured_LRA={L['input_lra']}"
           f":measured_thresh={L['input_thresh']}:offset={L['target_offset']}:linear=true,"
+          f"asetpts=N/SR/TB+STARTPTS,"
           f"aresample=192000,alimiter=limit=-2.5dB:attack=1:release=50:level=false,aresample={hz}")
     r = sh(["ffmpeg", "-y", "-v", "error", "-i", str(src), "-map", "0:a:0", "-vn", "-af", af, "-ac", "2", "-c:a", "pcm_s24le", str(wav)])
     if r.returncode:
@@ -107,6 +115,15 @@ def master_audio(src, out, lufs=-14.0, kbps=192, hz=48000, ceiling=-1.0, meas=No
     if keep_wav is None:
         wav.unlink(missing_ok=True)
     return I, P
+
+def file_identity(path):
+    """Return 'size:mtime_ns' identity string for a file (empty if missing/inaccessible).
+    Used to lock `verified` to a specific output file. Adapted from ffmpeg-skill emit.py technique."""
+    try:
+        st = Path(path).stat()
+        return f"{st.st_size}:{st.st_mtime_ns}"
+    except (OSError, FileNotFoundError):
+        return ""
 
 def export_one(video, preset, outdir, mode="pad-blur", thumb_at=None, srt=None, vtt=None, src=None, meas=None):
     p = PRESETS[preset]
@@ -135,11 +152,15 @@ def export_one(video, preset, outdir, mode="pad-blur", thumb_at=None, srt=None, 
     if r.returncode:
         raise SystemExit(f"{preset}: ffmpeg failed: {r.stderr[-400:]}")
     o = probe(out)
+    identity = file_identity(out)
+    verified = out.exists() and identity != ""
     notes = []
     if o["duration"] > p["max_seconds"]:
         notes.append(f"FAIL over {preset} max length ({o['duration']:.1f}s > {p['max_seconds']}s)")
+        verified = False
     if p.get("max_bytes") and o["bytes"] > p["max_bytes"]:
         notes.append(f"FAIL over {preset} max size")
+        verified = False
     if not same:
         notes.append(f"aspect converted with '{mode}'; a native render at {p['w']}x{p['h']} looks better")
     # thumbnail / cover
@@ -158,7 +179,7 @@ def export_one(video, preset, outdir, mode="pad-blur", thumb_at=None, srt=None, 
         if side:
             shutil.copy(side, Path(outdir) / f"{Path(video).stem}-{preset}{Path(side).suffix}")
     rep = {"preset": preset, "file": str(out), "w": o["w"], "h": o["h"], "fps": o["fps"], "seconds": round(o["duration"], 3),
-           "mb": round(o["bytes"] / 1e6, 2), "notes": notes}
+           "mb": round(o["bytes"] / 1e6, 2), "output_identity": identity, "verified": verified, "notes": notes}
     print(f"  {preset:16} {o['w']}x{o['h']} {o['fps']:.0f}fps {o['duration']:.2f}s {rep['mb']} MB {'; '.join(notes)}")
     return rep
 

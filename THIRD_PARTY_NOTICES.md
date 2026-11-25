@@ -1147,3 +1147,177 @@ The stream-highlights mode can optionally use pre-trained ONNX models from OpenC
 - **License**: Apache License 2.0
 - **Copyright**: Copyright (c) 2021 OpenCV
 - **Purpose**: Person tracking for player-follow panning crop
+
+## Craft Techniques Bundle (v5.6.0)
+
+Techniques adapted from several projects for video quality verification and mastering. This section documents the five techniques from ffmpeg-skill and four items from the four-repo fit check.
+
+### ffmpeg-skill
+
+Techniques adapted from [ffmpeg-skill](https://github.com/kajisho5/ffmpeg-skill) by kajisho5.
+
+**Source commit:** v4.1.3 (`45df6b9ab0740cecc15d0169165e8cfbcefdfb0b`, read 2026-11-20)
+
+**What was adapted (no files copied):**
+1. **Output identity verification** (`scripts/export.py` `file_identity()`, `scripts/review.py` `file_identity()` and `--expect-identity` check) — `size:mtime_ns` identity string tied to output file, adapted from `scripts/_common/emit.py` `file_identity()` and `output_identity` emission. A `verified` flag is set only when the file was written, probed, and every check passed. Identity check FAILs if the file changed or was replaced.
+2. **Audio dropout detection** (`scripts/review.py` `detect_dropouts()`) — short digital holes (≤ −80 dBFS, 20 ms–1 s, sound on both sides, not within 50 ms of ends), adapted from `scripts/check.py` content dropout pass. Returns list of `(time, duration)`.
+3. **SSIM/PSNR comparison** (`scripts/review.py` `compare_ssim_psnr()`) — frames paired by decode index (settb/setpts=N), not by timestamp, adapted from `scripts/check.py` `--compare`. Mean SSIM < 0.98 is WARN. No VMAF.
+4. **Change scope verification** (`scripts/review.py` `verify_change_scope()`, `--expect-changed`) — tile-based (32×18) change detection with declared time/rect regions, adapted from `scripts/check.py` `--expect-changed` and change_scope FAIL on changes outside declared spans.
+5. **Loudnorm timestamp fix** (`scripts/export.py` `master_audio()`) — `aresample=async=1:min_hard_comp=0.01` before loudnorm (fills gaps from 10 ms) + `asetpts=N/SR/TB+STARTPTS` after (restamps frames to prevent the ~89 ms jump and end trim that loudnorm causes on FFmpeg 6.1 after a digital-silence gap), adapted from `scripts/loudness.py` lines 144–157.
+
+**Changes:** rewritten in Python for Reelsmith's review.py and export.py; thresholds and integration points adapted to our existing checks; no wholesale copy, no MCP server, no GPL builds or GPL code.
+
+**License (MIT):**
+
+```
+MIT License
+
+Copyright (c) 2026 kajisho5
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### Optional Dependencies (Four-Repo Fit Check)
+
+The following optional dependencies are documented for advanced workflows but are not required for Reelsmith's core functionality. Install them only when needed.
+
+#### WhisperX
+
+- **Package**: whisperX
+- **Source**: https://github.com/m-bain/whisperX (v3.8.6, `3ccc17b8de34f305300f8a3fd3c9f76ba820c0d0`)
+- **License**: BSD 2-Clause License
+- **Purpose**: Optional lyric-timing cross-check (report-only, official lyrics remain source of truth)
+- **Usage**: Documented in `references/helpers.md` for multi-speaker transcripts and word-level timing
+
+```
+BSD 2-Clause License
+
+Copyright (c) 2024, Max Bain
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+#### PySceneDetect
+
+- **Package**: scenedetect
+- **Source**: https://github.com/Breakthrough/PySceneDetect (v0.7.3)
+- **License**: BSD 3-Clause License
+- **Purpose**: Optional cut-map verifier with published F1 accuracy numbers
+- **Usage**: For cut-map verification when frame-exact cut lists are required
+
+```
+BSD 3-Clause License
+
+Copyright (C) 2014, Brandon Castellano
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
+
+#### DeepFilterNet
+
+- **Package**: deep-filter (Rust binary) or deepfilternet (Python)
+- **Source**: https://github.com/Rikorose/DeepFilterNet (v0.5.6)
+- **License**: Dual-licensed MIT OR Apache-2.0 (at user's option)
+- **Purpose**: Optional dialogue-only denoise (never on song vocals or music stems)
+- **Usage**: Speech enhancement for dialogue cleanup only; must never run on song vocals, mixed music beds, or vocal stems
+
+```
+MIT License OR Apache License 2.0 (user's choice)
+
+Copyright (c) 2021 Hendrik Schröter
+
+MIT License text: (same as ffmpeg-skill MIT above)
+
+Apache License 2.0 text: (same as HyperFrames Apache 2.0 in this file)
+```
+
+#### auto-editor
+
+- **Package**: auto-editor
+- **Source**: https://github.com/WyattBlue/auto-editor (v31.9.0, official binary)
+- **License**: Unlicense (public domain dedication)
+- **Purpose**: Silence removal from spoken / raw takes
+- **Usage**: Documented in `references/helpers.md` for interview and talking-head content
+- **Note**: Binary artifacts may include open source assets under various licenses; the CLI tool used is under Unlicense
+
+```
+This is free and unencumbered software released into the public domain.
+
+Anyone is free to copy, modify, publish, use, compile, sell, or
+distribute this software, either in source code form or as a compiled
+binary, for any purpose, commercial or non-commercial, and by any
+means.
+
+In jurisdictions that recognize copyright laws, the author or authors
+of this software dedicate any and all copyright interest in the
+software to the public domain. We make this dedication for the benefit
+of the public at large and to the detriment of our heirs and
+successors. We intend this dedication to be an overt act of
+relinquishment in perpetuity of all present and future rights to this
+software under copyright law.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+For more information, please refer to <http://unlicense.org/>
+```

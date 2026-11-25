@@ -5,7 +5,7 @@
   at time T: `[1:v]setpts=PTS-STARTPTS+T/TB[m];[0:v][m]overlay=…:eof_action=pass`. Example: `manim-example/`.
 - **Lottie:** HyperFrames: local `assets/lottie.min.js`, `lottie.loadAnimation({…, autoplay:false, path:"assets/x.json"})`,
   pushed to `window.__hfLottie` (the runtime seeks it). Remotion: `@remotion/lottie`. Example: `lottie-example/`.
-- **auto-editor** (cut silences from user footage): venv `pip install auto-editor`; `auto-editor in.mp4 -o cut.mp4 --no-open`.
+- **auto-editor** (cut silences from user footage): Official binary (not pip; that install is stale). Download from https://github.com/WyattBlue/auto-editor/releases or `brew install auto-editor` on macOS. `auto-editor in.mp4 -o cut.mp4 --no-open`.
 - **Transcribe:** `$HF transcribe a.mp3 -e parakeet --json` (word times) or `--to srt`. WhisperX: venv
   `pip install whisperx` (~7.5 GB; `--device cpu --compute_type int8`).
 - **ffmpeg recipes:**

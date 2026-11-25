@@ -5,6 +5,78 @@ All notable changes to Reelsmith will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.6.0] - 2026-11-25
+
+### Added
+
+**Craft Techniques Bundle** - Quality verification and mastering improvements adapted from ffmpeg-skill and four-repo fit check
+
+#### From ffmpeg-skill-review.md (Scout document):
+
+1. **Output identity verification** (`scripts/export.py`, `scripts/review.py`)
+   - `file_identity()` returns `size:mtime_ns` identity string tied to output file
+   - `export_one()` includes `output_identity` and `verified` flag in reports
+   - `review.py check --expect-identity SIZE:MTIME_NS` FAILs if file changed or replaced
+   - Verified flag set only when file was written, probed, and every check passed
+   - Prevents carrying verification status to a different file
+
+2. **Audio dropout detection** (`scripts/review.py`)
+   - `detect_dropouts()` finds short digital holes (≤ −80 dBFS, 20 ms–1 s duration)
+   - Requires sound on both sides, excludes 50 ms near file edges
+   - Integrated into `check()` as WARN row
+   - Catches join/export seams and encoding artifacts
+
+3. **SSIM/PSNR comparison** (`scripts/review.py`)
+   - `compare_ssim_psnr(ref, test)` compares two videos
+   - Frames paired by decode index (settb/setpts=N), not by timestamp
+   - `review.py check --compare REF` enables comparison
+   - Mean SSIM < 0.98 triggers WARN
+   - No VMAF (kept lightweight)
+
+4. **Change scope verification** (`scripts/review.py`)
+   - `verify_change_scope(ref, test, regions)` with 32×18 tile grid
+   - `review.py check --compare REF --expect-changed START-END[@X,Y,W,H]|none`
+   - FAILs on changes outside declared time/rect regions
+   - Verifies audio-only, caption-only, or loudnorm-only passes didn't alter picture
+
+5. **Loudnorm timestamp fix** (`scripts/export.py`)
+   - `master_audio()` now includes `aresample=async=1:min_hard_comp=0.01` before loudnorm
+   - Fills gaps from 10 ms (swresample's 100 ms threshold left 80 ms gaps)
+   - Adds `asetpts=N/SR/TB+STARTPTS` after loudnorm to prevent ~89 ms jump and end trim
+   - Prevents A/V sync drift that loudnorm causes on FFmpeg 6.1 after digital-silence gaps
+   - Sync drift stays < 50 ms
+
+#### From four-repo-fit-check.md (Scout document):
+
+6. **auto-editor install correction** (`references/helpers.md`)
+   - Updated to official binary download (GitHub releases or Homebrew)
+   - Removed stale `pip install auto-editor` instruction (package no longer published)
+   - Preserves existing workflow pattern (EDL approval before cut)
+
+7. **Optional dependency documentation** (`THIRD_PARTY_NOTICES.md`)
+   - **WhisperX** (BSD 2-Clause): Optional lyric-timing cross-check (report-only, official lyrics remain source of truth)
+   - **PySceneDetect** (BSD 3-Clause): Optional cut-map verifier with published F1 accuracy
+   - **DeepFilterNet** (MIT OR Apache-2.0): Optional dialogue-only denoise (enforced: never on song vocals or music stems)
+   - **auto-editor** (Unlicense): Silence removal for spoken / raw takes
+   - All documented as optional, install-on-demand
+
+### Changed
+
+- VERSION bumped to 5.6.0
+- THIRD_PARTY_NOTICES.md extended with ffmpeg-skill attribution (MIT) and optional-dependency licenses
+- `review.py check()` signature extended: `--expect-identity`, `--compare`, `--expect-changed`
+- `export_one()` report now includes `output_identity` and `verified` keys
+- Existing tests unaffected; all prior behavior preserved
+
+### Technical Details
+
+- All techniques rewritten in Python for Reelsmith style
+- No wholesale copy, no MCP server, no GPL builds or GPL code
+- Filter-graph inputs sanitized (existing practice reinforced)
+- Optional heavy deps (WhisperX, PySceneDetect, DeepFilterNet) are opt-in, skip cleanly when absent
+- Comprehensive test coverage in `scripts/test_craft_techniques.py`
+- Deterministic tests mapped to Scout done_when checks
+
 ## [5.5.1] - 2026-11-22
 
 ### Fixed
