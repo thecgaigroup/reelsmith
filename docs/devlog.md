@@ -1,5 +1,19 @@
 # Development Log
 
+## 2026-11-25 (Reelsmith 5.6.0 round 4)
+
+**What changed**
+- Added a CFR and A/V alignment preflight, bounded the single AAC mix to the picture, and verified cue accounting in `check`.
+
+**State**
+- Local, uncommitted changes for PR #48 on `feat/finish-pass-slim-r4`.
+
+**Where we left off**
+- Signal rendered 23 cues, matched the round 3 MP4 SHA-256, and passed `check`. Local evidence is in `.finish-slim/FIX4_REPORT.md`.
+
+**Open**
+- Local FFmpeg lacks libass for the stream-highlights end-to-end test. Independent review and hosted CI are pending.
+
 ## 2026-11-25 (Reelsmith 5.6.0 round 3)
 
 **What changed**

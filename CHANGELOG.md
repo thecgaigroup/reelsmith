@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Use frame presentation timestamps for motion cues and preserve full cue attacks before delayed programme audio. Report rendered and skipped cues, converge on encoded loudness targets for sparse mixes, and give explicit diagnostics for short or silent inputs.
+- Reject variable frame rate and A/V starts more than one frame apart before writing any output. Deliver one AAC mix bounded by the picture, trim cue tails, and verify planned, rendered and skipped cue lists. Retain sparse-mix mastering and diagnostics for short or silent inputs.
 
 ## [5.6.0] - 2026-11-25
 

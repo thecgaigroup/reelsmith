@@ -6,7 +6,6 @@ import json
 import re
 import subprocess
 import wave
-from bisect import bisect_left
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -85,7 +84,7 @@ def plan_cues(duration, cuts, motion):
         cues.append(Cue("latch", round(t, 3), -10.0) if strength > threshold else
                     Cue("click", round(t, 3), -11.0))
     cues.append(Cue("impact", round(impact, 3), -7.0))
-    return sorted(cues, key=lambda cue: cue.time)
+    return sorted(dict.fromkeys(cues), key=lambda cue: cue.time)
 
 
 def local_file(path):
@@ -154,40 +153,27 @@ def frame_times(video):
     source = local_file(video)
     result = subprocess.run(
         ["ffprobe", "-v", "error", *LOCAL_PROTOCOLS, "-select_streams", "v:0",
-         "-show_entries", "stream=start_time:frame=best_effort_timestamp_time,pts_time,pkt_pts_time",
+         "-show_entries", "frame=best_effort_timestamp_time,pts_time",
          "-of", "json", str(source)], capture_output=True, text=True,
     )
     if result.returncode:
         raise ValueError(f"cannot read video frame timestamps: {result.stderr.strip()}")
     data = json.loads(result.stdout)
     try:
-        start = float(data["streams"][0]["start_time"])
-        times = [next(float(frame[key]) for key in ("best_effort_timestamp_time", "pts_time", "pkt_pts_time")
-                      if frame.get(key) not in (None, "N/A")) - start for frame in data.get("frames", [])]
-    except (IndexError, KeyError, StopIteration, ValueError) as error:
-        raise ValueError("motion analysis needs a presentation timestamp for every video frame") from error
-    if not np.isfinite(times).all() or any(a > b for a, b in zip(times, times[1:])):
-        raise ValueError("motion analysis needs video timestamps in presentation order")
-    return times
+        return [float(frame.get("best_effort_timestamp_time", frame.get("pts_time", "nan")))
+                for frame in data.get("frames", [])]
+    except ValueError as error:
+        raise ValueError("invalid frame presentation timestamp") from error
 
 
 def cue_events(video, duration, fps, scenes=None):
     # CSV and scene-detector cut times are already relative to picture start.
     cuts = [t for t in cut_times(video, scenes) if 0 < t < duration]
     delta = motion_deltas(video)
-    times = frame_times(video)
-    if len(times) != len(delta):
-        raise ValueError(f"motion analysis decoded {len(delta)} frames but found {len(times)} frame timestamps")
-
-    def cut_strength(t):
-        right = min(bisect_left(times, t), len(times) - 1)
-        left = max(0, right - 1)
-        return delta[left if t - times[left] <= times[right] - t else right]
-
     threshold = max(0.25, (np.median(delta) + 1e-3) * 3)
     motion = []
     for i, strength in enumerate(delta[1:-1], start=1):
-        t = times[i]
+        t = i / fps
         if strength <= threshold or strength < delta[i - 1] or strength <= delta[i + 1]:
             continue
         if delta[i - 1] >= strength * 0.85 or any(abs(t - c) < 0.45 for c in cuts):
@@ -197,23 +183,22 @@ def cue_events(video, duration, fps, scenes=None):
                 motion[-1] = [t, strength]
         else:
             motion.append([t, strength])
-    return {"duration": duration, "cuts": [[t, cut_strength(t)] for t in cuts], "motion": motion}
+    return {"duration": duration, "cuts": [[t, delta[min(round(t * fps), len(delta) - 1)]] for t in cuts],
+            "motion": motion}
 
 
-def render_stem(path, duration, cue_path, sounds, *, picture_duration, offset=0):
+def render_stem(path, duration, cues, sounds):
     stem = np.zeros(round(duration * SR), dtype=np.float32)
     rendered, skipped = [], []
-    for record in json.loads(local_file(cue_path).read_text())["cues"]:
-        cue = Cue(**record)
-        # A lead-in planned for an opening cut can start at the first frame.
-        cue_start = round((max(0, cue.time) + offset) * SR)
-        samples = sounds[cue.sound].samples
-        end = cue_start + len(samples)
-        if cue.time >= picture_duration or cue_start < 0 or end > len(stem):
-            skipped.append(record)
+    for cue in cues:
+        if cue.time >= duration:
+            skipped.append(cue)
             continue
-        stem[cue_start:end] += samples * 10 ** (cue.gain_db / 20)
-        rendered.append(record)
+        # Clamp opening lead-ins and round any final sub-sample start inward.
+        start = min(round(max(0, cue.time) * SR), len(stem) - 1)
+        samples = sounds[cue.sound].samples[:len(stem) - start]
+        stem[start:start + len(samples)] += samples * 10 ** (cue.gain_db / 20)
+        rendered.append(cue)
     # Float PCM keeps overlapping hits intact before the single mastering stage.
     stem.astype("<f4").tofile(path)
     return rendered, skipped
@@ -227,17 +212,14 @@ DUCK_GRAPH = (
 )
 
 
-def premix(video, stem, out, has_audio, duration, *, programme_delay=0):
+def premix(video, stem, out, has_audio, duration):
     raw = ["-f", "f32le", "-ar", SR, "-ac", 1, "-i", local_file(stem)]
-    graph = DUCK_GRAPH
-    if programme_delay:
-        graph = graph.replace("apad,asplit", f"adelay={round(programme_delay * SR)}S:all=1,apad,asplit")
-    args = ["-i", local_file(video), *raw, "-filter_complex", graph, "-map", "[mix]"] if has_audio else raw
+    args = ["-i", local_file(video), *raw, "-filter_complex", DUCK_GRAPH, "-map", "[mix]"] if has_audio else raw
     ffmpeg("-v", "error", "-y", *args, "-t", f"{duration:.9f}", "-ac", 2, "-c:a", "pcm_f32le", out)
 
 
-def loudness(path, audio_index=0):
-    result = ffmpeg("-hide_banner", "-nostats", "-i", local_file(path), "-map", f"0:a:{audio_index}",
+def loudness(path):
+    result = ffmpeg("-hide_banner", "-nostats", "-i", local_file(path), "-map", "0:a:0",
                     "-af", "ebur128=peak=true", "-f", "null", "-")
     summary = result.stderr.decode().rsplit("Summary:", 1)[-1]
     stats = {}
