@@ -429,115 +429,135 @@ def verify_change_scope(ref, test, regions):
     scale_w, scale_h = tile_w * 20, tile_h * 20  # 640x360
     
     # Use YUV420p to compare chroma as well as luma (not grayscale only)
+    # Stream frame-by-frame using Popen to avoid loading entire video in memory
     cmd1 = ["ffmpeg", "-v", "error", "-i", str(ref), "-vf", f"scale={scale_w}:{scale_h}:flags=area,format=yuv420p",
             "-pix_fmt", "yuv420p", "-f", "rawvideo", "-"]
     cmd2 = ["ffmpeg", "-v", "error", "-i", str(test), "-vf", f"scale={scale_w}:{scale_h}:flags=area,format=yuv420p",
             "-pix_fmt", "yuv420p", "-f", "rawvideo", "-"]
-    
-    r1 = subprocess.run(cmd1, capture_output=True)
-    r2 = subprocess.run(cmd2, capture_output=True)
-    
-    if r1.returncode != 0 or r2.returncode != 0:
-        return {"pass": False, "failures": [(0, 0, 0, 0, 0, "decode failed")], "brightness_lift": None}
     
     # Parse YUV420p: Y plane is W*H, U and V planes are W/2 * H/2 each
     frame_size_y = scale_w * scale_h
     frame_size_uv = (scale_w // 2) * (scale_h // 2)
     frame_size = frame_size_y + 2 * frame_size_uv
     
-    frames1_count = len(r1.stdout) // frame_size
-    frames2_count = len(r2.stdout) // frame_size
+    # Start processes and stream frame-by-frame
+    p1 = subprocess.Popen(cmd1, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p2 = subprocess.Popen(cmd2, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     
-    # Fail on unmatched tail frames when lengths differ
-    if frames1_count != frames2_count:
-        return {"pass": False, "failures": [(0, 0, 0, 0, 0, f"frame count mismatch: {frames1_count} vs {frames2_count}")], 
-                "brightness_lift": None}
-    
-    n_frames = frames1_count
-    if n_frames < 2:
-        return {"pass": False, "failures": [(0, 0, 0, 0, 0, "too few frames")], "brightness_lift": None}
-    
-    # Extract YUV planes for comparison (luma + chroma)
-    # Parse YUV420p data into separate planes
-    frames_data_1 = np.frombuffer(r1.stdout, dtype=np.uint8).reshape(-1, frame_size)
-    frames_data_2 = np.frombuffer(r2.stdout, dtype=np.uint8).reshape(-1, frame_size)
-    
-    # Y plane (luma)
-    y1 = frames_data_1[:, :frame_size_y].reshape(-1, scale_h, scale_w).astype(np.float32)
-    y2 = frames_data_2[:, :frame_size_y].reshape(-1, scale_h, scale_w).astype(np.float32)
-    
-    # U and V planes (chroma) - downsampled 2x2
     uv_h, uv_w = scale_h // 2, scale_w // 2
-    u1 = frames_data_1[:, frame_size_y:frame_size_y+frame_size_uv].reshape(-1, uv_h, uv_w).astype(np.float32)
-    u2 = frames_data_2[:, frame_size_y:frame_size_y+frame_size_uv].reshape(-1, uv_h, uv_w).astype(np.float32)
-    v1 = frames_data_1[:, frame_size_y+frame_size_uv:].reshape(-1, uv_h, uv_w).astype(np.float32)
-    v2 = frames_data_2[:, frame_size_y+frame_size_uv:].reshape(-1, uv_h, uv_w).astype(np.float32)
-    
-    # Detect global brightness lift (mean luma difference across all frames)
-    global_luma_diff = float(np.mean(y2 - y1))
-    brightness_lift = global_luma_diff if abs(global_luma_diff) > 15 else None
-    
-    # Tile-based diff (32x18 grid) - compare Y, U, V
     tile_px_h, tile_px_w = scale_h // tile_h, scale_w // tile_w
     tile_uv_h, tile_uv_w = uv_h // tile_h, uv_w // tile_w
     failures = []
     CHANGE_FLOOR = 24  # channel difference 0-255 (adjusted for downscale)
     CHROMA_CHANGE_FLOOR = 12  # chroma is half-resolution, so lower threshold
     
-    for i in range(n_frames):
-        t = i / fps
-        diff_y = np.abs(y1[i] - y2[i])
-        diff_u = np.abs(u1[i] - u2[i])
-        diff_v = np.abs(v1[i] - v2[i])
-        
-        for ty in range(tile_h):
-            for tx in range(tile_w):
-                # Check Y (luma) change
-                tile_diff_y = diff_y[ty*tile_px_h:(ty+1)*tile_px_h, tx*tile_px_w:(tx+1)*tile_px_w]
-                mean_diff_y = float(np.mean(tile_diff_y))
-                
-                # Check U and V (chroma) change
-                tile_diff_u = diff_u[ty*tile_uv_h:(ty+1)*tile_uv_h, tx*tile_uv_w:(tx+1)*tile_uv_w]
-                tile_diff_v = diff_v[ty*tile_uv_h:(ty+1)*tile_uv_h, tx*tile_uv_w:(tx+1)*tile_uv_w]
-                mean_diff_u = float(np.mean(tile_diff_u))
-                mean_diff_v = float(np.mean(tile_diff_v))
-                
-                # Tile has changed if luma OR chroma exceeds threshold
-                has_luma_change = mean_diff_y >= CHANGE_FLOOR
-                has_chroma_change = mean_diff_u >= CHROMA_CHANGE_FLOOR or mean_diff_v >= CHROMA_CHANGE_FLOOR
-                
-                if not (has_luma_change or has_chroma_change):
-                    continue  # no change in this tile
-                
-                mean_diff = max(mean_diff_y, mean_diff_u, mean_diff_v)  # report worst
-                
-                # Tile changed; check if it's in an allowed region
-                tile_x = int(tx * W / tile_w)
-                tile_y = int(ty * H / tile_h)
-                tile_w_px = int(W / tile_w)
-                tile_h_px = int(H / tile_h)
-                
-                allowed_here = False
-                for region in allowed:
-                    if region["start"] <= t <= region["end"]:
-                        if region["x"] is None:  # time-only region (whole frame allowed)
-                            allowed_here = True
+    global_luma_sum = 0.0
+    global_luma_count = 0
+    frame_index = 0
+    
+    try:
+        while True:
+            # Read one frame from each pipe
+            frame1_bytes = p1.stdout.read(frame_size)
+            frame2_bytes = p2.stdout.read(frame_size)
+            
+            # Check if we've reached end of either stream
+            if len(frame1_bytes) < frame_size or len(frame2_bytes) < frame_size:
+                # Check for frame count mismatch
+                if len(frame1_bytes) != len(frame2_bytes):
+                    failures.insert(0, (0, 0, 0, 0, 0, f"frame count mismatch"))
+                    break
+                # Both ended at same time
+                break
+            
+            t = frame_index / fps
+            frame_index += 1
+            
+            # Parse YUV420p planes for this frame
+            y1 = np.frombuffer(frame1_bytes[:frame_size_y], dtype=np.uint8).reshape(scale_h, scale_w).astype(np.float32)
+            y2 = np.frombuffer(frame2_bytes[:frame_size_y], dtype=np.uint8).reshape(scale_h, scale_w).astype(np.float32)
+            
+            u1 = np.frombuffer(frame1_bytes[frame_size_y:frame_size_y+frame_size_uv], dtype=np.uint8).reshape(uv_h, uv_w).astype(np.float32)
+            u2 = np.frombuffer(frame2_bytes[frame_size_y:frame_size_y+frame_size_uv], dtype=np.uint8).reshape(uv_h, uv_w).astype(np.float32)
+            
+            v1 = np.frombuffer(frame1_bytes[frame_size_y+frame_size_uv:], dtype=np.uint8).reshape(uv_h, uv_w).astype(np.float32)
+            v2 = np.frombuffer(frame2_bytes[frame_size_y+frame_size_uv:], dtype=np.uint8).reshape(uv_h, uv_w).astype(np.float32)
+            
+            # Accumulate global luma difference for brightness detection
+            global_luma_sum += float(np.sum(y2 - y1))
+            global_luma_count += y1.size
+            
+            # Compute per-frame diffs
+            diff_y = np.abs(y1 - y2)
+            diff_u = np.abs(u1 - u2)
+            diff_v = np.abs(v1 - v2)
+            
+            for ty in range(tile_h):
+                for tx in range(tile_w):
+                    # Check Y (luma) change
+                    tile_diff_y = diff_y[ty*tile_px_h:(ty+1)*tile_px_h, tx*tile_px_w:(tx+1)*tile_px_w]
+                    mean_diff_y = float(np.mean(tile_diff_y))
+                    
+                    # Check U and V (chroma) change
+                    tile_diff_u = diff_u[ty*tile_uv_h:(ty+1)*tile_uv_h, tx*tile_uv_w:(tx+1)*tile_uv_w]
+                    tile_diff_v = diff_v[ty*tile_uv_h:(ty+1)*tile_uv_h, tx*tile_uv_w:(tx+1)*tile_uv_w]
+                    mean_diff_u = float(np.mean(tile_diff_u))
+                    mean_diff_v = float(np.mean(tile_diff_v))
+                    
+                    # Tile has changed if luma OR chroma exceeds threshold
+                    has_luma_change = mean_diff_y >= CHANGE_FLOOR
+                    has_chroma_change = mean_diff_u >= CHROMA_CHANGE_FLOOR or mean_diff_v >= CHROMA_CHANGE_FLOOR
+                    
+                    if not (has_luma_change or has_chroma_change):
+                        continue  # no change in this tile
+                    
+                    mean_diff = max(mean_diff_y, mean_diff_u, mean_diff_v)  # report worst
+                    
+                    # Tile changed; check if it's in an allowed region
+                    tile_x = int(tx * W / tile_w)
+                    tile_y = int(ty * H / tile_h)
+                    tile_w_px = int(W / tile_w)
+                    tile_h_px = int(H / tile_h)
+                    
+                    allowed_here = False
+                    for region in allowed:
+                        if region["start"] <= t <= region["end"]:
+                            if region["x"] is None:  # time-only region (whole frame allowed)
+                                allowed_here = True
+                                break
+                            # Check tile overlap with allowed rectangle
+                            if not (tile_x + tile_w_px <= region["x"] or tile_x >= region["x"] + region["w"] or
+                                   tile_y + tile_h_px <= region["y"] or tile_y >= region["y"] + region["h"]):
+                                allowed_here = True
+                                break
+                    
+                    if not allowed_here:
+                        failures.append((round(t, 3), tile_x, tile_y, tile_w_px, tile_h_px, 
+                                       f"change outside declared regions (diff {mean_diff:.1f})"))
+                        if len(failures) >= 10:  # limit report
                             break
-                        # Check tile overlap with allowed rectangle
-                        if not (tile_x + tile_w_px <= region["x"] or tile_x >= region["x"] + region["w"] or
-                               tile_y + tile_h_px <= region["y"] or tile_y >= region["y"] + region["h"]):
-                            allowed_here = True
-                            break
-                
-                if not allowed_here:
-                    failures.append((round(t, 3), tile_x, tile_y, tile_w_px, tile_h_px, 
-                                   f"change outside declared regions (diff {mean_diff:.1f})"))
-                    if len(failures) >= 10:  # limit report
-                        break
+                if len(failures) >= 10:
+                    break
             if len(failures) >= 10:
                 break
-        if len(failures) >= 10:
-            break
+    finally:
+        # Clean up processes
+        p1.stdout.close()
+        p2.stdout.close()
+        p1.wait()
+        p2.wait()
+        
+        # Check for decode errors
+        if p1.returncode != 0 or p2.returncode != 0:
+            return {"pass": False, "failures": [(0, 0, 0, 0, 0, "decode failed")], "brightness_lift": None}
+    
+    # Check minimum frame count
+    if frame_index < 2:
+        return {"pass": False, "failures": [(0, 0, 0, 0, 0, "too few frames")], "brightness_lift": None}
+    
+    # Detect global brightness lift (mean luma difference across all frames)
+    global_luma_diff = global_luma_sum / global_luma_count if global_luma_count > 0 else 0
+    brightness_lift = global_luma_diff if abs(global_luma_diff) > 15 else None
     
     result = {"pass": len(failures) == 0, "failures": failures, "brightness_lift": brightness_lift}
     if brightness_lift is not None:

@@ -587,13 +587,13 @@ def test_brightness_lift_detection():
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp)
         # Create two videos: darker and brighter (use RGB values for consistent luma)
-        # RGB 128,128,128 vs 178,178,178 gives ~+20 luma lift
+        # RGB 128,128,128 vs 148,148,148 gives exactly +20 luma lift
         subprocess.run(["ffmpeg", "-y", "-f", "lavfi",
                         "-i", "color=0x808080:s=320x240:r=30:duration=0.5",
                         "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "ref.mp4")],
                        capture_output=True, check=True)
         subprocess.run(["ffmpeg", "-y", "-f", "lavfi",
-                        "-i", "color=0xb2b2b2:s=320x240:r=30:duration=0.5",
+                        "-i", "color=0x949494:s=320x240:r=30:duration=0.5",
                         "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "test.mp4")],
                        capture_output=True, check=True)
         
@@ -601,7 +601,27 @@ def test_brightness_lift_detection():
         assert result["pass"] is False
         assert result["brightness_lift"] is not None
         assert result["brightness_lift"] > 15
-        print(f"  brightness lift detected: {result['brightness_lift']:+.1f} levels")
+        print(f"  brightness lift detected: {result['brightness_lift']:+.1f} levels (expected ~+20)")
+
+# (b) Test small brightness change is not flagged
+def test_brightness_small_change_allowed():
+    """verify_change_scope allows +3 brightness change (below threshold)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        # RGB 128,128,128 vs 131,131,131 gives +3 luma lift (below 15 threshold)
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi",
+                        "-i", "color=0x808080:s=320x240:r=30:duration=0.5",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "ref.mp4")],
+                       capture_output=True, check=True)
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi",
+                        "-i", "color=0x838383:s=320x240:r=30:duration=0.5",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "test.mp4")],
+                       capture_output=True, check=True)
+        
+        result = verify_change_scope(out / "ref.mp4", out / "test.mp4", ["none"])
+        assert result["pass"] is True
+        assert result["brightness_lift"] is None
+        print(f"  small +3 brightness change allowed (below threshold)")
 
 # (b) Test appended tail frames fail
 def test_appended_tail_frames_fail():
@@ -643,18 +663,17 @@ def test_black_white_appended_fails_none():
         assert result["pass"] is False
         print(f"  appended white frames caught")
 
-# (c) Test memory bounds
-def skip_test_change_scope_memory_bounded():
-    """verify_change_scope stays <500MB on 10s 1080x1920 video."""
+# (c) Test memory bounds with streaming
+def test_change_scope_memory_bounded():
+    """verify_change_scope stays <150MB on 10s 1080x1920 video (frame-by-frame streaming)."""
     import tracemalloc
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp)
-        # Create shorter video (5s) to fit within memory bounds while still being meaningful
-        # 10s at 30fps is 300 frames which at 640x360 YUV420p is still large
-        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "color=black:s=1080x1920:r=30:duration=5",
+        # Create 10s video at 1080x1920 (30fps = 300 frames)
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "color=black:s=1080x1920:r=30:duration=10",
                         "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "ref.mp4")],
                        capture_output=True, check=True, timeout=60)
-        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "color=black:s=1080x1920:r=30:duration=5",
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "color=black:s=1080x1920:r=30:duration=10",
                         "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "test.mp4")],
                        capture_output=True, check=True, timeout=60)
         
@@ -664,10 +683,10 @@ def skip_test_change_scope_memory_bounded():
         current, peak = tracemalloc.get_traced_memory()
         tracemalloc.stop()
         
-        # Peak memory in MB (downscale to 640x360 keeps 5s video under 500 MB)
+        # Peak memory in MB (frame-by-frame streaming keeps it under 150 MB)
         peak_mb = peak / (1024 * 1024)
-        assert peak_mb < 500, f"Peak memory {peak_mb:.1f} MB exceeds 500 MB"
-        print(f"  peak memory: {peak_mb:.1f} MB on 5s 1080x1920 (< 500 MB)")
+        assert peak_mb < 150, f"Peak memory {peak_mb:.1f} MB exceeds 150 MB"
+        print(f"  peak memory: {peak_mb:.1f} MB on 10s 1080x1920 (< 150 MB)")
 
 # (d) Test PySceneDetect actual cut lists
 def test_pyscenedetect_actual_cuts():
@@ -692,110 +711,79 @@ def test_pyscenedetect_actual_cuts():
         print(f"  cuts detected: {result['cuts']} (expected frame 6)")
 
 # (e) Test whisperX alignment failure
-def skip_test_whisperx_alignment_failure():
+def test_whisperx_alignment_failure():
     """WhisperX returns error when alignment fails."""
-    # Create a stub module that simulates whisperx with failing alignment
+    from unittest.mock import Mock, patch
+    import numpy as np
+    
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp)
         v = make_test_video(out, dur=1, audio=True)
         
-        # Create stub whisperx module
-        stub_code = '''
-class StubModel:
-    def transcribe(self, audio, language=None):
-        return {"segments": [{"text": "test"}]}
-
-def load_model(name, device="cpu", compute_type="int8", language="en"):
-    return StubModel()
-
-def load_audio(path):
-    import numpy as np
-    return np.zeros(16000)
-
-def load_align_model(language_code="en", device="cpu"):
-    raise RuntimeError("Alignment failed")
-
-def align(segments, model, metadata, audio, device):
-    raise RuntimeError("Alignment failed")
-'''
-        (out / "whisperx_stub.py").write_text(stub_code)
+        # Mock whisperx module and its functions
+        mock_whisperx = Mock()
+        mock_whisperx.load_audio.return_value = np.zeros(16000)
         
-        # Inject stub
-        old_path = sys.path.copy()
-        sys.path.insert(0, str(out))
-        sys.modules.pop('whisperx', None)  # clear cache
+        mock_model = Mock()
+        mock_model.transcribe.return_value = {"segments": [{"text": "test"}]}
+        mock_whisperx.load_model.return_value = mock_model
         
-        try:
+        # Alignment raises exception
+        mock_whisperx.load_align_model.side_effect = RuntimeError("Alignment model failed")
+        
+        with patch.dict('sys.modules', {'whisperx': mock_whisperx, 'torch': Mock()}):
             import whisperx_helper
-            # Reload with stub
-            import importlib
-            importlib.reload(whisperx_helper)
-            
             result = whisperx_helper.cross_check_lyrics(str(v), ["test", "words"])
+            
             assert result["success"] is False
             assert result["error"] is not None
             assert "alignment failed" in result["error"].lower()
             print(f"  alignment failure caught: {result['error'][:50]}")
-        finally:
-            sys.path = old_path
-            sys.modules.pop('whisperx', None)
 
 # (e) Test whisperX wrong order detection
-def skip_test_whisperx_wrong_order():
-    """WhisperX detects words in wrong order."""
-    # Create stub with words out of order
+def test_whisperx_wrong_order():
+    """WhisperX detects words in wrong order or timing >300ms off."""
+    from unittest.mock import Mock, patch
+    import numpy as np
+    
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp)
         v = make_test_video(out, dur=1, audio=True)
         
-        stub_code = '''
-class StubModel:
-    def transcribe(self, audio, language=None):
-        return {"segments": [{"text": "world hello", "words": []}]}
-
-def load_model(name, device="cpu", compute_type="int8", language="en"):
-    return StubModel()
-
-def load_audio(path):
-    import numpy as np
-    return np.zeros(16000)
-
-class StubAlignModel:
-    pass
-
-def load_align_model(language_code="en", device="cpu"):
-    return StubAlignModel(), {}
-
-def align(segments, model, metadata, audio, device):
-    # Return words in wrong order
-    return {"segments": [{"words": [
-        {"word": "world", "start": 0.0, "end": 0.5},
-        {"word": "hello", "start": 0.5, "end": 1.0}
-    ]}]}
-'''
-        (out / "whisperx_stub.py").write_text(stub_code)
+        # Mock whisperx module
+        mock_whisperx = Mock()
+        mock_whisperx.load_audio.return_value = np.zeros(16000)
         
-        old_path = sys.path.copy()
-        sys.path.insert(0, str(out))
-        sys.modules.pop('whisperx', None)
+        mock_model = Mock()
+        mock_model.transcribe.return_value = {"segments": [{"text": "world hello"}]}
+        mock_whisperx.load_model.return_value = mock_model
         
-        try:
+        # Mock alignment that returns words in WRONG order
+        mock_align_model = Mock()
+        mock_whisperx.load_align_model.return_value = (mock_align_model, {})
+        mock_whisperx.align.return_value = {
+            "segments": [{
+                "words": [
+                    {"word": "world", "start": 0.0, "end": 0.5},
+                    {"word": "hello", "start": 0.5, "end": 1.0}
+                ]
+            }]
+        }
+        
+        with patch.dict('sys.modules', {'whisperx': mock_whisperx, 'torch': Mock()}):
             import whisperx_helper
-            import importlib
-            importlib.reload(whisperx_helper)
-            
-            # Official order: hello, world
+            # Official order: hello, world (opposite of detected)
             result = whisperx_helper.cross_check_lyrics(str(v), ["hello", "world"])
-            # Should detect order mismatch
-            assert result["success"] is True  # alignment succeeded
+            
+            # Alignment succeeded but order is wrong or timing is off >300ms
+            assert result["success"] is True  # alignment didn't crash
+            # Check for order issues or timing issues
             details = result.get("details", {})
             if isinstance(details, dict):
                 order_mismatches = details.get("order_mismatches", [])
-                assert len(order_mismatches) > 0, "Should detect order mismatch"
-                print(f"  order mismatch detected: {order_mismatches[0][:50] if order_mismatches else 'detected'}")
-        finally:
-            sys.path = old_path
-            sys.modules.pop('whisperx', None)
+                timing_mismatches = details.get("timing_mismatches", [])
+                assert len(order_mismatches) > 0 or len(timing_mismatches) > 0, "Should detect order or timing mismatch"
+                print(f"  order/timing mismatch detected")
 
 # (f) Test filter sanitizer renders correctly
 def test_filter_sanitizer_renders_correctly():
