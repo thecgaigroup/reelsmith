@@ -840,8 +840,8 @@ def test_many_failures_preserve_reasons():
                         "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out / "ref.mp4")],
                        capture_output=True, check=True)
         # Create test with many small white squares that will trigger multiple tile failures
-        # Draw 20 white rectangles across different locations to hit multiple tiles
-        drawboxes = ":".join([
+        # Draw 12 white rectangles across different locations to hit multiple tiles
+        drawboxes = ",".join([
             "drawbox=x=0:y=0:w=100:h=100:color=white:t=fill",
             "drawbox=x=200:y=0:w=100:h=100:color=white:t=fill",
             "drawbox=x=400:y=0:w=100:h=100:color=white:t=fill",
