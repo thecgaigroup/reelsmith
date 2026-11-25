@@ -8,7 +8,7 @@ def media(c):
     return [c.get("hero")] if c.get("hero") else []
 
 def plan(c, ctx):
-    10|    """Plan scenes for Signal Short: title reveal + 2-3 key points + end card."""
+    """Plan scenes for Signal Short: title reveal + 2-3 key points + end card."""
     vo = c.get("vo") or {}
     sc = [
         {"id": "s-title", "seconds": 3.0},
@@ -19,7 +19,7 @@ def plan(c, ctx):
         sc.append({"id": "s-key3", "seconds": 2.5})
     sc.append({"id": "s-end", "seconds": 3.0})
     
-    20|    for s in sc:
+    for s in sc:
         if vo.get(s["id"]):
             s["vo"] = vo[s["id"]]
     return sc
@@ -31,7 +31,7 @@ def build(c, ctx, scenes):
     # Safe layout flag from context
     safe_layout = ctx.get("safe_layout", False)
     
-    30|    # Initialize safe zones if enabled
+    # Initialize safe zones if enabled
     if safe_layout and ctx["vertical"]:
         zones = SafeZones(1080, 1920, enabled=True)
         badge_x, badge_y = zones.get_badge_position()
@@ -44,7 +44,7 @@ def build(c, ctx, scenes):
         pill_right_margin = 40  # px from right edge (legacy)
     
     # Brand elements that appear on every scene
-    40|    badge_html = f'<div class="badge" style="left: {badge_x}px; top: {badge_y if safe_layout and ctx["vertical"] else 40}px;"><img src="{ctx.get("badge_url", "")}" alt="badge" style="width: 80px; height: 80px;"></div>' if ctx.get("badge_url") else ""
+    badge_html = f'<div class="badge" style="left: {badge_x}px; top: {badge_y if safe_layout and ctx["vertical"] else 40}px;"><img src="{ctx.get("badge_url", "")}" alt="badge" style="width: 80px; height: 80px;"></div>' if ctx.get("badge_url") else ""
     pill_html = f'<div class="pill" style="right: {pill_right_margin}px; top: {badge_y if safe_layout and ctx["vertical"] else 40}px;">{E(c.get("pill_text", "THE SIGNAL"))}</div>'
     
     for i, s in enumerate(scenes):
@@ -53,7 +53,7 @@ def build(c, ctx, scenes):
         if sid == "s-title":
             # Hero art background + title reveal with center line
             hero_bg = f'<div class="media"><img class="hero" src="{ctx["media"](c["hero"])}" alt=""></div><div class="shade"></div>' if c.get("hero") else ""
-    50|            
+            
             # Center line with keyword highlights (cyan/purple)
             title_parts = c["title"].split()
             title_html = " ".join(f'<span class="w kw{(i % 2) + 1}">{E(w)}</span>' for i, w in enumerate(title_parts))
@@ -64,7 +64,7 @@ def build(c, ctx, scenes):
             
             # Animation: hold for 6 frames (0.25s at 24fps) then animate
             hold_time = 0.25
-    60|            js += [
+            js += [
                 f'tl.set("#{sid} .badge, #{sid} .pill", {{opacity: 1}}, {t(st)});',
                 f'tl.fromTo("#{sid} .bar", {{scaleX: 0}}, {{scaleX: 1, duration: 0.8, ease: "power4.inOut"}}, {t(st + hold_time)});',
                 words_in(f"#{sid} .title", st + hold_time + 0.3, 0.12, "rise", 0.5),
@@ -75,7 +75,7 @@ def build(c, ctx, scenes):
         elif sid.startswith("s-key"):
             # Key point with hero background
             key_num = int(sid[-1]) - 1
-    70|            key_text = c.get(f"key{key_num + 1}", "")
+            key_text = c.get(f"key{key_num + 1}", "")
             
             hero_bg = f'<div class="media"><img class="hero" src="{ctx["media"](c["hero"])}" alt=""></div><div class="shade sh2"></div>' if c.get("hero") else ""
             
@@ -85,7 +85,7 @@ def build(c, ctx, scenes):
             js += [
                 f'tl.set("#{sid} .badge, #{sid} .pill", {{opacity: 1}}, {t(st)});',
                 words_in(f"#{sid} .keypoint", st + 0.1, 0.08),
-    80|            ]
+            ]
             if c.get("hero"):
                 js.append(f'kenburns("#{sid} .hero", {t(st)}, {t(d)}, {key_num});')
         
@@ -96,7 +96,7 @@ def build(c, ctx, scenes):
         js += cut_js(s, i, scenes, ctx)
         out.append({"id": sid, "start": st, "dur": d, "html": h})
     
-    90|    # Constrain content width in safe layout mode
+    # Constrain content width in safe layout mode
     safe_width_pct = "60%" if safe_layout and ctx["vertical"] else "100%"
     
     css = f"""
@@ -109,7 +109,7 @@ def build(c, ctx, scenes):
 .title {{ font-size: calc(var(--h1) * 1.2); line-height: 1.1; word-wrap: break-word; }}
 .kw1 {{ color: #22D3EE; }}
 .kw2 {{ color: #A78BFA; }}
-   100|.keypoint {{ font-size: calc(var(--h2) * 1.1); text-align: center; max-width: {safe_width_pct}; margin: 0 auto; word-wrap: break-word; }}
+.keypoint {{ font-size: calc(var(--h2) * 1.1); text-align: center; max-width: {safe_width_pct}; margin: 0 auto; word-wrap: break-word; }}
 .sh2 {{ background: rgba(0,0,0,0.65); }}
 """
     return {"scenes": out, "js": "\n".join(js), "css": css}
