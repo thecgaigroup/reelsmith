@@ -1,11 +1,10 @@
 name: CI
 
+# The required check "lint, typecheck, and build" must report on every pull
+# request, including docs-only ones. So the workflow always runs, and the job
+# exits early with success when only Markdown, docs/ or LICENSE changed.
 on:
   pull_request:
-    paths-ignore:
-      - "**/*.md"
-      - "docs/**"
-      - "LICENSE"
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -22,20 +21,42 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect docs-only change
+        id: changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          files=$(git diff --name-only "$BASE_SHA...$HEAD_SHA")
+          echo "Changed files:"
+          echo "$files"
+          code=$(printf '%s\n' "$files" | grep -v -E '(\.md$|^docs/|^LICENSE$)' | grep -c . || true)
+          if [ -n "$files" ] && [ "$code" -eq 0 ]; then
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+            echo "Docs-only change: skipping lint, typecheck, build and tests."
+          else
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set up Python
+        if: steps.changes.outputs.docs_only != 'true'
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
 
       - name: Install dependencies
+        if: steps.changes.outputs.docs_only != 'true'
         run: python3 -m pip install -r requirements.txt
 
       # No eslint, ruff, mypy, or tsc project is in this tree. Remotion's
       # `tsc --noEmit` lives in the starter kit and is not run here.
       # These are the checks the repo already supports. None of them render.
       - name: Lint
+        if: steps.changes.outputs.docs_only != 'true'
         run: |
           python3 -m compileall -q scripts templates hyperframes-example manim-example
           python3 -c '
@@ -55,14 +76,17 @@ jobs:
           '
 
       - name: Typecheck
+        if: steps.changes.outputs.docs_only != 'true'
         run: python3 scripts/brand.py validate brand/sample-brand.json
 
       - name: Build
+        if: steps.changes.outputs.docs_only != 'true'
         run: |
           python3 scripts/reelsmith.py list
           python3 scripts/openmotion_preflight.py openmotion-example
 
       - name: Test
+        if: steps.changes.outputs.docs_only != 'true'
         run: |
           sudo apt-get update && sudo apt-get install -y ffmpeg
           python3 -m pip install pytest numpy scipy 'opencv-python>=4.10,<5' pysubs2
