@@ -1,3 +1,5 @@
+> Superseded as the statement of purpose by [docs/product/](docs/product/) (2026-11-26). Kept as history.
+
 # Reelsmith roadmap
 
 Parked work. Do not start these until the current release gates elsewhere are stable, unless the owner asks for a spike.

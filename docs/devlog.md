@@ -1,5 +1,19 @@
 # Development Log
 
+## 2026-11-26 (Reelsmith product docs)
+
+**What changed**
+- Added a product docs index, PRFAQ, requirements and roadmap. The root roadmap points to the new docs and stays as history.
+
+**State**
+- Product docs are in draft. The roadmap records what has shipped and marks proposed milestones for issue tracking.
+
+**Where we left off**
+- The first milestone versions the brief and render interface. The roadmap puts that work and the status feed before the Orbit view.
+
+**Open**
+- Confirm which render paths belong in API v1, whether a render service is needed, and which shared connector will carry render status to Orbit.
+
 ## 2026-11-25 (Reelsmith 5.7.0)
 
 - Rebased the finish-pass branch onto main after #47 took 5.6.0. This release is 5.7.0. The finish-pass CHANGELOG entry sits above the 5.6.0 safe-layout notes, and CI runs both test lists.
