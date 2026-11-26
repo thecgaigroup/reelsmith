@@ -17,7 +17,7 @@ Reelsmith is the open-source skill for taking a video from brief to reviewed exp
 1. **Plan before rendering.** Match the template or engine to the brief. Use a storyboard for a multi-beat cut and review the draft before delivery.
 2. **Keep a local path.** The reference render should work on a prepared machine with supplied media and no sign-in.
 3. **API first, UI second.** Design the brief, job and result contract first so a person or agent can run the same job.
-4. **One CGAI.** Work should be “frictionless” across products that are “integrated and work together”, with “one login for all” on hosted CGAI surfaces and “the same or similar connectors like grokbot does to outside tools or mcp” where workflows reach external tools.
+4. **One CGAI.** Work should be frictionless across integrated CGAI products, with one sign-in on hosted CGAI surfaces and shared connectors (including MCP) where workflows reach external tools.
 
 ## Goals and non-goals
 
@@ -78,7 +78,8 @@ The current `reelsmith.py render` CLI accepts template content JSON, a brand kit
 
 ## Guardrails
 
-- **GR-1** Only spend, credentials and irreversible deletes wait for Marc. Production deploys and publishing follow decide-and-show. Record the decision and show the result to Marc. Reelsmith itself stops at delivery files.
+- **GR-1** Company default: spend, credentials and irreversible deletes always wait for Marc. Other work is decide-and-show (record the decision and show the result) only where no stricter rule applies. Reelsmith itself stops at delivery files.
+- **GR-1a** Existing stricter rules are not loosened by GR-1. A major dependency update (labelled "major, needs Marc") or any change touching deploy files or Ignition-live waits for Marc, and intentional pins are not bumped ([README, Dependency updates](../../README.md#dependency-updates)). The user approves the plan before long renders and before any paid generation, and approves the preview before export ([SKILL.md](../../SKILL.md), Workflow steps 3 and 5).
 - **GR-2** Use media, marks, voices and likenesses with permission. Carry credits and synthetic-media disclosures when required.
 - **GR-3** Preserve the human review gate for delivery. Changes land after independent review and green CI.
 

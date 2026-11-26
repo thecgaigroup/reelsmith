@@ -8,7 +8,7 @@ Supersedes: None
 
 # Reelsmith product docs
 
-Reelsmith is a public, open-source skill for making video in code. It takes a brief through planning, rendering, review and export. It ships HyperFrames and Remotion templates, a brand kit and caption tools. CGAI products such as Signal Studio use Reelsmith to make video. See the [repository README](../../README.md) and [skill guide](../../SKILL.md).
+Reelsmith is a public, open-source skill for making video in code. It takes a brief through planning, rendering, review and export. It ships HyperFrames and Remotion templates, a brand kit and caption tools. It is planned as the video engine for other CGAI products. See the [repository README](../../README.md) and [skill guide](../../SKILL.md).
 
 | File | What it answers |
 |---|---|
@@ -19,7 +19,6 @@ Reelsmith is a public, open-source skill for making video in code. It takes a br
 ## How these docs are kept
 
 - **Git is the working copy.** Edits land by PR in `docs/product/`.
-- **Google Docs is the reading copy.** Refresh `CGAI Product Docs/Reelsmith/` in Drive after each docs merge.
 - **GitHub issues labelled `roadmap` track the milestones.** The roadmap sets the order and exit criteria. Issues hold status and evidence.
 
 ## What this replaces
