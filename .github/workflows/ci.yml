@@ -30,11 +30,22 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          files=$(git diff --name-only "$BASE_SHA...$HEAD_SHA")
+          # --no-renames lists both sides of a rename, so moving code into
+          # docs/ still counts as a code change. -z keeps unusual paths exact.
+          list="$RUNNER_TEMP/changed-files"
+          git diff --name-only --no-renames -z "$BASE_SHA...$HEAD_SHA" > "$list"
           echo "Changed files:"
-          echo "$files"
-          code=$(printf '%s\n' "$files" | grep -v -E '(\.md$|^docs/|^LICENSE$)' | grep -c . || true)
-          if [ -n "$files" ] && [ "$code" -eq 0 ]; then
+          tr '\0' '\n' < "$list"
+          any=false
+          code=false
+          while IFS= read -r -d '' f; do
+            any=true
+            case "$f" in
+              *.md|docs/*|LICENSE) ;;
+              *) code=true ;;
+            esac
+          done < "$list"
+          if [ "$any" = true ] && [ "$code" = false ]; then
             echo "docs_only=true" >> "$GITHUB_OUTPUT"
             echo "Docs-only change: skipping lint, typecheck, build and tests."
           else
