@@ -2,7 +2,7 @@ name: CI
 
 # The required check "lint, typecheck, and build" must report on every pull
 # request, including docs-only ones. So the workflow always runs, and the job
-# exits early with success when only Markdown, docs/ or LICENSE changed.
+# exits early with success when only Markdown files or LICENSE changed.
 on:
   pull_request:
 
@@ -30,21 +30,26 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          # --no-renames lists both sides of a rename, so moving code into
-          # docs/ still counts as a code change. -z keeps unusual paths exact.
+          # Docs-only means every changed path is a Markdown file or LICENSE.
+          # Anything else, including non-Markdown files under docs/, runs the
+          # full job. --no-renames lists both sides of a rename, so moving
+          # code into a .md path still counts as a code change. -z keeps
+          # unusual paths exact. File names are not echoed, so a crafted name
+          # cannot inject workflow commands into the log.
           list="$RUNNER_TEMP/changed-files"
           git diff --name-only --no-renames -z "$BASE_SHA...$HEAD_SHA" > "$list"
-          echo "Changed files:"
-          tr '\0' '\n' < "$list"
           any=false
           code=false
+          n=0
           while IFS= read -r -d '' f; do
             any=true
+            n=$((n + 1))
             case "$f" in
-              *.md|docs/*|LICENSE) ;;
+              *.md|LICENSE) ;;
               *) code=true ;;
             esac
           done < "$list"
+          echo "Changed paths: $n"
           if [ "$any" = true ] && [ "$code" = false ]; then
             echo "docs_only=true" >> "$GITHUB_OUTPUT"
             echo "Docs-only change: skipping lint, typecheck, build and tests."
