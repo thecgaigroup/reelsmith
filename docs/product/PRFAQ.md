@@ -20,7 +20,7 @@ The CGAI Group today launched Reelsmith for makers and coding agents who build l
 
 **The solution.** Reelsmith uses HyperFrames for template-driven video and Remotion for narrated, speech-timed work. A brand kit carries the logo, colors and type. The review step produces contact sheets and a phone-size preview. After approval, export produces files for the intended format. A versioned CLI and JSON contract give agents the same path through the job each time.
 
-**How it fits CGAI.** Reelsmith is how CGAI products such as Signal Studio make video. Ignition builds agent workflows that can validate a brief, run a render and retrieve the result. Orbit is the company dashboard where render state, failures and review outcomes are visible. CGAI products share sign-in and connector conventions where they connect.
+**How it fits CGAI.** Reelsmith is how CGAI products such as Signal Studio make video. Planned integrations: Ignition will build agent workflows that can validate a brief, run a render and retrieve the result. Orbit is the company dashboard where render state, failures and review outcomes will be visible. CGAI products are to share sign-in and connector conventions where they connect.
 
 **From Marc Wojcik, owner.** “we build everything api first ui second”.
 
