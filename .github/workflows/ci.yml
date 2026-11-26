@@ -26,9 +26,6 @@ jobs:
 
       - name: Detect docs-only change
         id: changes
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           # Docs-only means every changed path is a Markdown file or LICENSE.
           # Anything else, including non-Markdown files under docs/, runs the
@@ -36,8 +33,14 @@ jobs:
           # code into a .md path still counts as a code change. -z keeps
           # unusual paths exact. File names are not echoed, so a crafted name
           # cannot inject workflow commands into the log.
+          # Classify exactly what this run tests: the checked-out merge commit
+          # against its first parent (the base branch tip). If HEAD is not a
+          # merge commit, the list stays empty and the full job runs.
           list="$RUNNER_TEMP/changed-files"
-          git diff --name-only --no-renames -z "$BASE_SHA...$HEAD_SHA" > "$list"
+          : > "$list"
+          if git rev-parse -q --verify 'HEAD^2' > /dev/null; then
+            git diff --name-only --no-renames -z 'HEAD^1' HEAD > "$list"
+          fi
           any=false
           code=false
           n=0
